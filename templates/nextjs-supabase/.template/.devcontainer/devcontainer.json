@@ -1,0 +1,43 @@
+{
+  "name": "nextjs-supabase",
+{{#templateOption.usePrebuiltImage}}
+  "image": "ghcr.io/airnub-labs/dev-web:latest",
+{{/templateOption.usePrebuiltImage}}
+{{^templateOption.usePrebuiltImage}}
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "."
+  },
+{{/templateOption.usePrebuiltImage}}
+  "features": {
+    "ghcr.io/airnub-labs/devcontainer-features/chrome-cdp:1": {
+      "channel": "{{templateOption.chromeChannel}}",
+      "port": {{templateOption.cdpPort}}
+    },
+    "ghcr.io/airnub-labs/devcontainer-features/supabase-cli:1": {
+      "manageLocalStack": true
+    }{{#templateOption.includeAgentToolingClis}},
+    "ghcr.io/airnub-labs/devcontainer-features/agent-tooling-clis:1": {}
+    {{/templateOption.includeAgentToolingClis}}
+  },
+  "customizations": {
+    "codespaces": {
+      "repositories": [
+        {
+          "repository": "airnub-labs/lesson-starter",
+          "ref": "main",
+          "clonePath": "Lessons/01-starter"
+        }
+      ]
+    }
+  },
+  "forwardPorts": [
+    {{templateOption.cdpPort}}
+  ],
+  "portsAttributes": {
+    "{{templateOption.cdpPort}}": {
+      "label": "Chrome DevTools"
+    }
+  },
+  "postCreateCommand": "bash -c \"chmod +x ./scripts/ws-clone && ./scripts/ws-clone .devcontainer/workspace.repos.yaml && ./.devcontainer/postCreate.sh\""
+}

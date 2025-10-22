@@ -1,0 +1,40 @@
+{
+  "name": "classroom-studio-webtop",
+  "dockerComposeFile": [
+    "./compose.yaml"
+  ],
+  "service": "dev",
+  "runServices": ["dev", "webtop"],
+  "features": {
+    "../../../../features/supabase-cli": {
+      "manageLocalStack": true
+    },
+    "../../../../features/agent-tooling-clis": {}
+  },
+  "customizations": {
+    "codespaces": {
+      "repositories": [
+        {
+          "repository": "airnub-labs/lesson-starter",
+          "ref": "main",
+          "clonePath": "Lessons/01-starter"
+        }
+      ]
+    }
+  },
+  "forwardPorts": [
+    {{templateOption.webtopPort}}
+  ],
+  "portsAttributes": {
+    "{{templateOption.webtopPort}}": {
+      "label": "Desktop (webtop)",
+      "requireLocalPort": false
+    }
+  },
+  "remoteEnv": {
+    "WEBTOP_PORT": "{{templateOption.webtopPort}}",
+    "CHROME_POLICY_SOURCE": "{{templateOption.chromePolicies}}",
+    "CHROME_POLICY_MODE": "{{templateOption.policyMode}}"
+  },
+  "postCreateCommand": "bash -c \"chmod +x ./scripts/ws-clone && ./scripts/ws-clone .devcontainer/workspace.repos.yaml && ./.devcontainer/postCreate.sh\""
+}

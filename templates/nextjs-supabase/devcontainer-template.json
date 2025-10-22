@@ -1,0 +1,56 @@
+{
+  "version": "1.0.0",
+  "id": "nextjs-supabase",
+  "name": "Next.js + Supabase",
+  "description": "Next.js workspace with Supabase tooling and optional scaffold.",
+  "documentationURL": "https://github.com/airnub-labs/vscode-meta-workspace-internal",
+  "publisher": "airnub-labs",
+  "options": {
+    "usePrebuiltImage": {
+      "type": "boolean",
+      "default": true,
+      "description": "Pull the published ghcr.io/airnub-labs/dev-web image instead of building locally."
+    },
+    "chromeChannel": {
+      "type": "string",
+      "enum": ["stable", "beta"],
+      "default": "stable",
+      "description": "Chrome channel for the Chrome CDP feature."
+    },
+    "cdpPort": {
+      "type": "integer",
+      "default": 9222,
+      "description": "Forwarded port for the headless Chrome CDP endpoint."
+    },
+    "includeAgentToolingClis": {
+      "type": "boolean",
+      "default": true,
+      "description": "Install optional agent tooling CLIs (Codex/Claude/Gemini)."
+    },
+    "scaffold": {
+      "type": "boolean",
+      "default": false,
+      "description": "Create a Next.js app on first launch when no package.json is present."
+    },
+    "nextVersion": {
+      "type": "string",
+      "default": "15",
+      "description": "Version of Next.js to use when scaffolding."
+    },
+    "ts": {
+      "type": "boolean",
+      "default": true,
+      "description": "Use TypeScript when scaffolding."
+    },
+    "appRouter": {
+      "type": "boolean",
+      "default": true,
+      "description": "Use the App Router when scaffolding."
+    },
+    "auth": {
+      "type": "boolean",
+      "default": true,
+      "description": "Install Supabase auth helpers when scaffolding."
+    }
+  }
+}
