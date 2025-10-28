@@ -9,16 +9,11 @@ on:
   workflow_dispatch: {}
 
 jobs:
-  build:
+  build-dev-base:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-    strategy:
-      matrix:
-        image:
-          - dev-base
-          - dev-web
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3
@@ -28,10 +23,33 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build & push
+      - name: Build & push dev-base
         uses: docker/build-push-action@v6
         with:
-          context: images/${{ matrix.image }}
+          context: images/dev-base
           push: true
           platforms: linux/amd64,linux/arm64
-          tags: ghcr.io/airnub-labs/${{ matrix.image }}:latest
+          tags: ghcr.io/airnub-labs/dev-base:latest
+
+  build-dev-web:
+    runs-on: ubuntu-latest
+    needs: build-dev-base
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build & push dev-web
+        uses: docker/build-push-action@v6
+        with:
+          context: images/dev-web
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ghcr.io/airnub-labs/dev-web:latest
