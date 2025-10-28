@@ -1,9 +1,9 @@
-name: Publish Devcontainer Features
+name: Publish Devcontainer Templates (Stacks)
 on:
   push:
     branches: [ main ]
     paths:
-      - 'features/**'
+      - 'templates/**'
   workflow_dispatch: {}
 
 jobs:
@@ -14,12 +14,11 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
-      - uses: devcontainers/cli@v0.80.0
-      - name: Publish each feature as its own OCI package
+      - name: Publish templates as OCI
         uses: devcontainers/action@v1
         with:
-          base-path-to-features: features
-          publish-features: 'true'
+          base-path-to-templates: templates
+          publish-templates: 'true'
           registry: ghcr.io
           owner: airnub-labs
-          features-namespace: devcontainer-features
+          templates-namespace: devcontainer-templates

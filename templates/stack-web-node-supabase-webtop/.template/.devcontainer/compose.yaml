@@ -1,6 +1,6 @@
 services:
   dev:
-    image: ghcr.io/airnub-labs/dev-web:latest
+    image: ghcr.io/airnub-labs/devcontainer-images/dev-web:latest
     user: "vscode"
     volumes:
       - ..:/workspaces:cached

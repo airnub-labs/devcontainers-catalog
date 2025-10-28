@@ -39,13 +39,39 @@ Each stack template specifies:
 - **Image** = “Prebaked base for the dev container (optional).”
 - **Stack** = “An opinionated Template (plus optional matching Image) with a tested combo: Node + pnpm + Redis + Supabase + GUI + CDP.”
 
+## Canonical GHCR Namespaces
+
+| Asset type | Example | Notes |
+| --- | --- | --- |
+| Feature | `ghcr.io/airnub-labs/devcontainer-features/supabase-cli:1` | Published per feature folder via `publish-features.yml`. |
+| Template / Stack | `ghcr.io/airnub-labs/devcontainer-templates/stack-web-node-supabase-webtop:1.0.0` | Template IDs double as stack IDs (prefixed with `stack-`). |
+| Image | `ghcr.io/airnub-labs/devcontainer-images/dev-web:1` | Multi-arch builds cut by `build-images.yml` with `:latest` and major tags. |
+
 ## Reproducibility
 
 Each template may include a `stack.lock.json` (or README table) pinning feature versions and image digests.
 
+## Consumption examples
+
+```jsonc
+{
+  "image": "ghcr.io/airnub-labs/devcontainer-images/dev-web:1",
+  "features": {
+    "ghcr.io/airnub-labs/devcontainer-features/supabase-cli:1": {},
+    "ghcr.io/airnub-labs/devcontainer-features/chrome-cdp:1": { "port": 9222 }
+  }
+}
+```
+
+```bash
+# Materialize a stack template
+devcontainer templates apply \
+  --template-id ghcr.io/airnub-labs/devcontainer-templates/stack-web-node-supabase-webtop:1.0.0
+```
+
 ## Publish & Test
 
-- GitHub Actions publish **Features** (OCI) and **Images** (GHCR), and test **Templates** by materializing their payloads and running smoke checks.
+- GitHub Actions publish **Features**, **Templates/Stacks**, and **Images** to GHCR, and test **Templates** by materializing their payloads and running smoke checks.
 
 ### Workflow Topology
 

@@ -2,7 +2,7 @@
 
 Extends the base web workspace with optional Next.js scaffolding. Template options let you:
 
-- Reuse the published `dev-web` image or build locally (`usePrebuiltImage`). A pinned digest will be added after the first
+- Reuse the published `ghcr.io/airnub-labs/devcontainer-images/dev-web` image or build locally (`usePrebuiltImage`). A pinned digest will be added after the first
   public publish of the image; until then the templates reference the `:latest` tag.
 - Select the Chrome channel/port for the CDP feature (`chromeChannel`, `cdpPort`).
 - Decide whether to install the agent tooling CLI suite (`includeAgentToolingClis`).

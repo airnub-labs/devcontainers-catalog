@@ -1,7 +1,7 @@
 {
   "name": "nextjs-supabase",
 {{#templateOption.usePrebuiltImage}}
-  "image": "ghcr.io/airnub-labs/dev-web:latest",
+  "image": "ghcr.io/airnub-labs/devcontainer-images/dev-web:latest",
 {{/templateOption.usePrebuiltImage}}
 {{^templateOption.usePrebuiltImage}}
   "build": {

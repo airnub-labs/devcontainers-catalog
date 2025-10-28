@@ -2,7 +2,7 @@
 
 Catalog assets focus on two container layers:
 
-1. **Primary Dev Container** – defined by each template’s `.devcontainer/devcontainer.json`. It installs tooling through catalog features, optionally using the published images (`ghcr.io/airnub-labs/dev-base` or `dev-web`).
+1. **Primary Dev Container** – defined by each template’s `.devcontainer/devcontainer.json`. It installs tooling through catalog features, optionally using the published images (`ghcr.io/airnub-labs/devcontainer-images/dev-base` or `ghcr.io/airnub-labs/devcontainer-images/dev-web`).
 2. **Optional sidecars** – declared through template `dockerComposeFile` entries. Examples include the classroom template’s `webtop` desktop container.
 
 Understanding how these layers interact makes it easier to compose new templates and extend the catalog.
@@ -13,8 +13,8 @@ Understanding how these layers interact makes it easier to compose new templates
 
 The primary container runs the developer tooling. Templates can either:
 
-- Pull `ghcr.io/airnub-labs/dev-web:latest` (or another published image) for a fast start, **or**
-- Build locally from the provided Dockerfile, which itself extends `ghcr.io/airnub-labs/dev-base:latest`.
+- Pull `ghcr.io/airnub-labs/devcontainer-images/dev-web:latest` (or another published image) for a fast start, **or**
+- Build locally from the provided Dockerfile, which itself extends `ghcr.io/airnub-labs/devcontainer-images/dev-base:latest`.
 
 Each template wires catalog features such as `chrome-cdp`, `supabase-cli`, and `agent-tooling-clis`. Post-create hooks stay lightweight—install dependencies, print versions, and configure policies—but avoid cloning repositories or depending on workspace-specific paths.
 

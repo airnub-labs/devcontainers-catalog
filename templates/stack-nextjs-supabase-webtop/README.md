@@ -1,6 +1,6 @@
 # Stack: Next.js + Supabase (Webtop)
 
-Opinionated template that layers Supabase tooling, Redis, and a browser-accessible desktop over the base `dev-web` image.
+Opinionated template that layers Supabase tooling, Redis, and a browser-accessible desktop over the base `ghcr.io/airnub-labs/devcontainer-images/dev-web` image.
 
 ## Services & Ports
 
@@ -33,7 +33,7 @@ Add a `stack.lock.json` (example below) to pin image digests and feature version
 ```json
 {
   "images": {
-    "dev": "ghcr.io/airnub-labs/dev-web@sha256:<digest>",
+    "dev": "ghcr.io/airnub-labs/devcontainer-images/dev-web@sha256:<digest>",
     "webtop": "lscr.io/linuxserver/webtop@sha256:<digest>"
   },
   "features": {
