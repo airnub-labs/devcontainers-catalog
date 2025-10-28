@@ -11,3 +11,5 @@ Adds quality-of-life tooling for Docker-in-Docker environments: installs the Bui
 ```
 
 This feature is meant to be layered on top of `ghcr.io/devcontainers/features/docker-in-docker`.
+
+<!-- Trigger feature test workflow. -->

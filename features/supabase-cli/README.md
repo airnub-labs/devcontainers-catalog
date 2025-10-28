@@ -42,3 +42,5 @@ The `services` option accepts a comma-separated list (for example, `"db,auth,sto
 | `inbucket` | `--exclude inbucket` when omitted | `supabase-inbucket` |
 
 Templates may use the recorded list to pre-populate `sbx-start` arguments, hydrate `.devcontainer/compose` overrides, or simply document which services a project relies on.
+
+<!-- Trigger feature test workflow. -->

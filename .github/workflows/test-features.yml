@@ -34,13 +34,13 @@ jobs:
               [[ -n "${feature_name}" && "${feature_name}" != "${subpath}" ]] || continue
 
               feature_dir="features/${feature_name}"
-              [[ -d "${feature_dir}/src" ]] || continue
+              [[ -f "${feature_dir}/devcontainer-feature.json" ]] || continue
 
               selected["${feature_dir}"]=1
             done < <(git diff --name-only "${base_ref}...${GITHUB_SHA}")
           else
             while IFS= read -r feature_dir; do
-              [[ -d "${feature_dir}/src" ]] || continue
+              [[ -f "${feature_dir}/devcontainer-feature.json" ]] || continue
               selected["${feature_dir}"]=1
             done < <(find features -mindepth 1 -maxdepth 1 -type d | sort)
           fi

@@ -50,3 +50,5 @@ fi
 ```
 
 Clients that support project configuration files (for example, `.claude/settings.json`) can instead commit their MCP definitions directly to the template payload.
+
+<!-- Trigger feature test workflow. -->

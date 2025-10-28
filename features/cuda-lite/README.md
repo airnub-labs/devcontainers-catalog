@@ -11,3 +11,5 @@ Detects whether the container has access to an NVIDIA GPU (via `nvidia-smi`). If
 ```
 
 Codespaces currently virtualizes GPUs for select SKUs only; environments without GPU passthrough will see `CUDA_AVAILABLE=false` in the shell profile.
+
+<!-- Trigger feature test workflow. -->
