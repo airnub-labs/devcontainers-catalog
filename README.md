@@ -46,3 +46,41 @@ Each template may include a `stack.lock.json` (or README table) pinning feature 
 ## Publish & Test
 
 - GitHub Actions publish **Features** (OCI) and **Images** (GHCR), and test **Templates** by materializing their payloads and running smoke checks.
+
+### Workflow Topology
+
+```mermaid
+flowchart TB
+    A[Contributor opens PR touching<br/>features/**] --> B[Test Devcontainer Features]
+    A2[Contributor opens PR touching<br/>templates/**] --> C[Smoke Test Templates]
+    B -->|Validate schemas & idempotence| D[Ready to merge]
+    C -->|Smoke test template builds| D
+    E[Push to main touching<br/>features/**] --> F[Publish Devcontainer Features]
+    G[Push to main touching<br/>images/**] --> H[Build & Push Images]
+    F -->|Publish OCI bundles to GHCR| I[Catalog consumers]
+    H -->|Publish multi-arch images to GHCR| I
+```
+
+### From Catalog Assets to a Workspace
+
+```mermaid
+flowchart LR
+    subgraph Catalog
+        F[Features<br/>Install tooling]
+        I[Images<br/>Prebuilt bases]
+        T[Templates<br/>.devcontainer payloads]
+    end
+    subgraph Tooling
+        CLI[Dev Containers CLI]
+    end
+    subgraph Workspace
+        W[Materialized<br/>workspace repo]
+    end
+
+    F -->|Referenced via<br/>devcontainer.json features| T
+    I -->|Pinned as base images| T
+    T -->|`devcontainer templates apply`| CLI
+    CLI -->|Generates .devcontainer/ files| W
+    F -->|Installs tooling during<br/>`devcontainer build`| W
+    I -->|Base image for dev service| W
+```
