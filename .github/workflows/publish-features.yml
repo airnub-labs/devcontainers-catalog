@@ -18,5 +18,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: devcontainers/action@v1
         with:
-          subcommand: 'features'
-          args: 'publish --namespace ghcr.io/airnub-labs/devcontainer-features features'
+          publish-features: true
+          base-path-to-features: features
+          oci-registry: ghcr.io
+          features-namespace: airnub-labs/devcontainer-features
