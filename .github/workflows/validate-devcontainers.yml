@@ -41,6 +41,7 @@ jobs:
             mkdir -p /tmp/devcontainer/templates
             devcontainer templates publish \
               templates \
+              --namespace airnub-labs/devcontainer-templates \
               --package \
               --output-folder /tmp/devcontainer/templates \
               --force-clean-output-folder
