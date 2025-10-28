@@ -22,11 +22,15 @@
     },
     "versions": {
       "type": "object",
+      "default": {},
       "description": "Optional per-CLI version map (semver or tag).",
       "properties": {
         "codex": { "type": "string" },
         "claude": { "type": "string" },
         "gemini": { "type": "string" }
+      },
+      "additionalProperties": {
+        "type": "string"
       }
     }
   },

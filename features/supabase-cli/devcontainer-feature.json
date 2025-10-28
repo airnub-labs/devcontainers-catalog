@@ -17,6 +17,7 @@
     },
     "services": {
       "type": "array",
+      "default": [],
       "description": "Advisory list of Supabase services used by the project.",
       "items": {
         "type": "string"
@@ -24,6 +25,7 @@
     },
     "projectRef": {
       "type": "string",
+      "default": "",
       "description": "Supabase project reference (exported as SUPABASE_PROJECT_REF if provided)."
     }
   },
