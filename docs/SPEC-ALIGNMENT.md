@@ -2,7 +2,7 @@
 
 This repository separates **Features**, **Templates**, and **Images** to align with the Dev Container specification.
 
-- **Features** (`features/*`) are OCI-friendly installers. Each feature contains only a `devcontainer-feature.json`, an idempotent `install.sh`, and documentation. No lifecycle hooks or project scaffolding are embedded.
+- **Features** (`features/*`) are OCI-friendly installers. Each feature lives under `src/<feature>/` with only a `devcontainer-feature.json`, an idempotent `install.sh`, and documentation, plus matching smoke tests in `test/<feature>/`. No lifecycle hooks or project scaffolding are embedded.
 - **Templates** (`templates/*`) package ready-to-use `.devcontainer` payloads. They apply features, wire up multi-container topologies, and expose template options that toggle behaviour without hard-coding project secrets or clone manifests.
 - **Images** (`images/*`) provide prebuilt bases published to GHCR for faster Codespaces start times. Templates can opt in through template options (`usePrebuiltImage`).
 
