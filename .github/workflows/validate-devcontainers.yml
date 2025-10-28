@@ -16,7 +16,7 @@ jobs:
 
       - name: Install Dev Containers CLI
         run: |
-          # Use a CLI version that supports `templates publish --package`.
+          # Use a CLI version that supports template packaging.
           npm install -g @devcontainers/cli@0.80.1
 
       - name: Validate feature manifests
@@ -39,10 +39,8 @@ jobs:
           set -euo pipefail
           if compgen -G "templates/*/devcontainer-template.json" > /dev/null; then
             mkdir -p /tmp/devcontainer/templates
-            devcontainer templates publish \
+            devcontainer templates package \
               templates \
-              --namespace airnub-labs/devcontainer-templates \
-              --package \
               --output-folder /tmp/devcontainer/templates \
               --force-clean-output-folder
           else
