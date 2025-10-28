@@ -3,7 +3,7 @@
   "id": "classroom-studio-webtop",
   "name": "Classroom Studio (Webtop)",
   "description": "Primary dev container with Supabase tooling and a Chrome-enabled webtop sidecar for touch devices.",
-  "documentationURL": "https://github.com/airnub-labs/vscode-meta-workspace-internal",
+  "documentationURL": "https://github.com/airnub-labs/devcontainers-catalog",
   "publisher": "airnub-labs",
   "options": {
     "policyMode": {

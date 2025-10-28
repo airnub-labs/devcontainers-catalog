@@ -1,9 +1,10 @@
 # Migration Guide
 
-1. **Retire legacy `.devcontainer/scripts` installers.** Supabase, Codex, Claude, Gemini, Docker, and CUDA setup scripts now live under `features/*`. Workspace-specific logic belongs in `workspaces/<variant>/postCreate.sh` or `postStart.sh`.
-2. **Adopt templates.** Instead of copying `.devcontainer` folders between projects, consume the templates from this repository (via `devcontainer templates apply airnub-labs/web`, etc.). Options cover Supabase project refs, Chrome CDP ports, and Next.js scaffolding.
-3. **Move GUI browsers to sidecars.** Desktop/noVNC tooling is isolated in the `classroom-studio-webtop` template. The primary container stays lightweight and headless.
-4. **Pre-clone required repositories.** Templates now declare `customizations.codespaces.repositories` blocks for Codespaces and ship `.devcontainer/workspace.repos.yaml` manifests plus a `scripts/ws-clone` helper for local/CLI parity.
-5. **Rename `mcp-clis` → `agent-tooling-clis`.** Update any pinned references (`features/agent-tooling-clis`) and switch template options or overrides from `includeMcpClis` to `includeAgentToolingClis`.
-6. **Use prebuilt images for faster startups.** Both `web` and `nextjs-supabase` templates default to `ghcr.io/airnub-labs/dev-web:<version>`. Opt out with the `usePrebuiltImage` option if you need local Dockerfile tweaks.
-7. **Wire up CI.** The new GitHub Actions workflows publish features, build GHCR images, validate templates, and run `.score/scripts/checks.sh` for spec conformance. Mirror the workflow configuration into downstream repositories or trigger them via reusable workflows.
+Follow these steps when moving an existing project or workspace into the catalog-only layout.
+
+1. **Replace ad-hoc installers with catalog features.** Supabase, Chrome CDP, CUDA, agent tooling CLIs, and Docker ergonomics live under `features/*`. Compose them via `devcontainer.json` or templates instead of bespoke shell scripts.
+2. **Adopt catalog templates.** Rather than copying `.devcontainer` folders between repos, materialize templates with `devcontainer templates apply --template-folder templates/<id>`. Options cover Chrome channels, CDP ports, Supabase project metadata, and Next.js scaffolding toggles.
+3. **Consume published images.** Prefer the prebuilt `ghcr.io/airnub-labs/dev-base` and `ghcr.io/airnub-labs/dev-web` images for faster startup. Fall back to local builds when you need custom Dockerfile tweaks.
+4. **Wire optional scaffolding per project.** Templates expose feature flags (for example, `includeAgentToolingClis` or `scaffold`). Use them instead of editing shared Dockerfiles so downstream workspaces stay aligned.
+5. **Keep documentation in sync.** Update `docs/CATALOG.md` and `VERSIONING.md` whenever you add new assets or publish new tags so consumers know which coordinates to pull.
+6. **Rely on CI for publishing.** The GitHub Actions workflows in `.github/workflows/` publish features to GHCR, build multi-arch images, and smoke-test templates. Trigger them by pushing to `main` or via workflow dispatch.

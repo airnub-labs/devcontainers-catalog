@@ -2,6 +2,16 @@
 
 Installs the [Supabase CLI](https://supabase.com/docs/guides/cli) inside a dev container. Supports pinning to a specific release, exporting a `SUPABASE_PROJECT_REF`, and optionally shipping helper wrappers for local stack commands.
 
+## Usage
+
+```jsonc
+"features": {
+  "ghcr.io/airnub-labs/devcontainer-features/supabase-cli:1": {
+    "manageLocalStack": true
+  }
+}
+```
+
 ## Options
 
 | Option | Type | Default | Description |

@@ -2,6 +2,17 @@
 
 Installs Google Chrome (or Chromium on non-amd64 architectures) and launches a headless DevTools Protocol endpoint via `supervisord`.
 
+## Usage
+
+```jsonc
+"features": {
+  "ghcr.io/airnub-labs/devcontainer-features/chrome-cdp:1": {
+    "channel": "beta",
+    "port": 9333
+  }
+}
+```
+
 ## Options
 
 | Option | Type | Default | Description |

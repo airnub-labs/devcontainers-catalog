@@ -1,28 +1,14 @@
-# Ignore everything at the repo root (files & folders)
- /*
-# Also ignore all dotfiles at root
- /.*
+# General build artifacts
+node_modules/
+dist/
+*.log
 
-# Allow-list just these:
-!.gitignore
-!.gitattributes
-!*.code-workspace
+# OS-specific
+.DS_Store
 
-# Allow the shared devcontainer config (and everything in it)
-!.devcontainer/
-!.devcontainer/**
-/.devcontainer/.env
-/.env
+# Local overrides
+.env
+.env.*
 
-# (Optional) keep these if you use them:
-!README.md
-!.github/
-!.github/**
-!scripts/
-!scripts/**
-!workspaces/
-!workspaces/**
-
-*.DS_Store
-.airnub-current-project
+# Legacy app checkouts (should stay untracked)
 apps/

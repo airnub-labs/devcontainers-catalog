@@ -2,6 +2,16 @@
 
 Installs coding-agent client CLIs for Codex, Claude, and Gemini using the first available Node package manager (`pnpm` preferred, `npm` fallback). Each CLI can be toggled individually and version-pinned. The feature purposely limits itself to installing binaries; configure MCP servers per project via template hooks (for example, `.devcontainer/postCreate.sh`) or editor-specific project files.
 
+## Usage
+
+```jsonc
+"features": {
+  "ghcr.io/airnub-labs/devcontainer-features/agent-tooling-clis:1": {
+    "installClaude": true
+  }
+}
+```
+
 ## Options
 
 | Option | Type | Default | Description |

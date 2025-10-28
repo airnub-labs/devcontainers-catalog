@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "name": "Supabase CLI",
   "description": "Installs the Supabase CLI and optional helper scripts for managing local stacks.",
-  "documentationURL": "https://github.com/airnub-labs/vscode-meta-workspace-internal",
+  "documentationURL": "https://github.com/airnub-labs/devcontainers-catalog",
   "options": {
     "version": {
       "type": "string",

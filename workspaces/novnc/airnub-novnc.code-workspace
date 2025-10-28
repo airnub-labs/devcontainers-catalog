@@ -1,7 +1,0 @@
-{
-  "folders": [
-    { "path": "../../workspaces/_shared/supabase" },
-    { "path": "../../apps" },
-    { "path": "../../docs" }
-  ]
-}

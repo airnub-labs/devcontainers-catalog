@@ -1,11 +1,12 @@
-name: Build Dev Images
+name: Build & Push Images
 
 on:
   push:
     branches: [ main ]
     paths:
       - 'images/**'
-  workflow_dispatch:
+      - '.github/workflows/build-images.yml'
+  workflow_dispatch: {}
 
 jobs:
   build:
@@ -13,6 +14,11 @@ jobs:
     permissions:
       contents: read
       packages: write
+    strategy:
+      matrix:
+        image:
+          - dev-base
+          - dev-web
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3
@@ -22,23 +28,10 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and push dev-base
-        uses: docker/build-push-action@v5
+      - name: Build & push
+        uses: docker/build-push-action@v6
         with:
-          context: images/dev-base
-          platforms: linux/amd64,linux/arm64
+          context: images/${{ matrix.image }}
           push: true
-          tags: |
-            ghcr.io/airnub-labs/dev-base:latest
-            ghcr.io/airnub-labs/dev-base:${{ github.sha }}
-      - name: Build and push dev-web
-        uses: docker/build-push-action@v5
-        with:
-          context: images/dev-web
           platforms: linux/amd64,linux/arm64
-          push: true
-          build-args: |
-            BASE_IMAGE=ghcr.io/airnub-labs/dev-base:${{ github.sha }}
-          tags: |
-            ghcr.io/airnub-labs/dev-web:latest
-            ghcr.io/airnub-labs/dev-web:${{ github.sha }}
+          tags: ghcr.io/airnub-labs/${{ matrix.image }}:latest

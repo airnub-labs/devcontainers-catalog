@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "name": "Chrome DevTools Protocol",
   "description": "Installs Google Chrome with a headless DevTools Protocol endpoint.",
-  "documentationURL": "https://github.com/airnub-labs/vscode-meta-workspace-internal",
+  "documentationURL": "https://github.com/airnub-labs/devcontainers-catalog",
   "options": {
     "channel": {
       "type": "string",
