@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "name": "CUDA Lite",
   "description": "Installs minimal CUDA libraries when a GPU is available.",
-  "documentationURL": "https://github.com/airnub-labs/vscode-meta-workspace-internal",
+  "documentationURL": "https://github.com/airnub-labs/devcontainers-catalog",
   "options": {},
   "installsAfter": [
     "ghcr.io/devcontainers/features/common-utils"

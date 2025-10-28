@@ -1,23 +1,17 @@
-name: Test Dev Container Features
+name: Test Devcontainer Features
 
 on:
   pull_request:
     paths:
       - 'features/**'
-  push:
-    branches: [ main ]
-    paths:
-      - 'features/**'
-  workflow_dispatch:
+      - '.github/workflows/test-features.yml'
+  workflow_dispatch: {}
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     steps:
       - uses: actions/checkout@v4
-      - uses: devcontainers/action@v1
-        with:
-          base-path: ./features
-          run-features-test: true
+      - name: Validate feature schemas
+        run: |
+          npx --yes @devcontainers/cli@latest features test --skip-autofix --project-root . --features-root features

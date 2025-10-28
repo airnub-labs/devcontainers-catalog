@@ -3,7 +3,7 @@
   "id": "nextjs-supabase",
   "name": "Next.js + Supabase",
   "description": "Next.js workspace with Supabase tooling and optional scaffold.",
-  "documentationURL": "https://github.com/airnub-labs/vscode-meta-workspace-internal",
+  "documentationURL": "https://github.com/airnub-labs/devcontainers-catalog",
   "publisher": "airnub-labs",
   "options": {
     "usePrebuiltImage": {

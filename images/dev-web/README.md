@@ -1,3 +1,9 @@
 # dev-web Image
 
-Bundles the Node.js 24 + pnpm setup used by `dev-base`, adds headless browser dependencies (fonts and Chrome runtime libraries), and pre-seeds the Google Chrome apt repository for faster provisioning by the `chrome-cdp` feature. When publishing images you can still override `BASE_IMAGE` to point at a prebuilt `dev-base` artifact.
+Extends the `dev-base` image with Chrome package repositories so the `chrome-cdp` feature can install browsers quickly. Use this image when building GUI-enabled or browser-automation workspaces.
+
+Pull from GHCR:
+
+```
+docker pull ghcr.io/airnub-labs/dev-web:latest
+```
