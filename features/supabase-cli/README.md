@@ -18,14 +18,14 @@ Installs the [Supabase CLI](https://supabase.com/docs/guides/cli) inside a dev c
 | --- | --- | --- | --- |
 | `version` | string | `"latest"` | Semver or tag for the Supabase CLI. |
 | `manageLocalStack` | boolean | `false` | Adds `sbx-start`, `sbx-stop`, and `sbx-status` helpers that wrap `supabase` local stack commands. |
-| `services` | string[] | _optional_ | Advisory list of Supabase services (captured in install metadata). |
+| `services` | string | `""` | Comma-separated Supabase service hints recorded in install metadata. |
 | `projectRef` | string | _optional_ | Populates `SUPABASE_PROJECT_REF` via `/etc/profile.d` and `containerEnv`. |
 
 Helper scripts are only created when `manageLocalStack` is enabled. The feature is idempotent and will skip reinstalling the CLI when the requested version is already present.
 
 ### Service name hints
 
-The `services` option does not toggle Supabase components directly; instead it records your intent so templates can translate the list into `supabase start` flags or Compose overrides. Use the canonical Supabase service identifiers shown below:
+The `services` option accepts a comma-separated list (for example, `"db,auth,storage"`). It does not toggle Supabase components directly; instead it records your intent so templates can translate the list into `supabase start` flags or Compose overrides. Use the canonical Supabase service identifiers shown below:
 
 | Service hint | CLI flag (`supabase start`) | Compose service |
 | --- | --- | --- |

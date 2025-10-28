@@ -1,6 +1,6 @@
 {
   "id": "agent-tooling-clis",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "name": "Agent Tooling CLIs",
   "description": "Installs optional coding agent client CLIs (Codex, Claude, Gemini).",
   "documentationURL": "https://github.com/airnub-labs/devcontainers-catalog",
@@ -20,14 +20,20 @@
       "default": false,
       "description": "Install the Gemini CLI."
     },
-    "versions": {
-      "type": "object",
-      "description": "Optional per-CLI version map (semver or tag).",
-      "properties": {
-        "codex": { "type": "string" },
-        "claude": { "type": "string" },
-        "gemini": { "type": "string" }
-      }
+    "codexVersion": {
+      "type": "string",
+      "default": "latest",
+      "description": "Version (semver or tag) of the Codex CLI to install."
+    },
+    "claudeVersion": {
+      "type": "string",
+      "default": "latest",
+      "description": "Version (semver or tag) of the Claude CLI to install."
+    },
+    "geminiVersion": {
+      "type": "string",
+      "default": "latest",
+      "description": "Version (semver or tag) of the Gemini CLI to install."
     }
   },
   "installsAfter": [

@@ -1,6 +1,6 @@
 {
   "id": "supabase-cli",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "name": "Supabase CLI",
   "description": "Installs the Supabase CLI and optional helper scripts for managing local stacks.",
   "documentationURL": "https://github.com/airnub-labs/devcontainers-catalog",
@@ -16,14 +16,13 @@
       "description": "Install helper scripts (sbx-start/stop/status) for managing Supabase local stack."
     },
     "services": {
-      "type": "array",
-      "description": "Advisory list of Supabase services used by the project.",
-      "items": {
-        "type": "string"
-      }
+      "type": "string",
+      "default": "",
+      "description": "Comma-separated list of Supabase services used by the project (for metadata only)."
     },
     "projectRef": {
       "type": "string",
+      "default": "",
       "description": "Supabase project reference (exported as SUPABASE_PROJECT_REF if provided)."
     }
   },
