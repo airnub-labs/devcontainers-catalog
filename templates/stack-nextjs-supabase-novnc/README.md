@@ -1,6 +1,6 @@
 # Stack: Next.js + Supabase (noVNC)
 
-Opinionated template for running Next.js with Supabase tooling and a lightweight noVNC desktop.
+Opinionated template for running Next.js with Supabase tooling and a lightweight noVNC desktop on top of the `ghcr.io/airnub-labs/devcontainer-images/dev-web` image.
 
 ## Services & Ports
 

@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=ghcr.io/airnub-labs/dev-base:latest
+ARG BASE_IMAGE=ghcr.io/airnub-labs/devcontainer-images/dev-base:latest
 FROM ${BASE_IMAGE}
 
 # Pre-seed the Google Chrome repository on amd64 so the chrome-cdp feature can reuse it quickly.

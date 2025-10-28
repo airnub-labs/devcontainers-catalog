@@ -1,6 +1,6 @@
 # Stack: Web + Node + Supabase (Webtop)
 
-Starter stack for Node.js web apps with Supabase integration and a full desktop via Webtop.
+Starter stack for Node.js web apps with Supabase integration and a full desktop via Webtop, built on the `ghcr.io/airnub-labs/devcontainer-images/dev-web` image.
 
 ## Services & Ports
 

@@ -16,9 +16,16 @@ This repository now hosts only the **Devcontainers Catalog**: reusable Features,
 
 1. Features install tooling only. Avoid starting daemons or embedding project secrets.
 2. Templates must not clone repositories automatically. Provide options for behaviour toggles instead of hard-coded paths.
-3. Images should build on Ubuntu 24.04, support amd64 + arm64, and lean on `ghcr.io/airnub-labs/dev-base` / `dev-web` where applicable.
+3. Images should build on Ubuntu 24.04, support amd64 + arm64, and lean on `ghcr.io/airnub-labs/devcontainer-images/dev-base` / `ghcr.io/airnub-labs/devcontainer-images/dev-web` where applicable.
 4. Documentation reflects the catalog-only scope (no workspace-specific instructions).
 5. CI workflows stay functional: feature validation, template smoke tests, and image builds.
+
+## Naming & Publishing
+
+- **Features** → `ghcr.io/airnub-labs/devcontainer-features/<feature-id>:<semver>`
+- **Templates & stacks** → `ghcr.io/airnub-labs/devcontainer-templates/<template-id>:<semver>` (stacks keep their `stack-` prefix).
+- **Images** → `ghcr.io/airnub-labs/devcontainer-images/<image-name>:<semver>`
+- Always publish via CI (`publish-features`, `publish-templates`, `build-images`). Never push the parent `devcontainer-features` folder as a package.
 
 ## Helpful Commands
 

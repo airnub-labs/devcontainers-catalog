@@ -9,7 +9,7 @@
     "usePrebuiltImage": {
       "type": "boolean",
       "default": true,
-      "description": "Pull the published ghcr.io/airnub-labs/dev-web image instead of building locally."
+      "description": "Pull the published ghcr.io/airnub-labs/devcontainer-images/dev-web image instead of building locally."
     },
     "chromeChannel": {
       "type": "string",
