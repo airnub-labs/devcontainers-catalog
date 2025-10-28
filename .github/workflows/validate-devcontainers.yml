@@ -25,8 +25,9 @@ jobs:
           if compgen -G "features/*/devcontainer-feature.json" > /dev/null; then
             mkdir -p /tmp/devcontainer/features
             devcontainer features package \
-              --features-dir features \
-              --output /tmp/devcontainer/features
+              features \
+              --output-folder /tmp/devcontainer/features \
+              --force-clean-output-folder
           else
             echo "No features found to validate."
           fi
@@ -37,8 +38,9 @@ jobs:
           if compgen -G "templates/*/devcontainer-template.json" > /dev/null; then
             mkdir -p /tmp/devcontainer/templates
             devcontainer templates package \
-              --templates-dir templates \
-              --output /tmp/devcontainer/templates
+              templates \
+              --output-folder /tmp/devcontainer/templates \
+              --force-clean-output-folder
           else
             echo "No templates found to validate."
           fi
