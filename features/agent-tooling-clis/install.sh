@@ -4,45 +4,13 @@ set -euo pipefail
 INSTALL_CODEX="${INSTALLCODEX:-true}"
 INSTALL_CLAUDE="${INSTALLCLAUDE:-false}"
 INSTALL_GEMINI="${INSTALLGEMINI:-false}"
-VERSION_JSON="${VERSIONS:-}"
-VERSION_CODEX="${VERSIONS__CODEX:-}"
-VERSION_CLAUDE="${VERSIONS__CLAUDE:-}"
-VERSION_GEMINI="${VERSIONS__GEMINI:-}"
+VERSION_CODEX="${CODEXVERSION:-latest}"
+VERSION_CLAUDE="${CLAUDEVERSION:-latest}"
+VERSION_GEMINI="${GEMINIVERSION:-latest}"
 FEATURE_DIR="/usr/local/share/devcontainer/features/agent-tooling-clis"
 LAST_INSTALLED_VERSION=""
 
 mkdir -p "${FEATURE_DIR}"
-
-parse_version_json() {
-    local key="$1"
-    if [ -z "${VERSION_JSON}" ]; then
-        return 0
-    fi
-    python3 - <<PYTHON
-import json, os
-raw = os.environ.get("VERSION_JSON", "")
-key = os.environ.get("KEY")
-if not raw:
-    raise SystemExit(0)
-try:
-    data = json.loads(raw)
-except json.JSONDecodeError:
-    raise SystemExit(0)
-value = data.get(key)
-if value:
-    print(value)
-PYTHON
-}
-
-if [ -z "${VERSION_CODEX}" ]; then
-    VERSION_CODEX=$(KEY="codex" VERSION_JSON="${VERSION_JSON}" parse_version_json codex)
-fi
-if [ -z "${VERSION_CLAUDE}" ]; then
-    VERSION_CLAUDE=$(KEY="claude" VERSION_JSON="${VERSION_JSON}" parse_version_json claude)
-fi
-if [ -z "${VERSION_GEMINI}" ]; then
-    VERSION_GEMINI=$(KEY="gemini" VERSION_JSON="${VERSION_JSON}" parse_version_json gemini)
-fi
 
 trim_first_line() {
     python3 - <<'PYTHON'
