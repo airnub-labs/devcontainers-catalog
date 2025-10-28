@@ -29,7 +29,9 @@ jobs:
           context: images/dev-base
           push: true
           platforms: linux/amd64,linux/arm64
-          tags: ghcr.io/airnub-labs/dev-base:latest
+          tags: |
+            ghcr.io/airnub-labs/dev-base:latest
+            ghcr.io/airnub-labs/dev-base:${{ github.sha }}
 
   build-dev-web:
     runs-on: ubuntu-latest
@@ -52,4 +54,6 @@ jobs:
           context: images/dev-web
           push: true
           platforms: linux/amd64,linux/arm64
-          tags: ghcr.io/airnub-labs/dev-web:latest
+          tags: |
+            ghcr.io/airnub-labs/dev-web:latest
+            ghcr.io/airnub-labs/dev-web:${{ github.sha }}
