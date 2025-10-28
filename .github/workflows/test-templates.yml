@@ -22,12 +22,9 @@ jobs:
             [ -f "$T/devcontainer-template.json" ] || continue
             echo "==> Materializing template: $T"
             TMP="$(mktemp -d)"
-            # Materialize into TMP using devcontainers/cli 'templates apply' once stable across environments;
-            # For now, basic schema check and build a minimal payload if present.
-            devcontainer templates apply --template-folder "$T" --workspace-folder "$TMP" || true
-            # If template carries payload, attempt a build
             if [ -d "$T/.template/.devcontainer" ]; then
               cp -r "$T/.template/.devcontainer" "$TMP/.devcontainer"
+              python scripts/render_template_defaults.py "$T/devcontainer-template.json" "$TMP/.devcontainer"
               devcontainer build --workspace-folder "$TMP"
             fi
             rm -rf "$TMP"

@@ -14,4 +14,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate feature schemas
         run: |
-          npx --yes @devcontainers/cli@latest features test --skip-autofix --project-root . --features-root features
+          set -euo pipefail
+          for feature_dir in features/*; do
+            [ -d "${feature_dir}/src" ] || continue
+            echo "==> Testing feature: ${feature_dir}"
+            npx --yes @devcontainers/cli@latest features test --project-folder "${feature_dir}"
+          done
