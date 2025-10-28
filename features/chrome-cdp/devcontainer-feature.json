@@ -12,8 +12,8 @@
       "description": "Chrome release channel to install."
     },
     "port": {
-      "type": "integer",
-      "default": 9222,
+      "type": "string",
+      "default": "9222",
       "description": "Port exposed by the Chrome DevTools Protocol server."
     }
   },
