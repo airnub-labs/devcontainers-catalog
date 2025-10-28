@@ -12,11 +12,71 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate feature schemas
+        with:
+          fetch-depth: 0
+      - name: Determine features to test
+        id: features
         run: |
           set -euo pipefail
-          for feature_dir in features/*; do
-            [ -d "${feature_dir}/src" ] || continue
+
+          declare -A selected=()
+
+          if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+            base_ref="${{ github.event.pull_request.base.sha }}"
+            echo "Detecting changes relative to ${base_ref}"
+            while IFS= read -r file; do
+              [[ -n "${file}" ]] || continue
+              [[ "${file}" == features/* ]] || continue
+
+              subpath="${file#features/}"
+              feature_name="${subpath%%/*}"
+
+              [[ -n "${feature_name}" && "${feature_name}" != "${subpath}" ]] || continue
+
+              feature_dir="features/${feature_name}"
+              [[ -d "${feature_dir}/src" ]] || continue
+
+              selected["${feature_dir}"]=1
+            done < <(git diff --name-only "${base_ref}...${GITHUB_SHA}")
+          else
+            while IFS= read -r feature_dir; do
+              [[ -d "${feature_dir}/src" ]] || continue
+              selected["${feature_dir}"]=1
+            done < <(find features -mindepth 1 -maxdepth 1 -type d | sort)
+          fi
+
+          if ((${#selected[@]} == 0)); then
+            echo "No features selected for testing."
+            echo 'count=0' >> "${GITHUB_OUTPUT}"
+            echo 'features=' >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          tmp_file=$(mktemp)
+          printf '%s\n' "${!selected[@]}" | sort > "${tmp_file}"
+
+          echo "Features to test:"
+          cat "${tmp_file}"
+
+          count=$(wc -l < "${tmp_file}")
+
+          {
+            echo "count=${count}"
+            echo 'features<<EOF'
+            cat "${tmp_file}"
+            echo 'EOF'
+          } >> "${GITHUB_OUTPUT}"
+
+          rm -f "${tmp_file}"
+      - name: No features changed
+        if: steps.features.outputs.count == '0'
+        run: echo "No feature changes detected; skipping tests."
+      - name: Validate feature schemas
+        if: steps.features.outputs.count != '0'
+        run: |
+          set -euo pipefail
+          while IFS= read -r feature_dir; do
+            [[ -n "${feature_dir}" ]] || continue
             echo "==> Testing feature: ${feature_dir}"
             npx --yes @devcontainers/cli@latest features test --project-folder "${feature_dir}"
-          done
+          done <<< "${{ steps.features.outputs.features }}"
