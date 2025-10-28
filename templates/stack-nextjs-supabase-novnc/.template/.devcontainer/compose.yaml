@@ -1,0 +1,38 @@
+services:
+  dev:
+    image: ghcr.io/airnub-labs/dev-web:latest
+    user: "vscode"
+    volumes:
+      - ..:/workspaces:cached
+    environment:
+      - CHROME_CDP_PORT={{templateOption.chromeCdpPort}}
+    shm_size: "2gb"
+{{#templateOption.redis}}
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+{{/templateOption.redis}}
+  webtop:
+    image: lscr.io/linuxserver/webtop:ubuntu-xfce
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      - CUSTOM_USER=vscode
+    volumes:
+      - ..:/workspace
+    ports:
+      - "${WEBTOP_PORT:-3001}:3000"
+    shm_size: "2gb"
+  novnc:
+    image: ghcr.io/airnub-labs/dev-novnc:latest
+    environment:
+      - DISPLAY=:1
+    ports:
+      - "${NOVNC_PORT:-6080}:6080"
+volumes:
+  redis-data:
+    name: devcontainer-redis-data
