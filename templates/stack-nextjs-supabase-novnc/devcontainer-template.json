@@ -1,0 +1,31 @@
+{
+  "version": "1.0.0",
+  "id": "stack-nextjs-supabase-novnc",
+  "name": "Stack: Next.js + Supabase (noVNC)",
+  "description": "Next.js stack with Supabase CLI, Redis, and a noVNC desktop sidecar.",
+  "documentationURL": "https://github.com/airnub-labs/devcontainers-catalog",
+  "publisher": "airnub-labs",
+  "options": {
+    "guiProvider": {
+      "type": "string",
+      "enum": ["webtop", "novnc"],
+      "default": "novnc",
+      "description": "Select the GUI sidecar to run alongside the dev container."
+    },
+    "chromeCdpPort": {
+      "type": "integer",
+      "default": 9222,
+      "description": "Forwarded port for the Chrome DevTools Protocol endpoint."
+    },
+    "supabaseLocal": {
+      "type": "boolean",
+      "default": true,
+      "description": "Use the Supabase CLI to manage a local stack (requires \"supabase start\")."
+    },
+    "redis": {
+      "type": "boolean",
+      "default": true,
+      "description": "Launch a Redis sidecar for caching and queueing."
+    }
+  }
+}

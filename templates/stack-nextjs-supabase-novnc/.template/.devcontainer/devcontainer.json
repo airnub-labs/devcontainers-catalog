@@ -1,0 +1,47 @@
+{
+  "name": "stack-nextjs-supabase-novnc",
+  "dockerComposeFile": [
+    "./compose.yaml"
+  ],
+  "service": "dev",
+  "runServices": [
+    "dev",
+    "{{templateOption.guiProvider}}"{{#templateOption.redis}},
+    "redis"{{/templateOption.redis}}
+  ],
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "features": {
+    "ghcr.io/airnub-labs/devcontainer-features/supabase-cli:1": {
+      "manageLocalStack": {{templateOption.supabaseLocal}}
+    },
+    "ghcr.io/airnub-labs/devcontainer-features/chrome-cdp:1": {
+      "port": {{templateOption.chromeCdpPort}}
+    },
+    "ghcr.io/airnub-labs/devcontainer-features/agent-tooling-clis:1": {}
+  },
+  "forwardPorts": [
+    {{templateOption.chromeCdpPort}},
+    3001,
+    6080{{#templateOption.redis}},
+    6379{{/templateOption.redis}}
+  ],
+  "portsAttributes": {
+    "{{templateOption.chromeCdpPort}}": {
+      "label": "Chrome DevTools",
+      "onAutoForward": "notify"
+    },
+    "3001": {
+      "label": "Webtop GUI",
+      "requireLocalPort": false
+    },
+    "6080": {
+      "label": "noVNC GUI",
+      "requireLocalPort": false
+    }{{#templateOption.redis}},
+    "6379": {
+      "label": "Redis",
+      "requireLocalPort": false
+    }{{/templateOption.redis}}
+  },
+  "postStartCommand": "bash .devcontainer/scripts/postStart.sh"
+}

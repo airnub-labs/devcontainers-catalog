@@ -1,0 +1,31 @@
+{
+  "version": "1.0.0",
+  "id": "stack-nextjs-supabase-webtop",
+  "name": "Stack: Next.js + Supabase (Webtop)",
+  "description": "Full-stack Next.js workspace with Supabase CLI, Redis, and a Webtop desktop sidecar.",
+  "documentationURL": "https://github.com/airnub-labs/devcontainers-catalog",
+  "publisher": "airnub-labs",
+  "options": {
+    "guiProvider": {
+      "type": "string",
+      "enum": ["webtop", "novnc"],
+      "default": "webtop",
+      "description": "Select the GUI sidecar to run alongside the dev container."
+    },
+    "chromeCdpPort": {
+      "type": "integer",
+      "default": 9222,
+      "description": "Forwarded port for the Chrome DevTools Protocol endpoint."
+    },
+    "supabaseLocal": {
+      "type": "boolean",
+      "default": true,
+      "description": "Use the Supabase CLI to manage a local stack (requires \"supabase start\")."
+    },
+    "redis": {
+      "type": "boolean",
+      "default": true,
+      "description": "Launch a Redis sidecar for caching and queueing."
+    }
+  }
+}

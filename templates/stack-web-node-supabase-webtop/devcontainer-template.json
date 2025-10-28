@@ -1,0 +1,31 @@
+{
+  "version": "1.0.0",
+  "id": "stack-web-node-supabase-webtop",
+  "name": "Stack: Web + Node + Supabase (Webtop)",
+  "description": "General purpose web stack with Node.js tooling, Supabase CLI, Redis, and a Webtop desktop.",
+  "documentationURL": "https://github.com/airnub-labs/devcontainers-catalog",
+  "publisher": "airnub-labs",
+  "options": {
+    "guiProvider": {
+      "type": "string",
+      "enum": ["webtop", "novnc"],
+      "default": "webtop",
+      "description": "Select the GUI sidecar to run alongside the dev container."
+    },
+    "chromeCdpPort": {
+      "type": "integer",
+      "default": 9222,
+      "description": "Forwarded port for the Chrome DevTools Protocol endpoint."
+    },
+    "supabaseLocal": {
+      "type": "boolean",
+      "default": true,
+      "description": "Use the Supabase CLI to manage a local stack (requires \"supabase start\")."
+    },
+    "redis": {
+      "type": "boolean",
+      "default": true,
+      "description": "Launch a Redis sidecar for caching and queueing."
+    }
+  }
+}
