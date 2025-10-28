@@ -1,0 +1,56 @@
+name: Validate Devcontainer Metadata
+
+on:
+  pull_request:
+    paths:
+      - 'features/**'
+      - 'templates/**'
+      - '.github/workflows/validate-devcontainers.yml'
+  workflow_dispatch: {}
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Dev Containers CLI
+        run: npm install -g @devcontainers/cli@latest
+
+      - name: Validate feature manifests
+        env:
+          DEVCONTAINER_FEATURES_ALLOW_UNION_TYPES: "true"
+        run: |
+          set -euo pipefail
+          if compgen -G "features/*/devcontainer-feature.json" > /dev/null; then
+            mkdir -p /tmp/devcontainer/features
+            devcontainer features package \
+              --features-dir features \
+              --output /tmp/devcontainer/features
+          else
+            echo "No features found to validate."
+          fi
+
+      - name: Validate template manifests
+        run: |
+          set -euo pipefail
+          if compgen -G "templates/*/devcontainer-template.json" > /dev/null; then
+            mkdir -p /tmp/devcontainer/templates
+            devcontainer templates package \
+              --templates-dir templates \
+              --output /tmp/devcontainer/templates
+          else
+            echo "No templates found to validate."
+          fi
+
+      - name: Validate devcontainer.json payloads
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          for template_dir in templates/*; do
+            payload_dir="$template_dir/.template"
+            if [ -d "$payload_dir/.devcontainer" ]; then
+              echo "==> Validating spec for $template_dir"
+              devcontainer read-configuration --workspace-folder "$payload_dir"
+            fi
+          done
