@@ -18,7 +18,7 @@ The catalog ships reusable Dev Container **features**, **templates**, and **imag
 | --- | --- | --- | --- | --- |
 | `web` | `1.0.0` | `ghcr.io/airnub-labs/dev-web` (optional local build) | `chrome-cdp`, `supabase-cli` | Options toggle the prebuilt image and CDP channel/port. |
 | `nextjs-supabase` | `1.0.0` | `ghcr.io/airnub-labs/dev-web` (optional local build) | `chrome-cdp`, `supabase-cli`, `agent-tooling-clis` (optional) | Supports turnkey Next.js scaffolding with Supabase integrations. |
-| `classroom-studio-webtop` | `1.0.0` | `ghcr.io/airnub-labs/dev-web` + `lscr.io/linuxserver/webtop` sidecar | `supabase-cli`, `agent-tooling-clis` | Managed/none Chrome policy presets mount into the sidecar; override via the `chromePolicies` option. |
+| `classroom-studio-webtop` | `1.0.0` | `mcr.microsoft.com/devcontainers/universal:2` (override with `DEVCONTAINER_CLASSROOM_BASE_IMAGE`) + `lscr.io/linuxserver/webtop` sidecar | `supabase-cli`, `agent-tooling-clis` | Managed/none Chrome policy presets mount into the sidecar; override via the `chromePolicies` option. |
 
 ## Images
 
