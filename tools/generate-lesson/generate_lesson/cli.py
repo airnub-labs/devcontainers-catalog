@@ -1,8 +1,10 @@
 import argparse
 import json
+import re
 import shutil
 import sys
 from pathlib import Path
+from typing import Dict, Iterable, Tuple
 
 try:
     import yaml  # type: ignore
@@ -10,6 +12,28 @@ except ModuleNotFoundError:  # pragma: no cover - fallback when PyYAML is unavai
     yaml = None
 
 ROOT = Path(__file__).resolve().parents[3]
+
+
+def _slugify_component(value: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", value.lower().strip())
+    slug = re.sub(r"-+", "-", slug).strip("-")
+    return slug or "lesson"
+
+
+def derive_lesson_slug(metadata: Dict[str, str]) -> str:
+    parts = (_slugify_component(str(metadata[key])) for key in ("org", "course", "lesson"))
+    return "-".join(part for part in parts if part)
+
+
+def _collect_extensions(raw_extensions: Iterable[str]) -> Tuple[str, ...]:
+    seen = set()
+    ordered = []
+    for ext in raw_extensions or []:
+        lowered = str(ext).lower()
+        if lowered and lowered not in seen:
+            ordered.append(lowered)
+            seen.add(lowered)
+    return tuple(ordered)
 
 
 def _parse_scalar(value: str):
@@ -121,6 +145,18 @@ def merge_services(services, out_dir: Path) -> None:
             shutil.copy2(yml, dst)
 
 
+def _build_vscode_customizations(spec: dict) -> Dict[str, dict]:
+    settings = dict(spec.get("settings", {}) or {})
+    settings["remote.downloadExtensionsLocally"] = "always"
+    extensions = _collect_extensions(spec.get("vscode_extensions", ()))
+    return {
+        "vscode": {
+            "settings": settings,
+            "extensions": list(extensions),
+        }
+    }
+
+
 def write_generated_preset_ctx(manifest: dict, out_dir: Path) -> None:
     spec = manifest["spec"]
     ensure_dir(out_dir)
@@ -128,12 +164,7 @@ def write_generated_preset_ctx(manifest: dict, out_dir: Path) -> None:
     devc = {
         "name": f"{manifest['metadata']['lesson']}",
         "build": {"dockerfile": "Dockerfile"},
-        "customizations": {
-            "vscode": {
-                "settings": spec.get("settings", {}),
-                "extensions": [ext.lower() for ext in spec.get("vscode_extensions", [])],
-            }
-        },
+        "customizations": _build_vscode_customizations(spec),
     }
 
     devcontainer_dir = out_dir / ".devcontainer"
@@ -148,21 +179,17 @@ def write_generated_preset_ctx(manifest: dict, out_dir: Path) -> None:
         handle.write(f"FROM ghcr.io/airnub-labs/templates/{base}:{img_tag}\n")
 
 
-def write_generated_repo_scaffold(manifest: dict, out_dir: Path) -> None:
+def write_generated_repo_scaffold(manifest: dict, out_dir: Path, slug: str) -> None:
     spec = manifest["spec"]
     ensure_dir(out_dir / ".devcontainer")
 
-    image_ref = f"ghcr.io/airnub-labs/templates/{spec['base_preset']}:{spec['image_tag_strategy']}"
+    image_tag = spec["image_tag_strategy"]
+    image_ref = f"ghcr.io/airnub-labs/templates/lessons/{slug}:{image_tag}"
     devc = {
         "name": f"{manifest['metadata']['lesson']}",
         "image": image_ref,
         "workspaceFolder": "/work",
-        "customizations": {
-            "vscode": {
-                "settings": spec.get("settings", {}),
-                "extensions": [ext.lower() for ext in spec.get("vscode_extensions", [])],
-            }
-        },
+        "customizations": _build_vscode_customizations(spec),
     }
 
     with (out_dir / ".devcontainer" / "devcontainer.json").open("w", encoding="utf-8") as handle:
@@ -182,19 +209,18 @@ def main() -> int:
 
     manifest = load_manifest(manifest_path)
     metadata = manifest["metadata"]
-    org = metadata["org"]
-    course = metadata["course"]
-    lesson = metadata["lesson"]
+    slug = derive_lesson_slug(metadata)
 
-    gen_preset_dir = ROOT / "images" / "presets" / "generated" / org / course / lesson
+    gen_preset_dir = ROOT / "images" / "presets" / "generated" / slug
     write_generated_preset_ctx(manifest, gen_preset_dir)
     merge_services((manifest.get("spec") or {}).get("services"), gen_preset_dir)
 
-    gen_template_dir = ROOT / "templates" / "generated" / org / course / lesson
-    write_generated_repo_scaffold(manifest, gen_template_dir)
+    gen_template_dir = ROOT / "templates" / "generated" / slug
+    write_generated_repo_scaffold(manifest, gen_template_dir, slug)
 
     print(f"[ok] Generated preset ctx: {gen_preset_dir}")
     print(f"[ok] Generated lesson scaffold: {gen_template_dir}")
+    print(f"[hint] Lesson image tag: ghcr.io/airnub-labs/templates/lessons/{slug}:{manifest['spec']['image_tag_strategy']}")
     return 0
 
 

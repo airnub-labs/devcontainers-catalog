@@ -1,6 +1,6 @@
 {
   "name": "week02-prompts",
-  "image": "ghcr.io/airnub-labs/templates/full:ubuntu-24.04",
+  "image": "ghcr.io/airnub-labs/templates/lessons/my-school-intro-ai-week02-prompts:ubuntu-24.04",
   "workspaceFolder": "/work",
   "customizations": {
     "vscode": {

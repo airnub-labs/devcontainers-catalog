@@ -12,12 +12,18 @@
 1. A curriculum designer uses a UI (or edits YAML) to produce a manifest matching `schemas/lesson-env.schema.json`.
 2. The manifest is committed alongside course assets and referenced in CI.
 3. The generator CLI (`tools/generate-lesson`) reads the manifest and emits:
-   - `images/presets/generated/<org>/<course>/<lesson>/` — build context used for prebuilds.
-   - `templates/generated/<org>/<course>/<lesson>/` — starter repo scaffold for students.
+   - `images/presets/generated/<lesson-slug>/` — build context used for prebuilds. The slug derives from `<org>-<course>-<lesson>` and stays stable for tagging and folder naming.
+   - `templates/generated/<lesson-slug>/.devcontainer/devcontainer.json` — starter repo scaffold for students that references the lesson-specific published image.
    - `services/` fragments copied into the preset context when requested.
-4. CI (or a manual run) executes `make lesson-build` / `make lesson-push` to build and publish the preset image to GHCR.
-5. Lesson repositories pin the published image in `.devcontainer/devcontainer.json` so Codespaces and local Docker machines start instantly.
+4. CI (or a manual run) executes `make lesson-build` / `make lesson-push` to build and publish the lesson image to GHCR under `ghcr.io/airnub-labs/templates/lessons/<lesson-slug>:<tag>`.
+5. Lesson repositories (or the shared Classroom Workspace Starter) pin the published image in `.devcontainer/devcontainer.json` so Codespaces and local Docker machines start instantly.
 6. Students launch the lesson workspace. Optional service stacks can be started with `docker compose` using the copied fragments.
+
+## Catalog vs. Classroom Repositories
+
+- **Catalog (this repo)** owns presets (`images/presets/*`), templates (`templates/*`), service fragments (`services/*`), the lesson manifest schema, and the generator CLI. Everything here is source-of-truth infrastructure.
+- **Classroom Workspace Starter** consumes generated templates and shows students how to bind to a published lesson image.
+- **Classroom Lessons** stores only instructional content. The generator can sync that content into the scaffold, but the repo itself stays free of devcontainer config so lessons remain portable.
 
 ## Secrets and Configuration
 

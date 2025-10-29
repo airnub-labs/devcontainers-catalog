@@ -12,7 +12,7 @@ Generated lesson presets can opt into additional Docker Compose services by list
 
 - **Compose**: `services/supabase/docker-compose.supabase.yml`
 - **CLI Alternative**: Prefer `supabase start` for managed secrets and parity with hosted Supabase projects.
-- **Secrets**: Declare placeholders such as `SUPABASE_SERVICE_ROLE_KEY` in the manifest so Codespaces or local `.env` files can provide real values at runtime.
+- **Secrets**: Declare placeholders such as `SUPABASE_SERVICE_ROLE_KEY` in the manifest so Codespaces or local `.env` files can provide real values at runtime. Copy `.env.example` to `.env` before launching when you vendor the compose bundle.
 - **Docs**: See `services/supabase/README.md` for sync guidance and CLI recommendations.
 
 ## Kafka (KRaft)
@@ -36,7 +36,7 @@ Generated lesson presets can opt into additional Docker Compose services by list
 ## Working with Fragments
 
 1. Generate a lesson preset: `make gen`.
-2. Change into the emitted preset directory, e.g. `cd images/presets/generated/my-school/intro-ai/week02`.
+2. Change into the emitted preset directory, e.g. `cd images/presets/generated/my-school-intro-ai-week02-prompts`.
 3. Launch services with Docker Compose as needed. Multiple fragments can be combined by passing multiple `-f` flags.
 4. Shut down services after class to avoid lingering containers.
 

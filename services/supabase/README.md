@@ -14,6 +14,6 @@ This keeps the catalog lightweight and delegates lifecycle to the CLI while stil
 
 For offline or audited environments, you can vendor the upstream compose bundle. Keep the files in sync with <https://github.com/supabase/supabase/tree/master/docker>. The placeholder compose below mirrors the core services (studio, rest, realtime, db) and is safe to copy into generated presets.
 
-To use it, merge the fragment alongside your generated preset and launch with `docker compose -f services/docker-compose.supabase.yml up`.
+To use it, merge the fragment alongside your generated preset and launch with `docker compose -f services/docker-compose.supabase.yml up`. Copy `.env.example` to `.env` (or rely on Codespaces secrets) before starting so passwords never ship in Git history.
 
-Because Supabase relies on numerous secrets, manifests should list placeholders in `spec.secrets_placeholders` so instructors remember to supply them via Codespaces secrets or `.env` files.
+Because Supabase relies on numerous secrets, manifests should list placeholders in `spec.secrets_placeholders` so instructors remember to supply them via Codespaces secrets or `.env` files. The compose file reads credentials from environment variables (see `.env.example`) and falls back to development defaults when values are not provided.
