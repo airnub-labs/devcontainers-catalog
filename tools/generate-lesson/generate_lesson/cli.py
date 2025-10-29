@@ -130,19 +130,31 @@ def ensure_dir(path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True)
 
 
-def merge_services(services, out_dir: Path) -> None:
+def merge_services(services, out_dir: Path) -> Tuple[str, ...]:
     svc_out = out_dir / "services"
     ensure_dir(svc_out)
+
+    seen = set()
+    ordered = []
     for svc in services or []:
-        name = (svc or {}).get("name") if isinstance(svc, dict) else str(svc)
+        if isinstance(svc, dict):
+            name = (svc or {}).get("name", "")
+        else:
+            name = str(svc)
+        name = (name or "").strip()
         if not name:
             continue
         src_dir = ROOT / "services" / name
         if not src_dir.exists():
             continue
-        for yml in src_dir.glob("*.yml"):
+        if name not in seen:
+            ordered.append(name)
+            seen.add(name)
+        for yml in sorted(src_dir.glob("*.yml")):
             dst = svc_out / yml.name
             shutil.copy2(yml, dst)
+
+    return tuple(ordered)
 
 
 def _build_vscode_customizations(spec: dict) -> Dict[str, dict]:
@@ -178,6 +190,24 @@ def write_generated_preset_ctx(manifest: dict, out_dir: Path) -> None:
         base = spec["base_preset"]
         handle.write(f"FROM ghcr.io/airnub-labs/templates/{base}:{img_tag}\n")
 
+        metadata = manifest["metadata"]
+        labels = {
+            "org.opencontainers.image.source": "https://github.com/airnub-labs/devcontainers-catalog",
+            "org.opencontainers.image.description": (
+                f"Lesson image for {metadata['org']}/{metadata['course']}/{metadata['lesson']}"
+            ),
+            "edu.airnub.org": metadata["org"],
+            "edu.airnub.course": metadata["course"],
+            "edu.airnub.lesson": metadata["lesson"],
+            "edu.airnub.schema": "airnub.devcontainers/v1",
+        }
+
+        items = list(labels.items())
+        for index, (key, value) in enumerate(items):
+            prefix = "LABEL " if index == 0 else "      "
+            suffix = " \\\n" if index < len(items) - 1 else "\n"
+            handle.write(f"{prefix}{key}={json.dumps(value)}{suffix}")
+
 
 def write_generated_repo_scaffold(manifest: dict, out_dir: Path, slug: str) -> None:
     spec = manifest["spec"]
@@ -197,6 +227,33 @@ def write_generated_repo_scaffold(manifest: dict, out_dir: Path, slug: str) -> N
         handle.write("\n")
 
 
+def write_services_readme(selected_services: Tuple[str, ...], out_dir: Path) -> None:
+    if not selected_services:
+        return
+
+    commands = {
+        "redis": "Redis:   `docker compose -f services/docker-compose.redis.yml up -d`",
+        "supabase": "Supabase: `cp .env.example .env && docker compose -f services/docker-compose.supabase.yml up -d`",
+        "kafka": "Kafka:   `docker compose -f services/docker-compose.kafka-kraft.yml up -d`",
+        "inbucket": "Inbucket: `docker compose -f services/docker-compose.inbucket.yml up -d`",
+    }
+
+    lines = ["# Lesson Services", "", "Launch as needed from this directory:"]
+    added = False
+    for name in selected_services:
+        command = commands.get(name)
+        if not command:
+            continue
+        lines.append(f"- {command}")
+        added = True
+
+    if not added:
+        return
+
+    lines.append("")
+    (out_dir / "README.md").write_text("\n".join(lines), encoding="utf-8")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--manifest", required=True)
@@ -213,7 +270,19 @@ def main() -> int:
 
     gen_preset_dir = ROOT / "images" / "presets" / "generated" / slug
     write_generated_preset_ctx(manifest, gen_preset_dir)
-    merge_services((manifest.get("spec") or {}).get("services"), gen_preset_dir)
+    selected_services = merge_services((manifest.get("spec") or {}).get("services"), gen_preset_dir)
+
+    if "supabase" in selected_services:
+        src_env = ROOT / "services" / "supabase" / ".env.example"
+        dst_env = gen_preset_dir / ".env.example"
+        if src_env.exists():
+            shutil.copy2(src_env, dst_env)
+            print(f"[hint] Supabase .env.example copied to {dst_env}")
+
+    write_services_readme(selected_services, gen_preset_dir)
+    readme_path = gen_preset_dir / "README.md"
+    if readme_path.exists():
+        print(f"[hint] Service README available at {readme_path}")
 
     gen_template_dir = ROOT / "templates" / "generated" / slug
     write_generated_repo_scaffold(manifest, gen_template_dir, slug)

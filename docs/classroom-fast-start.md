@@ -30,12 +30,16 @@ make lesson-push  LESSON_MANIFEST=examples/lesson-manifests/intro-ai-week02.yaml
 
 The targets use `yq` (if available) to derive `LESSON_SLUG` and publish `ghcr.io/airnub-labs/templates/lessons/<lesson-slug>:<tag>`. Override `LESSON_SLUG` manually when `yq` is not installed.
 
+> **Multi-arch builds matter:** the bundled `publish-lesson-images` workflow runs Docker Buildx for `linux/amd64` and `linux/arm64` so Apple Silicon laptops and cloud-hosted Codespaces pull the same image. Keep both architectures enabled unless you have a very specific reason to diverge.
+
 ## 4. Wire Student Repositories
 
 - **Fast path:** copy the generated `.devcontainer/devcontainer.json` into the Classroom Workspace Starter repo. Students immediately pull the prebuilt image.
 - **Custom path:** copy a template from `templates/` and adjust features or services. Initial start will take longer because Features run on create.
 
 When services are required, run `docker compose` from the generated preset context (or vendor the fragments into the workspace repo) so both local Docker and Codespaces behave the same way.
+
+Generated lesson artifacts under `images/presets/generated/` and `templates/generated/` are intentionally gitignored—regenerate them with `make gen` whenever you update a manifest so reviewers always see current outputs.
 
 ## 5. Keep Everything in Sync
 

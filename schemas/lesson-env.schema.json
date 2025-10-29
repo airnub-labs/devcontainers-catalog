@@ -3,12 +3,14 @@
   "title": "LessonEnv",
   "type": "object",
   "required": ["apiVersion", "kind", "metadata", "spec"],
+  "additionalProperties": false,
   "properties": {
     "apiVersion": { "type": "string", "const": "airnub.devcontainers/v1" },
     "kind":       { "type": "string", "const": "LessonEnv" },
     "metadata": {
       "type": "object",
       "required": ["org", "course", "lesson"],
+      "additionalProperties": false,
       "properties": {
         "org":    { "type": "string", "minLength": 1 },
         "course": { "type": "string", "minLength": 1 },
@@ -18,9 +20,16 @@
     "spec": {
       "type": "object",
       "required": ["base_preset", "image_tag_strategy"],
+      "additionalProperties": false,
       "properties": {
-        "base_preset": { "type": "string" },
-        "image_tag_strategy": { "type": "string" },
+        "base_preset": {
+          "type": "string",
+          "enum": ["full", "node-pnpm", "python"]
+        },
+        "image_tag_strategy": {
+          "type": "string",
+          "enum": ["ubuntu-24.04"]
+        },
         "vscode_extensions": { "type": "array", "items": { "type": "string" } },
         "settings": { "type": "object", "additionalProperties": true },
         "features": {
@@ -32,8 +41,12 @@
           "items": {
             "type": "object",
             "required": ["name"],
+            "additionalProperties": false,
             "properties": {
-              "name": { "type": "string" },
+              "name": {
+                "type": "string",
+                "enum": ["redis", "supabase", "kafka", "inbucket"]
+              },
               "vars": { "type": "object", "additionalProperties": true }
             }
           }
@@ -42,6 +55,7 @@
         "secrets_placeholders": { "type": "array", "items": { "type": "string" } },
         "resources": {
           "type": "object",
+          "additionalProperties": false,
           "properties": {
             "cpu": { "type": "string" },
             "memory": { "type": "string" }
@@ -49,9 +63,11 @@
         },
         "starter_repo": {
           "type": "object",
+          "required": ["url"],
+          "additionalProperties": false,
           "properties": {
-            "url": { "type": "string" },
-            "path": { "type": "string" }
+            "url": { "type": "string", "format": "uri", "minLength": 1 },
+            "path": { "type": "string", "minLength": 1, "default": "/workspace" }
           }
         }
       }

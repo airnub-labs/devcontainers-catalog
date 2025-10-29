@@ -12,3 +12,7 @@ dist/
 
 # Legacy app checkouts (should stay untracked)
 apps/
+
+# Generated lesson outputs (regenerate via `make gen`)
+images/presets/generated/
+templates/generated/
