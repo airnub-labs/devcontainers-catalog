@@ -1,0 +1,8 @@
+{
+  "version": "1.0.0",
+  "id": "base",
+  "name": "Base Workspace",
+  "description": "Minimal Ubuntu devcontainer that stays close to the upstream base image.",
+  "documentationURL": "https://github.com/airnub-labs/devcontainers-catalog",
+  "publisher": "airnub-labs"
+}

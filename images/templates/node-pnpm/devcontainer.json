@@ -1,0 +1,33 @@
+{
+  "name": "airnub-labs — node + pnpm",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "workspaceFolder": "/airnub-labs",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "24",
+      "installPnpm": true
+    }
+  },
+  "containerEnv": {
+    "PNPM_HOME": "/home/vscode/.local/share/pnpm",
+    "PNPM_STORE_PATH": "/home/vscode/.pnpm-store"
+  },
+  "mounts": [
+    "source=global-pnpm-store,target=/home/vscode/.pnpm-store,type=volume"
+  ],
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "remote.downloadExtensionsLocally": "always",
+        "typescript.tsdk": "node_modules/typescript/lib",
+        "editor.formatOnSave": true
+      },
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss"
+      ]
+    }
+  },
+  "postCreateCommand": "bash -lc 'corepack enable || true'"
+}

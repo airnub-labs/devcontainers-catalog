@@ -1,0 +1,37 @@
+{
+  "name": "airnub-labs (base)",
+  "dockerComposeFile": [
+    ".devcontainer/compose.yaml"
+  ],
+  "service": "dev",
+  "workspaceFolder": "/airnub-labs",
+
+  "features": {},
+
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "remote.downloadExtensionsLocally": "always",
+        "workbench.activityBar.location": "top",
+        "workbench.colorTheme": "Default Dark Modern",
+        "workbench.startupEditor": "readme"
+      },
+      "extensions": [
+        "ms-azuretools.vscode-docker",
+        "ms-playwright.playwright",
+        "denoland.vscode-deno",
+        "supabase.vscode-supabase-extension",
+        "redis.redis-for-vscode",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "davidanson.vscode-markdownlint",
+        "bradlc.vscode-tailwindcss",
+        "github.vscode-github-actions",
+        "github.vscode-pull-request-github"
+      ]
+    }
+  },
+
+  "postCreateCommand": ".devcontainer/scripts/post-create.sh",
+  "postStartCommand": ".devcontainer/scripts/post-start.sh"
+}

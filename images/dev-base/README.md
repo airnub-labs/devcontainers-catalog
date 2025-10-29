@@ -1,6 +1,11 @@
 # dev-base Image
 
-Ubuntu 24.04 base image published as `ghcr.io/airnub-labs/devcontainer-images/dev-base` with Node.js 24, pnpm (via Corepack), Playwright/Chrome runtime dependencies, and a persistent pnpm store for the `vscode` user. Intended as the foundation for higher-level workspace images.
+A thin wrapper around `mcr.microsoft.com/devcontainers/base` published as `ghcr.io/airnub-labs/devcontainer-images/dev-base`.
+
+- Tracks Ubuntu 24.04 by default but exposes `UBUNTU_VERSION` / `BASE_IMAGE` build args for quick upgrades or swaps.
+- Installs only a handful of cross-stack CLI tools (`curl`, `git`, `less`, `iproute2`, `procps`, `gnupg`).
+- Annotates the image with OCI labels for provenance (source repo, license, upstream base).
+- Leaves Node.js, pnpm, Python, and other runtime tooling to Dev Container Features or downstream images/templates.
 
 Pull from GHCR:
 
