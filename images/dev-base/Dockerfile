@@ -14,6 +14,8 @@ LABEL org.opencontainers.image.source="https://github.com/airnub-labs/devcontain
       io.airnub.ubuntu_version="${UBUNTU_VERSION}"
 ENV UBUNTU_VERSION=${UBUNTU_VERSION}
 
+SHELL ["/bin/bash", "-lc"]
+
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
       ca-certificates \
