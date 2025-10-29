@@ -8,6 +8,7 @@ The catalog ships reusable Dev Container **features**, **templates**, and **imag
 | --- | --- | --- | --- |
 | `supabase-cli` | Installs the Supabase CLI with optional helper scripts and metadata capture. | `version`, `manageLocalStack`, `services`, `projectRef` | `ghcr.io/airnub-labs/devcontainer-features/supabase-cli:<semver>` |
 | `chrome-cdp` | Headless Chrome with a DevTools Protocol endpoint managed by supervisord. | `channel`, `port` | `ghcr.io/airnub-labs/devcontainer-features/chrome-cdp:<semver>` |
+| `deno` | Installs the Deno runtime with optional shell completions. | `version`, `installCompletions` | `ghcr.io/airnub-labs/devcontainer-features/deno:<semver>` |
 | `agent-tooling-clis` | Installs Codex, Claude, and Gemini CLIs using pnpm/npm fallbacks. Configure MCP servers per project via template hooks. | `installCodex`, `installClaude`, `installGemini`, `versions` | `ghcr.io/airnub-labs/devcontainer-features/agent-tooling-clis:<semver>` |
 | `docker-in-docker-plus` | Adds Buildx/BuildKit ergonomics on top of Docker-in-Docker. | _none_ | `ghcr.io/airnub-labs/devcontainer-features/docker-in-docker-plus:<semver>` |
 | `cuda-lite` | Installs CUDA runtime libraries only when a GPU is detected. | _none_ | `ghcr.io/airnub-labs/devcontainer-features/cuda-lite:<semver>` |

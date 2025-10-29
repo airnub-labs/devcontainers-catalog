@@ -1,0 +1,22 @@
+{
+  "id": "deno",
+  "version": "1.0.0",
+  "name": "Deno runtime",
+  "description": "Installs the Deno runtime via the official release archives.",
+  "documentationURL": "https://github.com/airnub-labs/devcontainers-catalog",
+  "options": {
+    "version": {
+      "type": "string",
+      "default": "latest",
+      "description": "Version of Deno to install (semver or release tag)."
+    },
+    "installCompletions": {
+      "type": "boolean",
+      "default": true,
+      "description": "Install shell completions for bash, zsh, and fish."
+    }
+  },
+  "installsAfter": [
+    "ghcr.io/devcontainers/features/common-utils"
+  ]
+}
