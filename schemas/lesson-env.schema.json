@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LessonEnv",
+  "type": "object",
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "type": "string", "const": "airnub.devcontainers/v1" },
+    "kind":       { "type": "string", "const": "LessonEnv" },
+    "metadata": {
+      "type": "object",
+      "required": ["org", "course", "lesson"],
+      "properties": {
+        "org":    { "type": "string", "minLength": 1 },
+        "course": { "type": "string", "minLength": 1 },
+        "lesson": { "type": "string", "minLength": 1 }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "required": ["base_preset", "image_tag_strategy"],
+      "properties": {
+        "base_preset": { "type": "string" },
+        "image_tag_strategy": { "type": "string" },
+        "vscode_extensions": { "type": "array", "items": { "type": "string" } },
+        "settings": { "type": "object", "additionalProperties": true },
+        "features": {
+          "type": "object",
+          "description": "Optional extra Features map if needed beyond preset"
+        },
+        "services": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string" },
+              "vars": { "type": "object", "additionalProperties": true }
+            }
+          }
+        },
+        "env": { "type": "object", "additionalProperties": { "type": "string" } },
+        "secrets_placeholders": { "type": "array", "items": { "type": "string" } },
+        "resources": {
+          "type": "object",
+          "properties": {
+            "cpu": { "type": "string" },
+            "memory": { "type": "string" }
+          }
+        },
+        "starter_repo": {
+          "type": "object",
+          "properties": {
+            "url": { "type": "string" },
+            "path": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

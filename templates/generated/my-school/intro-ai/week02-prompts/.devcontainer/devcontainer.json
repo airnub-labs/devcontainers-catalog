@@ -1,0 +1,16 @@
+{
+  "name": "week02-prompts",
+  "image": "ghcr.io/airnub-labs/templates/full:ubuntu-24.04",
+  "workspaceFolder": "/work",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "remote.downloadExtensionsLocally": "always"
+      },
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode"
+      ]
+    }
+  }
+}

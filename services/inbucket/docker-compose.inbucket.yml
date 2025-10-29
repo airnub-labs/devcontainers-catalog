@@ -1,0 +1,9 @@
+services:
+  inbucket:
+    image: inbucket/inbucket:stable
+    restart: unless-stopped
+    ports:
+      - "2500:2500"
+      - "9000:9000"
+    environment:
+      - INBUCKET_STORAGE_TYPE=memory
