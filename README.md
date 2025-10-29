@@ -9,11 +9,16 @@
 
 ## What’s in this repo
 
-- `features/` — install-only, idempotent. No services.
-- `templates/` — opinionated dev environments. Includes the minimal `base` template and **stack templates** (e.g., `stack-nextjs-supabase-webtop`).
-- `images/` — optional prebuilt bases to accelerate `dev` service startup.
-- `images/templates/` — feature-driven `devcontainer.json` presets that can be prebuilt into fast-start images.
-- `docs/` — spec alignment, architecture, publish/test pipelines.
+- `features/` — Install-only, idempotent add-ons. No services baked in.
+- `templates/` — **Dev Container Templates (scaffolds)** you copy into a repo (follow the Dev Container Template spec with `devcontainer-template.json`).
+- `images/presets/` — **Prebuildable image presets**. Each folder contains a `devcontainer.json` used by `devcontainer build` to bake/publish a fast-start image to GHCR.
+- `images/dev-base/` — A thin base on top of `mcr.microsoft.com/devcontainers/base` with overridable build args.
+- `docs/` — Guides, architecture notes, and CI examples.
+
+### Source vs Artifact (mental model)
+
+- **templates/** = SOURCE (scaffold you copy). Great when each repo needs flexibility.
+- **images/presets/** = ARTIFACT (prebuilt image you pull). Great when you want the fastest start (e.g., Codespaces for classrooms, workshops, or CI).
 
 ## Using stacks (templates)
 

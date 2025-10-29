@@ -1,6 +1,6 @@
-# Template Images
+# Preset Images
 
-Opinionated devcontainer.json presets that lean on Features instead of baking runtimes into the base image.
+Prebuildable `devcontainer.json` presets that lean on Features instead of baking runtimes directly into the base image. Build them with the Dev Containers CLI and publish fast-start images to GHCR.
 
 ## Available presets
 
@@ -8,21 +8,22 @@ Opinionated devcontainer.json presets that lean on Features instead of baking ru
 - `python`: Installs Python 3.12 and JupyterLab via the Python Feature with matching VS Code extensions.
 - `full`: Combines the Node + pnpm and Python Features for full-stack work.
 
-## Prebuilding
+## Prebuilding locally
 
-You can prebuild and publish any of these templates to GHCR, keeping the configuration the same while offering faster start times:
+Use the Dev Containers CLI to build (and optionally push) an image. Update the workspace folder path to match the preset you want to package.
 
 ```bash
-# Example: publish the full template as an image
+# Example: publish the full preset as an image
 devcontainer build \
-  --workspace-folder images/templates/full \
-  --image-name ghcr.io/airnub-labs/templates/full:ubuntu-24.04
+   --workspace-folder images/presets/full \
+   --image-name ghcr.io/airnub-labs/templates/full:ubuntu-24.04 \
+   --push
 ```
 
 ### GitHub Actions example
 
 ```yaml
-name: publish-template-images
+name: publish-preset-images
 
 on:
   workflow_dispatch:
@@ -30,7 +31,7 @@ on:
     branches:
       - main
     paths:
-      - "images/templates/**"
+      - "images/presets/**"
 
 jobs:
   build-and-push:
@@ -44,7 +45,9 @@ jobs:
         with:
           runCmd: |
             devcontainer build \
-              --workspace-folder images/templates/full \
+              --workspace-folder images/presets/full \
               --image-name ghcr.io/airnub-labs/templates/full:ubuntu-24.04 \
               --push
 ```
+
+Refer to the root `Makefile` (or craft a similar script) for repeatable local builds across presets.
