@@ -29,7 +29,7 @@ The catalog ships reusable Dev Container **features**, **templates**, and **imag
 
 | Image | Description | OCI Reference |
 | --- | --- | --- |
-| `dev-base` | Ubuntu base with Node.js, pnpm, Playwright dependencies, and general developer tooling. | `ghcr.io/airnub-labs/devcontainer-images/dev-base:<semver>` |
+| `dev-base` | Thin wrapper around the upstream Dev Containers base image with no preinstalled runtimes; swap Ubuntu variants via build args. | `ghcr.io/airnub-labs/devcontainer-images/dev-base:<semver>` |
 | `dev-web` | Extends `dev-base` with Chrome repositories and web tooling. | `ghcr.io/airnub-labs/devcontainer-images/dev-web:<semver>` |
 
 Refer to [`VERSIONING.md`](../VERSIONING.md) for published tags and digests.

@@ -13,7 +13,7 @@
 | `features/agent-tooling-clis` | `1.1.0` | Codex/Claude/Gemini pnpm installers |
 | `features/docker-in-docker-plus` | `1.0.0` | Buildx and BuildKit defaults |
 | `features/cuda-lite` | `1.0.0` | Conditional CUDA runtime |
-| `ghcr.io/airnub-labs/devcontainer-images/dev-base` | `1.0.0` | Node 24 + pnpm base |
+| `ghcr.io/airnub-labs/devcontainer-images/dev-base` | `1.0.0` | Minimal wrapper over `mcr.microsoft.com/devcontainers/base` |
 | `ghcr.io/airnub-labs/devcontainer-images/dev-web` | `1.0.0` | Browser-ready extension (published digest pending) |
 
 Update this table as new versions are pushed.
