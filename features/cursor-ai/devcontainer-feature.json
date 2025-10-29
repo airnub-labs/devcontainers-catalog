@@ -1,0 +1,17 @@
+{
+  "id": "cursor-ai",
+  "version": "1.0.0",
+  "name": "Cursor AI CLI",
+  "description": "Installs the Cursor AI command line client via the system Node package manager (pnpm or npm).",
+  "documentationURL": "https://github.com/airnub-labs/devcontainers-catalog",
+  "options": {
+    "version": {
+      "type": "string",
+      "default": "latest",
+      "description": "Version (semver or npm tag) of @cursorai/cli to install."
+    }
+  },
+  "installsAfter": [
+    "ghcr.io/devcontainers/features/common-utils"
+  ]
+}
