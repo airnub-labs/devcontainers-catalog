@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Agent Intents",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "intent": {
+      "type": "string",
+      "enum": ["create_lesson", "modify_lesson", "add_service", "remove_service", "explain_choice"]
+    },
+    "lessonRef": { "type": "string", "minLength": 1 },
+    "services": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "starter_repo": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "url": { "type": "string", "format": "uri" },
+        "path": { "type": "string", "default": "/workspace" }
+      }
+    },
+    "notes": { "type": "string" }
+  },
+  "required": ["intent"]
+}

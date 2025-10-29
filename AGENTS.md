@@ -1,42 +1,112 @@
-# AGENTS.md — Catalog Guardrails
+# AGENTS.md — Catalog Guardrails (Never-Regress)
 
-This repository now hosts only the **Devcontainers Catalog**: reusable Features, Templates, Images, and supporting docs.
+This repository is the **Devcontainers Catalog**: reusable **Features**, **Templates**, **Presets/Images**, **Service fragments**, and **schemas** used by a future SaaS platform to deliver **chat-to-classroom** environments.
 
 ## Directory Ownership
 
-| Path | Role | Notes |
-| --- | --- | --- |
-| `features/*` | Dev Container Features | Keep installers idempotent. No long-running services or secrets. |
-| `templates/*` | Dev Container Templates | Provide reusable `.devcontainer` payloads that stay repo-agnostic. |
-| `images/*` | Base and dev images | Publish to GHCR via CI. Keep Dockerfiles minimal and multi-arch friendly. |
-| `docs/*` | Catalog documentation | Update alongside code changes. |
-| `.github/workflows/*` | CI automation | Workflows publish features/images and smoke-test templates. |
+| Path                     | Role                           | Notes |
+|--------------------------|--------------------------------|------|
+| `features/*`            | Dev Container Features         | Idempotent installers only. No daemons, no secrets. |
+| `templates/*`           | Source scaffolds               | Repo-agnostic `.devcontainer` payloads. |
+| `images/presets/*`      | Prebuilt image contexts        | Build/publish OCI images (GHCR) via CI. |
+| `services/*`            | Compose fragments              | Redis, Supabase, Kafka, Prefect, Airflow, Dagster, Temporal, etc. |
+| `schemas/*`             | JSON Schemas                   | Catalog and SaaS contracts (lesson env, chat intents). |
+| `tools/*`               | Generators/CLIs                | Deterministic emit of build ctx + student scaffold. |
+| `docs/*`                | Catalog docs                   | Updated with every change; source of truth. |
+| `.github/workflows/*`   | CI automation                  | Lint, validate schemas, build/push images, smoke tests. |
 
-## Non-negotiable Invariants
+---
 
-1. Features install tooling only. Avoid starting daemons or embedding project secrets.
-2. Templates must not clone repositories automatically. Provide options for behaviour toggles instead of hard-coded paths.
-3. Images should build on Ubuntu 24.04, support amd64 + arm64, and lean on `ghcr.io/airnub-labs/devcontainer-images/dev-base` / `ghcr.io/airnub-labs/devcontainer-images/dev-web` where applicable.
-4. Documentation reflects the catalog-only scope (no workspace-specific instructions).
-5. CI workflows stay functional: feature validation, template smoke tests, and image builds.
+## Non-Negotiable, Never-Regress Principles
+
+### 1) Local = Remote Parity
+Dev Containers must behave **identically** on:
+- Local Docker / VS Code Dev Containers,
+- GitHub Codespaces,
+- Any devcontainer-spec compliant host.  
+No host-only assumptions (e.g., listeners must prefer **service names** over hostnames).
+
+### 2) Education SaaS Alignment (Chat-to-Classroom)
+The catalog must **enable** a SaaS where instructors can, via **chat**, request a lesson, and the platform:
+- **Generates a Lesson Manifest** (schema-valid),
+- **Builds a prebuilt image** (from a preset; no secrets inside),
+- **Emits a student scaffold** that references that image,
+- **Optionally seeds lesson content** (no runtime cloning for students),
+- **Optionally emits an aggregate docker-compose** for realistic service stacks (Redis, Supabase, Kafka, Prefect, Airflow, Dagster, Temporal, etc.).
+
+This chat-to-classroom flow is a **product invariant**. Never regress.
+
+### 3) Device-Agnostic Access
+Students on low-power devices (Chromebook, iPad) must have **equal startup experience**:
+- Prebuilt images for fast cold starts.
+- GUI workflows available via **webtop/noVNC** when needed (no local GPU assumed).
+- No dependency on local hardware accelerators.
+
+### 4) MCP + LLM Agent Orchestration (via SaaS)
+The SaaS mediates **MCP agents** and **LLM agents** that:
+- Accept **instructor chat requests** → derive a **validated manifest**.
+- Call catalog MCP methods to **list templates**, **validate manifests**, **generate build contexts**, **publish images**, and **emit scaffolds**.
+- Are **deterministic** (idempotent actions; no hidden side-effects) and **auditable** (provenance labels on images, run logs retained).
+- Never embed secrets in images or templates; secrets flow via Codespaces/host **Secrets** or `.env` files provided by instructors.
+
+### 5) Safety, Privacy, and Provenance
+- **No secrets in Features, Templates, or Presets**. Use placeholders only.
+- Images must carry **OCI labels**: source repo, git sha, org/course/lesson identifiers, schema version.
+- Telemetry, content collection, or outbound network access from generators/agents must be **explicitly documented** and disabled by default.
+
+---
+
+## Agent Contracts & Guardrails
+
+**MCP Methods (SaaS → Catalog):**
+- `catalog.listPresets()` → presets (name, base image, features).
+- `catalog.listServices()` → service fragments (name, ports, docs path).
+- `manifest.validate(manifest)` → against `schemas/lesson-env.schema.json`.
+- `lesson.generate(manifest)` → emits:
+  - `images/presets/generated/<slug>/` build context (with OCI labels),
+  - `templates/generated/<slug>/.devcontainer/devcontainer.json` scaffold,
+  - optional `docker-compose.classroom.yml` aggregate if services selected.
+- `image.buildPush({ slug, tag })` → multi-arch to GHCR.
+- `scaffold.smokeTest({ slug })` → runs `devcontainer build` and `docker compose config`.
+
+**Determinism:**
+- Same manifest = same artifacts (modulo timestamps, digests).
+- No network fetches for code at generation time except optional “seed lesson content” that is **declared** in the manifest (`starter_repo`).
+
+**Reproducibility:**
+- All emitted files are **derived** only from manifest + catalog sources.
+- CI validates schemas, builds/pushes images, and smoke-tests generated scaffolds.
+
+**Privacy & Security:**
+- Secrets flow only via the host platform secrets manager or instructor-provided `.env`.
+- No credentials baked into images or templates.
+- Aggregate Compose uses private networks by default; ports explicitly mapped only as documented.
+
+---
 
 ## Naming & Publishing
 
-- **Features** → `ghcr.io/airnub-labs/devcontainer-features/<feature-id>:<semver>`
-- **Templates & stacks** → `ghcr.io/airnub-labs/devcontainer-templates/<template-id>:<semver>` (stacks keep their `stack-` prefix).
-- **Images** → `ghcr.io/airnub-labs/devcontainer-images/<image-name>:<semver>`
-- Always publish via CI (`publish-features`, `publish-templates`, `build-images`). Never push the parent `devcontainer-features` folder as a package.
+- **Features** → `ghcr.io/airnub-labs/devcontainer-features/<id>:<semver>`
+- **Presets/Images** → `ghcr.io/airnub-labs/templates/<preset>:<tag>`
+- **Lesson Images** → `ghcr.io/airnub-labs/templates/lessons/<org-course-lesson>:<tag>`
 
-## Helpful Commands
+Tags must include a **base tag** (e.g., `ubuntu-24.04`) and may include date/version suffixes.
 
-- `npx --yes @devcontainers/cli@latest features test --project-root . --features-root features`
-- `devcontainer build --workspace-folder <path>` (after materializing a template)
-- `docker buildx build --platform linux/amd64,linux/arm64 images/dev-base`
+---
+
+## CI Requirements
+
+- Validate **all** schemas.
+- For each example manifest: `lesson.generate` → `image.buildPush` (dry-run in PRs).
+- `devcontainer build` on generated scaffold (smoke).
+- `docker compose -f docker-compose.classroom.yml config` (if exists).
+- Check that images have required **OCI labels**.
+
+---
 
 ## Don’ts
 
-- ❌ Reintroduce `.devcontainer/` or `.code-workspace` folders at the repo root.
-- ❌ Commit `apps/` checkouts or workspace-local assets.
-- ❌ Start background services inside feature installers.
-
-Thanks for keeping the catalog lean and reusable! 🎛️
+- ❌ Start background daemons in feature installers.
+- ❌ Embed secrets anywhere in repo or images.
+- ❌ Depend on host-only DNS/IPs; always prefer service names in Compose.
+- ❌ Remove or weaken the Non-Negotiable principles without an ADR and major-version bump.

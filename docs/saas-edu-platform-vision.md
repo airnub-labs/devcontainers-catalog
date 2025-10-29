@@ -371,3 +371,49 @@ services:
 ```
 
 **Final word:** Instructors should compose once, validate once, and teach with confidence. Students should click one link and learn — not wait for installs. Your catalog structure (base → templates → presets) is a perfect foundation. Add the manifest, generator, and service fragments, and you’ve got a SaaS-ready engine for teaching real-world architecture — both locally and in Codespaces.
+
+## Agentic UX: Chat → Manifest → Image → Scaffold
+
+**Goal:** An instructor types:  
+> “Spin up an Intro to AI lesson with Python + Prefect + Redis, include Supabase, seed the Week-02 prompt engineering materials.”
+
+**Platform flow:**
+1. **LLM Orchestrator** parses the request → proposes a **Lesson Manifest**.
+2. **Manifest Validator (MCP)** validates against `schemas/lesson-env.schema.json`.
+3. **Catalog Generator (MCP)**:
+   - Emits a lesson build context under `images/presets/generated/<slug>/`
+   - Injects OCI provenance labels (org/course/lesson/schema/git SHA)
+   - Copies requested **service fragments** and emits an **aggregate** `docker-compose.classroom.yml`.
+   - Writes a student scaffold under `templates/generated/<slug>/.devcontainer/` referencing the **prebuilt image** (fast start).
+   - Optionally materializes **lesson content** from the `starter_repo` (declared in the manifest).
+4. **Builder (MCP)** builds and pushes a **multi-arch** lesson image to GHCR.
+5. **Provisioner (SaaS)** creates per-student repos (or a shared workspace) from the scaffold.
+6. Students open Codespaces or local Dev Containers → **instant identical environment**.
+
+### Agent Roles
+
+- **Instructor Agent (LLM)**: converses with the instructor; drafts/edits manifests; explains trade-offs.
+- **Catalog Agent (MCP)**: lists presets, services; validates manifests; generates artifacts.
+- **Builder Agent (MCP)**: builds/pushes images; stamps OCI labels; posts logs.
+- **Provisioner Agent (SaaS)**: creates repos, grants access, injects secrets (via platform secrets).
+
+### MCP Contract
+
+See **docs/agents-mcp-contract.md** for method names and I/O shapes. The SaaS binds these to internal services that call into this catalog repo’s generator and CI.
+
+### Parity & Device Inclusivity
+
+- **Local = Remote**: Presets and fragments never assume host-specific quirks.
+- **Low-power devices**: Prebuilt images + optional noVNC/webtop enable GUI flows without local power.
+
+### Security & Privacy
+
+- No secrets in images or templates.
+- Secrets live in the host platform (Codespaces) or instructor-provided `.env` files.
+- Aggregate compose uses a private network; only documented ports are mapped.
+
+### Observability
+
+- All agent actions emit logs and artifacts (manifests, config, image tags).
+- Build logs and scaffold hashes are retained for auditing.
+- Optional telemetry is opt-in and documented.
