@@ -18,6 +18,7 @@
   "customizations": {
     "vscode": {
       "settings": {
+        "remote.downloadExtensionsLocally": "always",
         "typescript.tsdk": "node_modules/typescript/lib",
         "editor.formatOnSave": true
       },

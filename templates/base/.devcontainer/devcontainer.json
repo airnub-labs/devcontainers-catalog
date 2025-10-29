@@ -20,43 +20,18 @@
         "ms-azuretools.vscode-docker",
         "ms-playwright.playwright",
         "denoland.vscode-deno",
-        "Supabase.vscode-supabase-extension",
-        "Redis.redis-for-vscode",
+        "supabase.vscode-supabase-extension",
+        "redis.redis-for-vscode",
         "dbaeumer.vscode-eslint",
         "esbenp.prettier-vscode",
-        "deque-systems.vscode-axe-linter",
-        "DavidAnson.vscode-markdownlint",
+        "davidanson.vscode-markdownlint",
         "bradlc.vscode-tailwindcss",
         "github.vscode-github-actions",
-        "GitHub.vscode-pull-request-github",
-        "openai.chatgpt",
-        "google.geminicodeassist",
-        "google.gemini-cli-vscode-ide-companion",
-        "anthropic.claude-code"
+        "github.vscode-pull-request-github"
       ]
-    },
-    "codespaces": {
-      "repositories": {
-        "airnub-labs/million-dollar-maps": {
-          "permissions": {
-            "contents": "write",
-            "pull_requests": "write"
-          }
-        }
-      }
     }
   },
 
   "postCreateCommand": ".devcontainer/scripts/post-create.sh",
-  "postStartCommand": ".devcontainer/scripts/post-start.sh",
-
-  "forwardPorts": [6379, 54321, 54322, 54323, 54324, 54327],
-  "portsAttributes": {
-    "6379":   { "label": "Redis" },
-    "54321":  { "label": "Supabase API" },
-    "54322":  { "label": "Supabase Postgres" },
-    "54323":  { "label": "Supabase Studio" },
-    "54324":  { "label": "Supabase Inbucket" },
-    "54327":  { "label": "Supabase Logflare" }
-  }
+  "postStartCommand": ".devcontainer/scripts/post-start.sh"
 }

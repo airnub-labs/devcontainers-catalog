@@ -18,3 +18,33 @@ devcontainer build \
   --workspace-folder images/templates/full \
   --image-name ghcr.io/airnub-labs/templates/full:ubuntu-24.04
 ```
+
+### GitHub Actions example
+
+```yaml
+name: publish-template-images
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "images/templates/**"
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: devcontainers/ci@v0.3
+        with:
+          runCmd: |
+            devcontainer build \
+              --workspace-folder images/templates/full \
+              --image-name ghcr.io/airnub-labs/templates/full:ubuntu-24.04 \
+              --push
+```

@@ -7,7 +7,8 @@ A minimal devcontainer template that tracks `mcr.microsoft.com/devcontainers/bas
 - Docker build args (`UBUNTU_VERSION`, `BASE_IMAGE`) so you can bump Ubuntu or swap the base image without editing files.
 - No Node.js, pnpm, or Python pre-installed. Add them with Features or the templates in `images/templates/`.
 - Quality-of-life CLI tools: `curl`, `git`, `less`, `iproute2`, `procps`, and `gnupg`.
-- VS Code defaults for extension syncing, activity bar layout, theme, and startup editor.
+- VS Code defaults for extension syncing, activity bar layout, theme, startup editor, and a lean extension set.
+- No forwarded ports or repo-specific Codespaces permissions—add those in downstream stacks as needed.
 - Placeholder post-create and post-start hooks that simply confirm the container is ready.
 
 ## Usage

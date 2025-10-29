@@ -21,6 +21,9 @@
   ],
   "customizations": {
     "vscode": {
+      "settings": {
+        "remote.downloadExtensionsLocally": "always"
+      },
       "extensions": [
         "ms-python.python",
         "ms-toolsai.jupyter",
@@ -28,5 +31,6 @@
         "esbenp.prettier-vscode"
       ]
     }
-  }
+  },
+  "postCreateCommand": "bash -lc 'corepack enable || true'"
 }

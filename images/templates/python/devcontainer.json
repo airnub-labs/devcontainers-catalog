@@ -10,6 +10,9 @@
   },
   "customizations": {
     "vscode": {
+      "settings": {
+        "remote.downloadExtensionsLocally": "always"
+      },
       "extensions": [
         "ms-python.python",
         "ms-toolsai.jupyter"
