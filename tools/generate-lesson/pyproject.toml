@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "generate-lesson"
 version = "0.1.0"
-dependencies = ["pyyaml>=6.0.1"]
+dependencies = ["pyyaml>=6.0.2"]
 
 [project.scripts]
 generate-lesson = "generate_lesson.cli:main"

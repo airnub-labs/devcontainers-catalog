@@ -24,7 +24,15 @@
       "properties": {
         "base_preset": {
           "type": "string",
-          "enum": ["full", "node-pnpm", "python"]
+          "enum": [
+            "full",
+            "node-pnpm",
+            "python",
+            "python-prefect",
+            "python-airflow",
+            "python-dagster",
+            "ts-temporal"
+          ]
         },
         "image_tag_strategy": {
           "type": "string",
@@ -45,11 +53,24 @@
             "properties": {
               "name": {
                 "type": "string",
-                "enum": ["redis", "supabase", "kafka", "inbucket"]
+                "enum": [
+                  "redis",
+                  "supabase",
+                  "kafka",
+                  "inbucket",
+                  "prefect",
+                  "airflow",
+                  "dagster",
+                  "temporal"
+                ]
               },
               "vars": { "type": "object", "additionalProperties": true }
             }
           }
+        },
+        "emit_aggregate_compose": {
+          "type": "boolean",
+          "default": true
         },
         "env": { "type": "object", "additionalProperties": { "type": "string" } },
         "secrets_placeholders": { "type": "array", "items": { "type": "string" } },

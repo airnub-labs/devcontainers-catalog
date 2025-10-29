@@ -9,6 +9,8 @@ dist/
 # Local overrides
 .env
 .env.*
+!services/**/.env.example
+!services/**/.env.example-*
 
 # Legacy app checkouts (should stay untracked)
 apps/

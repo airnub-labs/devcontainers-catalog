@@ -5,7 +5,7 @@ metadata:
   course: "intro-ai"
   lesson: "week02-prompts"
 spec:
-  base_preset: "full"
+  base_preset: "python-prefect"
   image_tag_strategy: "ubuntu-24.04"
   vscode_extensions:
     - dbaeumer.vscode-eslint
@@ -13,12 +13,15 @@ spec:
   settings:
     remote.downloadExtensionsLocally: "always"
   services:
-    - name: "redis"
-    - name: "supabase"
+    - name: "prefect"
+    - name: "airflow"
+    - name: "dagster"
+    - name: "temporal"
   env:
     NODE_OPTIONS: "--max-old-space-size=2048"
   secrets_placeholders:
-    - SUPABASE_SERVICE_ROLE_KEY
+    - AIRFLOW_ADMIN_PASS
+    - TEMPORAL_API_KEY
   starter_repo:
     url: "https://github.com/airnub-labs/lesson-starters/intro-ai-week02"
     path: "/workspace"

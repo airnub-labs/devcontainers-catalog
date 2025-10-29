@@ -1,0 +1,13 @@
+{
+  "name": "TypeScript + Temporal",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": { "version": "24", "installPnpm": true }
+  },
+  "customizations": {
+    "vscode": {
+      "settings": { "remote.downloadExtensionsLocally": "always" },
+      "extensions": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode"]
+    }
+  }
+}

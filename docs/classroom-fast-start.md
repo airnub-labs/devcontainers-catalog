@@ -7,7 +7,7 @@ This guide walks instructors through producing a fast-start lesson image and sca
 1. Copy `examples/lesson-manifests/intro-ai-week02.yaml` and update the metadata (`org`, `course`, `lesson`).
 2. Choose a base preset from `images/presets/` and list it under `spec.base_preset`.
 3. Add VS Code extensions and settings. The generator lowercases IDs and enforces `remote.downloadExtensionsLocally: "always"` for parity.
-4. Declare optional services (`redis`, `supabase`, `kafka`, etc.). The generator copies their compose fragments into the build context.
+4. Declare optional services (`redis`, `supabase`, `kafka`, orchestrators like `prefect`, `airflow`, `dagster`, or `temporal`). The generator copies their compose fragments into the build context and prepares a combined classroom stack (see `docs/stacks-orchestrators.md` for a full matrix).
 5. List any secrets you expect to provide at runtime in `spec.secrets_placeholders`.
 
 ## 2. Generate Preset + Scaffold
@@ -20,6 +20,7 @@ This writes two artifacts using a stable slug derived from `org-course-lesson`:
 
 - `images/presets/generated/<lesson-slug>/` — build context used to produce a lesson-specific image.
 - `templates/generated/<lesson-slug>/.devcontainer/devcontainer.json` — scaffold that references the published lesson image.
+- If services are requested, `docker-compose.classroom.yml` and `README-SERVICES.md` land beside the build context so instructors can launch every fragment with one command.
 
 ## 3. Build and Publish the Lesson Image
 
@@ -37,7 +38,7 @@ The targets use `yq` (if available) to derive `LESSON_SLUG` and publish `ghcr.io
 - **Fast path:** copy the generated `.devcontainer/devcontainer.json` into the Classroom Workspace Starter repo. Students immediately pull the prebuilt image.
 - **Custom path:** copy a template from `templates/` and adjust features or services. Initial start will take longer because Features run on create.
 
-When services are required, run `docker compose` from the generated preset context (or vendor the fragments into the workspace repo) so both local Docker and Codespaces behave the same way.
+When services are required, run `docker compose -f docker-compose.classroom.yml up -d` from the generated preset context (or vendor specific fragments into the workspace repo) so both local Docker and Codespaces behave the same way.
 
 Generated lesson artifacts under `images/presets/generated/` and `templates/generated/` are intentionally gitignored—regenerate them with `make gen` whenever you update a manifest so reviewers always see current outputs.
 

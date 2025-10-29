@@ -102,6 +102,15 @@ with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
     handle.write(f"lesson={metadata['lesson']}\n")
 PY
 
+      - name: Validate aggregate compose
+        run: |
+          FILE="images/presets/generated/${{ steps.slug.outputs.slug }}/docker-compose.classroom.yml"
+          if [ -f "$FILE" ]; then
+            docker compose -f "$FILE" config
+          else
+            echo "No aggregate compose generated for $FILE"
+          fi
+
       - name: Build and push lesson image
         uses: docker/build-push-action@v6
         with:
