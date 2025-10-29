@@ -10,8 +10,9 @@
 ## What’s in this repo
 
 - `features/` — install-only, idempotent. No services.
-- `templates/` — opinionated dev environments. Includes **stack templates** (e.g., `stack-nextjs-supabase-webtop`).
+- `templates/` — opinionated dev environments. Includes the minimal `base` template and **stack templates** (e.g., `stack-nextjs-supabase-webtop`).
 - `images/` — optional prebuilt bases to accelerate `dev` service startup.
+- `images/templates/` — feature-driven `devcontainer.json` presets that can be prebuilt into fast-start images.
 - `docs/` — spec alignment, architecture, publish/test pipelines.
 
 ## Using stacks (templates)

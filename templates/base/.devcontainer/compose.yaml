@@ -1,0 +1,16 @@
+services:
+  dev:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+      args:
+        # You can override these at build time without editing the Dockerfile
+        UBUNTU_VERSION: ${UBUNTU_VERSION-24.04}
+        BASE_IMAGE: ${BASE_IMAGE-mcr.microsoft.com/devcontainers/base:ubuntu-${UBUNTU_VERSION-24.04}}
+    # Keep the container alive, avoids bash-without-tty exits.
+    command: ["sleep", "infinity"]
+
+    # Tip: If you need Docker access inside the container *without* DinD feature,
+    # uncomment to use Docker socket from host (where supported):
+    # volumes:
+    #   - /var/run/docker.sock:/var/run/docker.sock

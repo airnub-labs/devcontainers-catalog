@@ -1,0 +1,32 @@
+{
+  "name": "airnub-labs — full (node+pnpm+python)",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "workspaceFolder": "/airnub-labs",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "24",
+      "installPnpm": true
+    },
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.12",
+      "installJupyterlab": true
+    }
+  },
+  "containerEnv": {
+    "PNPM_HOME": "/home/vscode/.local/share/pnpm",
+    "PNPM_STORE_PATH": "/home/vscode/.pnpm-store"
+  },
+  "mounts": [
+    "source=global-pnpm-store,target=/home/vscode/.pnpm-store,type=volume"
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-toolsai.jupyter",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode"
+      ]
+    }
+  }
+}
