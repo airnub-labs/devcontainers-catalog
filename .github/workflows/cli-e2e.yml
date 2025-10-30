@@ -62,7 +62,20 @@ jobs:
           FILE="images/presets/generated/${ID}/aggregate.compose.yml"
           if [ -f "$FILE" ]; then
             docker compose -f "$FILE" up -d
-            sleep 10
+            attempt=0
+            while [ $attempt -lt 20 ]; do
+              states=$(docker compose -f "$FILE" ps --format '{{.State}}')
+              if echo "$states" | grep -qE '(unhealthy|exited|dead)'; then
+                echo "[error] One or more services unhealthy" >&2
+                docker compose -f "$FILE" ps
+                exit 1
+              fi
+              if echo "$states" | grep -qi 'running'; then
+                break
+              fi
+              attempt=$((attempt + 1))
+              sleep 5
+            done
             docker compose -f "$FILE" ps
             docker compose -f "$FILE" down -v
           else

@@ -3,12 +3,14 @@ import fs from "fs-extra";
 import { LessonEnv } from "../types.js";
 import { buildAggregateCompose } from "./compose.js";
 import { safeWriteDir, writeJson } from "./fsutil.js";
+import { materializeServices } from "./services.js";
 
 export interface GenerateBaseOptions {
   repoRoot: string;
   manifest: LessonEnv;
   fetchMissingFragments?: boolean;
   fetchRef?: string;
+  catalogRef?: string;
 }
 
 export interface GeneratePresetOptions extends GenerateBaseOptions {
@@ -42,6 +44,19 @@ export async function generatePresetBuildContext(opts: GeneratePresetOptions) {
 
   await safeWriteDir(opts.outDir, opts.force);
   await fs.copy(presetSource, opts.outDir, { overwrite: true, errorOnExist: false });
+
+  const servicesRequested = ensureArray(manifest.spec.services).map((svc) => svc.name);
+  let servicesDir: string | null = null;
+  if (servicesRequested.length) {
+    servicesDir = path.join(opts.outDir, "services");
+    await materializeServices({
+      services: servicesRequested,
+      destination: servicesDir,
+      repoRoot: opts.repoRoot,
+      fetchIfMissing: opts.fetchMissingFragments,
+      fetchRef: opts.fetchRef,
+    });
+  }
 
   const devcontainerPath = path.join(opts.outDir, "devcontainer.json");
   const devcontainer = await fs.readJson(devcontainerPath).catch(() => ({ name: id }));
@@ -93,15 +108,16 @@ export async function generatePresetBuildContext(opts: GeneratePresetOptions) {
 
   const shouldEmitAggregate = manifest.spec.emit_aggregate_compose !== false;
 
-  if (shouldEmitAggregate && manifest.spec.services?.length) {
-    const services = manifest.spec.services.map((svc) => svc.name);
+  if (shouldEmitAggregate && servicesRequested.length) {
     const aggregatePath = path.join(opts.outDir, "aggregate.compose.yml");
     await buildAggregateCompose({
       repoRoot: opts.repoRoot,
-      services,
+      services: servicesRequested,
       outFile: aggregatePath,
       fetchIfMissing: opts.fetchMissingFragments,
       fetchRef: opts.fetchRef,
+      catalogRef: opts.catalogRef,
+      searchRoots: servicesDir ? [servicesDir, path.join(opts.repoRoot, "services")] : [path.join(opts.repoRoot, "services")],
     });
   }
 
@@ -148,16 +164,30 @@ export async function generateWorkspaceScaffold(opts: GenerateScaffoldOptions) {
 
   const shouldEmitAggregate = manifest.spec.emit_aggregate_compose !== false;
 
-  if (shouldEmitAggregate && manifest.spec.services?.length) {
-    const services = manifest.spec.services.map((svc) => svc.name);
-    const aggregatePath = path.join(devDir, "aggregate.compose.yml");
-    await buildAggregateCompose({
+  const servicesRequested = ensureArray(manifest.spec.services).map((svc) => svc.name);
+
+  if (servicesRequested.length) {
+    const servicesDir = path.join(devDir, "services");
+    await materializeServices({
+      services: servicesRequested,
+      destination: servicesDir,
       repoRoot: opts.repoRoot,
-      services,
-      outFile: aggregatePath,
       fetchIfMissing: opts.fetchMissingFragments,
       fetchRef: opts.fetchRef,
     });
+
+    if (shouldEmitAggregate) {
+      const aggregatePath = path.join(devDir, "aggregate.compose.yml");
+      await buildAggregateCompose({
+        repoRoot: opts.repoRoot,
+        services: servicesRequested,
+        outFile: aggregatePath,
+        fetchIfMissing: opts.fetchMissingFragments,
+        fetchRef: opts.fetchRef,
+        catalogRef: opts.catalogRef,
+        searchRoots: [servicesDir, path.join(opts.repoRoot, "services")],
+      });
+    }
   }
 
   if (manifest.spec.starter_repo?.url) {

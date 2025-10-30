@@ -23,15 +23,31 @@ export async function writeYaml(filePath: string, data: unknown) {
   await fs.outputFile(filePath, YAML.stringify(data));
 }
 
-export function repoRootFromCwd(): string {
-  let cur = process.cwd();
-  for (let i = 0; i < 8; i++) {
-    if (fs.existsSync(path.join(cur, "schemas"))) {
+export function discoverCatalogRoot(startDir = process.cwd()): string | null {
+  let cur = startDir;
+  for (let i = 0; i < 10; i++) {
+    if (
+      fs.existsSync(path.join(cur, "schemas", "lesson-env.schema.json")) ||
+      fs.existsSync(path.join(cur, "services"))
+    ) {
       return cur;
     }
     const parent = path.dirname(cur);
     if (parent === cur) break;
     cur = parent;
   }
-  return process.cwd();
+  return null;
+}
+
+export function discoverWorkspaceRoot(startDir = process.cwd()): string | null {
+  let cur = startDir;
+  for (let i = 0; i < 10; i++) {
+    if (fs.existsSync(path.join(cur, ".devcontainer", "devcontainer.json"))) {
+      return cur;
+    }
+    const parent = path.dirname(cur);
+    if (parent === cur) break;
+    cur = parent;
+  }
+  return null;
 }

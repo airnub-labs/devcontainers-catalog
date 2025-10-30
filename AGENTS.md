@@ -45,6 +45,8 @@ Students on low-power devices (Chromebook, iPad) must have **equal startup exper
 ### 3a) Use the Generator
 - Always materialize workspaces and lesson scaffolds with `@airnub/devc`.
 - Do **not** manually vendor compose fragments or preset assets; rely on the generator + manifests.
+- When manifests declare prebuilt images, **never** fall back to feature re-installs for fast starts. Regenerate the preset instead.
+- Keep service fragments minimal and safe for low-power parity; aggregate compose must run identically locally and in Codespaces.
 
 ## CLI Scope (Education-Agnostic, Lesson-Capable)
 

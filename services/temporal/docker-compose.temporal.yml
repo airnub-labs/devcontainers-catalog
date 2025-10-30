@@ -1,20 +1,32 @@
-version: "3.8"
+version: "3.9"
 services:
   temporal:
-    image: temporalio/auto-setup:1.23
-    environment:
-      - DB=sqlite
-      - DB_FILENAME=/var/lib/temporal/temporal.sqlite
-      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development_es.yaml
+    image: ghcr.io/temporalio/temporalite:latest
+    container_name: temporal
+    restart: unless-stopped
+    command: ["--headless"] # no UI, gRPC on 7233
     ports:
-      - "${TEMPORAL_GRPC_PORT:-7233}:7233"
-    volumes:
-      - temporal-data:/var/lib/temporal
+      - "7233:7233" # Temporal gRPC
     healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "7233"]
-      interval: 5s
-      timeout: 2s
-      retries: 30
+      test: ["CMD", "grpc_health_probe", "-addr=localhost:7233"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
 
-volumes:
-  temporal-data:
+  temporal-ui:
+    image: temporalio/ui:2.28.2
+    container_name: temporal_ui
+    restart: unless-stopped
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_CORS_ORIGINS=http://localhost:8080,http://localhost:3000
+    ports:
+      - "8081:8080" # Temporal UI
+    depends_on:
+      temporal:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
