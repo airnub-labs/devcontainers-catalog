@@ -145,7 +145,7 @@ PY
           tags: ${{ env.REGISTRY }}/lessons/${{ steps.slug.outputs.slug }}:${{ env.LESSON_TAG }}
           build-args: |
             GIT_SHA=${{ github.sha }}
-          provenance: mode=max
+          provenance: false
           sbom: true
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}

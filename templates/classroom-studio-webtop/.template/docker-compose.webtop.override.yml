@@ -1,0 +1,11 @@
+version: "3.8"
+services:
+  webtop:
+    environment:
+      CUSTOM_USER: vscode
+    volumes:
+      - ./:/work
+      - ./.devcontainer/policies:/etc/opt/chrome/policies/managed:ro
+    ports:
+      - "{{templateOption.webtopPort}}:3000"
+    shm_size: "2gb"

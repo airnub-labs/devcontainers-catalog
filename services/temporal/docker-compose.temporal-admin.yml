@@ -1,0 +1,10 @@
+version: "3.8"
+services:
+  temporal-admin:
+    image: temporalio/admin-tools:1.23
+    depends_on:
+      - temporal
+    environment:
+      - TEMPORAL_CLI_ADDRESS=temporal:7233
+    entrypoint: ["/bin/sh", "-lc"]
+    command: ["sleep infinity"]
