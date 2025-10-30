@@ -13,18 +13,42 @@ on:
       - "Makefile"
   workflow_dispatch:
 
-env:
-  LESSON_MANIFEST: examples/lesson-manifests/intro-ai-week02.yaml
-  LESSON_TAG: ubuntu-24.04
-  REGISTRY: ghcr.io/airnub-labs/templates
-
 jobs:
+  manifest-list:
+    name: Discover lesson manifests
+    runs-on: ubuntu-latest
+    outputs:
+      manifests: ${{ steps.collect.outputs.manifests }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: collect
+        run: |
+          set -euo pipefail
+          mapfile -t files < <(find examples/lesson-manifests -maxdepth 1 -type f \( -name '*.yml' -o -name '*.yaml' \) -print | sort)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "manifests=[]" >> "$GITHUB_OUTPUT"
+          else
+            printf '%s\n' "${files[@]}" | jq -R . | jq -s --compact-output '.' | {
+              read json
+              printf 'manifests=%s\n' "$json" >> "$GITHUB_OUTPUT"
+            }
+          fi
+
   publish:
     name: Build and publish lesson image
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+    needs: manifest-list
+    strategy:
+      fail-fast: false
+      matrix:
+        manifest: ${{ fromJSON(needs.manifest-list.outputs.manifests) }}
+    env:
+      LESSON_MANIFEST: ${{ matrix.manifest }}
+      LESSON_TAG: ubuntu-24.04
+      REGISTRY: ghcr.io/airnub-labs/templates
     steps:
       - uses: actions/checkout@v4
 
