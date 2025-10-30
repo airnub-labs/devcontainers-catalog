@@ -109,11 +109,28 @@ SERVICE_VOLUMES: Mapping[str, Sequence[str]] = {
 SERVICES_REQUIRE_CLASSROOM_NETWORK = {"prefect", "airflow", "dagster", "temporal"}
 
 
+SUPPORTED_SPEC_FIELDS = {
+    "base_preset",
+    "image_tag_strategy",
+    "vscode_extensions",
+    "settings",
+    "features",
+    "services",
+    "emit_aggregate_compose",
+    "env",
+    "starter_repo",
+}
+
+
+UNIMPLEMENTED_SPEC_FIELDS = {"secrets_placeholders", "resources"}
+
+
 @dataclass(frozen=True)
 class ServiceArtifacts:
     names: Tuple[str, ...]
     fragments: Dict[str, Tuple[Path, ...]]
     env_examples: Dict[str, Path]
+    vars: Dict[str, Dict[str, str]]
 
 
 def _slugify_component(value: str) -> str:
@@ -232,6 +249,18 @@ def ensure_dir(path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True)
 
 
+def _normalize_service_vars(raw_vars) -> Dict[str, str]:
+    normalized: Dict[str, str] = {}
+    if not isinstance(raw_vars, Mapping):
+        return normalized
+    for key, value in raw_vars.items():
+        key_str = str(key).strip()
+        if not key_str:
+            continue
+        normalized[key_str] = str(value)
+    return normalized
+
+
 def merge_services(services, out_dir: Path) -> ServiceArtifacts:
     svc_root = out_dir / "services"
     ensure_dir(svc_root)
@@ -239,12 +268,15 @@ def merge_services(services, out_dir: Path) -> ServiceArtifacts:
     ordered: List[str] = []
     fragments: Dict[str, Tuple[Path, ...]] = {}
     env_examples: Dict[str, Path] = {}
+    service_vars: Dict[str, Dict[str, str]] = {}
 
     for svc in services or []:
         if isinstance(svc, dict):
             name = str((svc or {}).get("name", "")).strip()
+            vars_payload = _normalize_service_vars((svc or {}).get("vars"))
         else:
             name = str(svc or "").strip()
+            vars_payload = {}
         if not name:
             continue
         src_dir = ROOT / "services" / name
@@ -281,7 +313,10 @@ def merge_services(services, out_dir: Path) -> ServiceArtifacts:
             shutil.copy2(env_src, dst)
             env_examples[name] = dst
 
-    return ServiceArtifacts(tuple(ordered), fragments, env_examples)
+        if vars_payload:
+            service_vars[name] = vars_payload
+
+    return ServiceArtifacts(tuple(ordered), fragments, env_examples, service_vars)
 
 
 def _build_vscode_customizations(spec: dict) -> Dict[str, dict]:
@@ -295,6 +330,39 @@ def _build_vscode_customizations(spec: dict) -> Dict[str, dict]:
             "extensions": list(extensions),
         }
     }
+
+
+def _coerce_string_map(raw_mapping) -> Dict[str, str]:
+    if not isinstance(raw_mapping, Mapping):
+        return {}
+    coerced: Dict[str, str] = {}
+    for key, value in raw_mapping.items():
+        key_str = str(key).strip()
+        if not key_str:
+            continue
+        coerced[key_str] = str(value)
+    return coerced
+
+
+def _apply_optional_devcontainer_overrides(devc: Dict[str, object], spec: dict) -> None:
+    features = spec.get("features")
+    if isinstance(features, Mapping) and features:
+        devc["features"] = json.loads(json.dumps(features))
+    env_map = _coerce_string_map(spec.get("env"))
+    if env_map:
+        devc["containerEnv"] = env_map
+
+
+def partition_spec_fields(spec: Mapping[str, object]) -> Tuple[Tuple[str, ...], Tuple[str, ...]]:
+    unsupported = tuple(sorted(field for field in UNIMPLEMENTED_SPEC_FIELDS if field in spec))
+    unknown = tuple(
+        sorted(
+            field
+            for field in spec
+            if field not in SUPPORTED_SPEC_FIELDS and field not in UNIMPLEMENTED_SPEC_FIELDS
+        )
+    )
+    return unsupported, unknown
 
 
 def generate_aggregate_compose(
@@ -345,6 +413,13 @@ def generate_aggregate_compose(
             handle.write("    extends:\n")
             handle.write(f"      file: {extends['file']}\n")
             handle.write(f"      service: {extends['service']}\n")
+            parent_service = extends["file"].split("/")[2]
+            overrides = artifacts.vars.get(parent_service, {})
+            if overrides:
+                handle.write("    environment:\n")
+                for key in sorted(overrides):
+                    value = overrides[key]
+                    handle.write(f"      {key}: {json.dumps(value)}\n")
 
         if volumes:
             handle.write("\nvolumes:\n")
@@ -383,6 +458,7 @@ def write_generated_preset_ctx(manifest: dict, out_dir: Path) -> None:
         "build": {"dockerfile": "Dockerfile"},
         "customizations": _build_vscode_customizations(spec),
     }
+    _apply_optional_devcontainer_overrides(devc, spec)
 
     devcontainer_dir = out_dir / ".devcontainer"
     devcontainer_dir.mkdir(parents=True, exist_ok=True)
@@ -435,6 +511,7 @@ def write_generated_repo_scaffold(
         "workspaceFolder": "/work",
         "customizations": _build_vscode_customizations(spec),
     }
+    _apply_optional_devcontainer_overrides(devc, spec)
 
     if ports_attributes:
         devc["portsAttributes"] = ports_attributes
@@ -442,6 +519,109 @@ def write_generated_repo_scaffold(
     with (out_dir / ".devcontainer" / "devcontainer.json").open("w", encoding="utf-8") as handle:
         json.dump(devc, handle, indent=2)
         handle.write("\n")
+
+
+def write_starter_repo_metadata(spec: dict, out_dir: Path) -> Optional[Path]:
+    starter_repo = spec.get("starter_repo")
+    if not isinstance(starter_repo, Mapping):
+        return None
+    url = str(starter_repo.get("url", "")).strip()
+    if not url:
+        return None
+    path_value = str(starter_repo.get("path", "/workspace")).strip() or "/workspace"
+    payload = {"url": url, "path": path_value}
+    target = out_dir / "starter-repo.json"
+    with target.open("w", encoding="utf-8") as handle:
+        json.dump(payload, handle, indent=2)
+        handle.write("\n")
+    return target
+
+
+def load_yaml_document(path: Path):
+    text = path.read_text(encoding="utf-8")
+    if yaml is not None:
+        return yaml.safe_load(text)
+    return parse_simple_yaml(text)
+
+
+def _split_image_reference(reference: str) -> Tuple[str, Optional[str], Optional[str]]:
+    raw = reference.strip()
+    digest: Optional[str] = None
+    if "@" in raw:
+        raw, digest = raw.split("@", 1)
+    last_slash = raw.rfind("/")
+    last_colon = raw.rfind(":")
+    tag: Optional[str] = None
+    if last_colon > last_slash:
+        tag = raw[last_colon + 1 :]
+        image = raw[:last_colon]
+    else:
+        image = raw
+    return image, tag, digest
+
+
+def _collect_service_images(artifacts: ServiceArtifacts) -> Dict[str, str]:
+    images: Dict[str, str] = {}
+    for service in artifacts.names:
+        extends_entries = SERVICE_EXTENDS.get(service, ())
+        for file_name, service_name in extends_entries:
+            compose_path = ROOT / "services" / service / file_name
+            if not compose_path.exists():
+                continue
+            try:
+                document = load_yaml_document(compose_path)
+            except Exception:
+                continue
+            service_block = (
+                (document or {}).get("services", {}) if isinstance(document, Mapping) else {}
+            )
+            if not isinstance(service_block, Mapping):
+                continue
+            entry = service_block.get(service_name)
+            if not isinstance(entry, Mapping):
+                continue
+            image_ref = entry.get("image")
+            if not image_ref:
+                continue
+            images[f"{service}:{service_name}"] = str(image_ref)
+    return images
+
+
+def write_stack_lock(
+    manifest: dict,
+    out_dir: Path,
+    artifacts: ServiceArtifacts,
+) -> Optional[Path]:
+    spec = manifest.get("spec", {})
+    base = spec.get("base_preset")
+    tag = spec.get("image_tag_strategy")
+    if not base or not tag:
+        return None
+    lesson_ref = f"ghcr.io/airnub-labs/templates/lessons/{derive_lesson_slug(manifest['metadata'])}:{tag}"
+    entries: Dict[str, Dict[str, Optional[str]]] = {}
+    image, parsed_tag, digest = _split_image_reference(
+        f"ghcr.io/airnub-labs/templates/{base}:{tag}"
+    )
+    entries["lesson-base"] = {"image": image, "tag": parsed_tag, "digest": digest or ""}
+    service_images = _collect_service_images(artifacts)
+    for key, reference in sorted(service_images.items()):
+        image, parsed_tag, digest = _split_image_reference(reference)
+        entries[key] = {"image": image, "tag": parsed_tag, "digest": digest or ""}
+    runtime_image, runtime_tag = lesson_ref.split(":", 1)
+    entries["lesson-runtime"] = {
+        "image": runtime_image,
+        "tag": runtime_tag,
+        "digest": "",
+    }
+    target = out_dir / "stack.lock.json"
+    payload = {
+        "_comment": "Populate digest fields after building and publishing images to guarantee reproducible rebuilds.",
+        "images": entries,
+    }
+    with target.open("w", encoding="utf-8") as handle:
+        json.dump(payload, handle, indent=2)
+        handle.write("\n")
+    return target
 
 
 def write_services_readme(artifacts: ServiceArtifacts, out_dir: Path) -> Optional[Path]:
@@ -489,15 +669,36 @@ def main() -> int:
         return 1
 
     manifest = load_manifest(manifest_path)
+    spec = manifest.get("spec") or {}
+    unsupported_fields, unknown_fields = partition_spec_fields(spec)
+    for field in unsupported_fields:
+        print(
+            f"[warn] spec.{field} is currently ignored by the generator; downstream automation should handle it.",
+            file=sys.stderr,
+        )
+    for field in unknown_fields:
+        print(
+            f"[warn] spec.{field} is not recognized and will be ignored.",
+            file=sys.stderr,
+        )
+
     metadata = manifest["metadata"]
     slug = derive_lesson_slug(metadata)
 
     gen_preset_dir = ROOT / "images" / "presets" / "generated" / slug
     write_generated_preset_ctx(manifest, gen_preset_dir)
-    artifacts = merge_services((manifest.get("spec") or {}).get("services"), gen_preset_dir)
+    artifacts = merge_services(spec.get("services"), gen_preset_dir)
 
     for name, env_path in sorted(artifacts.env_examples.items()):
         print(f"[hint] Copied {name} .env example to {env_path}")
+
+    stack_lock_path = write_stack_lock(manifest, gen_preset_dir, artifacts)
+    if stack_lock_path:
+        print(f"[hint] Stack lock template available at {stack_lock_path}")
+
+    starter_meta = write_starter_repo_metadata(spec, gen_preset_dir)
+    if starter_meta:
+        print(f"[hint] Starter repo metadata recorded at {starter_meta}")
 
     aggregate_path: Optional[Path] = None
     try:
@@ -517,6 +718,15 @@ def main() -> int:
 
     gen_template_dir = ROOT / "templates" / "generated" / slug
     write_generated_repo_scaffold(manifest, gen_template_dir, slug, ports_attributes)
+
+    if stack_lock_path:
+        copied_stack_lock = gen_template_dir / "stack.lock.json"
+        shutil.copy2(stack_lock_path, copied_stack_lock)
+        print(f"[hint] Copied stack lock to {copied_stack_lock}")
+
+    starter_template_meta = write_starter_repo_metadata(spec, gen_template_dir)
+    if starter_template_meta:
+        print(f"[hint] Starter repo metadata recorded at {starter_template_meta}")
 
     print(f"[ok] Generated preset ctx: {gen_preset_dir}")
     print(f"[ok] Generated lesson scaffold: {gen_template_dir}")
