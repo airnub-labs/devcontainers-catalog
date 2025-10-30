@@ -18,6 +18,7 @@ LABEL org.opencontainers.image.source="https://github.com/airnub-labs/devcontain
       io.airnub.base_tag="${BASE_TAG}"
 
 # Pre-seed the Google Chrome repository on amd64 so the chrome-cdp feature can reuse it quickly.
+USER root
 RUN set -eux; \
     install -d /usr/share/keyrings; \
     arch="$(dpkg --print-architecture)"; \
@@ -28,3 +29,4 @@ RUN set -eux; \
     else \
       echo "# Google Chrome repo not available for ${arch}" >/etc/apt/sources.list.d/google-chrome.list; \
     fi
+USER vscode
