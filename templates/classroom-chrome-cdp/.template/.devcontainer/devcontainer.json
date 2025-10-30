@@ -1,0 +1,20 @@
+{
+  "name": "Classroom — Chrome CDP (Headless)",
+  "dockerComposeFile": [
+    "../docker-compose.yml",
+    "../../../../services/chrome-cdp/docker-compose.chrome-cdp.yml"
+  ],
+  "service": "devcontainer",
+  "runServices": ["chrome-cdp"],
+  "workspaceFolder": "/work",
+  "containerEnv": {
+    "CHROME_CDP_URL": "http://localhost:${CHROME_CDP_PORT:-3001}"
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "remote.downloadExtensionsLocally": "always"
+      }
+    }
+  }
+}

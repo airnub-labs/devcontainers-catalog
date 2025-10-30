@@ -17,13 +17,15 @@
 
 ## Source vs Artifact (Templates vs Presets)
 
-- **templates/** = **SOURCE scaffolds** (Dev Container Templates per spec).
-  Use these to *copy* a `.devcontainer/` into your repo for flexible, per-repo edits.
+- **templates/** = **SOURCE scaffolds** (Dev Container Templates per spec).  
+  Copy a `.devcontainer/` into your repo for flexible, per-repo edits.
 
-- **images/presets/** = **ARTIFACT contexts** used to **prebuild OCI images** (published to GHCR).
-  External workspaces reference these prebuilt images for **fast, identical starts** on Codespaces and local Docker.
+- **images/presets/** = **ARTIFACT build contexts** used to **prebuild OCI images** (published to GHCR).  
+  External workspaces reference these prebuilt images for **fast, identical starts** (Codespaces & local Docker).
 
-**Classroom tip:** Prefer **prebuilt lesson images** for students (fast start, no features to re-run). Instructors select services (Redis, Supabase, Kafka/KRaft, Airflow, Prefect, Dagster, Temporal, Webtop) and the generator emits an **aggregate compose** so the whole stack runs with one command.
+**Classroom tip:** Prefer **prebuilt lesson images** for students (no feature re-installs). Instructors select service fragments (Redis, Supabase, Kafka/KRaft, Airflow, Prefect, Dagster, Temporal, Webtop/CDP) and the generator emits an **aggregate compose** so the whole stack runs with one command.
+
+See: [docs/quick-start-fast-classroom.md](docs/quick-start-fast-classroom.md) · [docs/saas-edu-platform-vision.md](docs/saas-edu-platform-vision.md)
 
 ## Using stacks (templates)
 

@@ -1,0 +1,8 @@
+{
+  "version": "1.0.0",
+  "id": "classroom-chrome-cdp",
+  "name": "Classroom — Chrome CDP",
+  "description": "Headless Chrome with Browserless exposing a DevTools Protocol endpoint on ${CHROME_CDP_PORT:-3001}.",
+  "documentationURL": "https://github.com/airnub-labs/devcontainers-catalog",
+  "publisher": "airnub-labs"
+}
