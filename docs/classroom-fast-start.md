@@ -20,6 +20,8 @@ This writes two artifacts using a stable slug derived from `org-course-lesson`:
 
 - `images/presets/generated/<lesson-slug>/` — build context used to produce a lesson-specific image.
 - `templates/generated/<lesson-slug>/.devcontainer/devcontainer.json` — scaffold that references the published lesson image.
+- `images/presets/generated/<lesson-slug>/GENERATION_SUMMARY.md` — a recap of copied `.env` templates, required secrets, and resource hints.
+- `images/presets/generated/<lesson-slug>/secrets.placeholders.env` — copy to `.env` (or wire into Codespaces secrets) so services launch with the right credentials.
 - If services are requested, `docker-compose.classroom.yml` and `README-SERVICES.md` land beside the build context so instructors can launch every fragment with one command.
 
 ## 3. Build and Publish the Lesson Image
