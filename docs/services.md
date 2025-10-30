@@ -33,33 +33,31 @@ Generated lesson presets can opt into additional Docker Compose services by list
 - **Ports**: SMTP on 2500, web UI on 9000.
 - **Use Cases**: Pair with Supabase auth flows that send transactional emails.
 
-## Prefect
+## Prefect (Minimal Server)
 
 - **Compose**: `services/prefect/docker-compose.prefect.yml`
 - **Ports**: 4200 (Prefect UI)
-- **Env template**: Copy `.env.example-prefect` to `.env` to override API host or auth tokens.
-- **Notes**: Runs the Prefect 2 server; students can register flows from the generated lesson workspace.
+- **Workspace**: Mounts `./prefect` to persist CLI profiles. No database needed—ideal for short demos.
 
-## Apache Airflow
+## Apache Airflow (SequentialExecutor)
 
 - **Compose**: `services/airflow/docker-compose.airflow.yml`
 - **Ports**: 8080 (Airflow UI)
-- **Env template**: `.env.example-airflow` seeds admin credentials; copy to `.env` before launch.
-- **Persistence**: Named volumes store DAGs, logs, and Postgres data so the scheduler keeps history between restarts.
+- **Workspace**: Bind-mounts `./airflow` so DAGs live beside the generated preset. A default admin user (`admin` / `admin`) is created at boot.
 
-## Dagster
+## Dagster (dagster dev)
 
 - **Compose**: `services/dagster/docker-compose.dagster.yml`
 - **Ports**: 3000 (Dagster UI)
-- **Env template**: `.env.example-dagster` documents where to place pipeline-specific variables.
-- **Project scaffold**: `services/dagster/example_dagster_repo/` is a placeholder repo—replace it with the lesson’s Dagster project or mount a dedicated repository.
+- **Workspace**: Mounts `./dagster` and runs `dagster dev` against `workspace.yaml`, matching the lesson scaffold defaults.
 
-## Temporal
+## Temporal (Temporalite + UI)
 
 - **Compose**: `services/temporal/docker-compose.temporal.yml`
-- **Ports**: 7233 (gRPC), 8080 (Temporal UI)
-- **Env template**: `.env.example-temporal` exposes CORS overrides when you integrate custom front ends.
-- **Notes**: Uses Temporal’s auto-setup image with Postgres backing storage for a production-like control plane.
+- **Ports**: 7233 (gRPC), 8081 (Temporal UI)
+- **Workspace**: Single Temporalite container plus UI, safe for Codespaces and laptops. Health checks gate the UI until Temporalite is serving.
+
+Each fragment ships with a README describing expectations and how the aggregate compose bundles them. The generator copies these READMEs into the preset so instructors know what ports are in play when enabling multiple orchestrators together.
 
 ## Working with Fragments
 

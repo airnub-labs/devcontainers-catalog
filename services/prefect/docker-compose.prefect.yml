@@ -1,12 +1,18 @@
-version: "3.8"
+version: "3.9"
 services:
   prefect:
     image: prefecthq/prefect:2-latest
+    container_name: prefect
+    restart: unless-stopped
     command: ["prefect", "server", "start", "--host", "0.0.0.0"]
     ports:
-      - "${PREFECT_PORT:-4200}:4200"
+      - "4200:4200"   # Prefect UI
+    environment:
+      - PREFECT_DEBUG_MODE=false
+    volumes:
+      - ./prefect:/root/.prefect
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:4200/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:4200/"]
       interval: 10s
-      timeout: 3s
-      retries: 30
+      timeout: 5s
+      retries: 20

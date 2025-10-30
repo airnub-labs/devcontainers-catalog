@@ -1,14 +1,17 @@
-version: "3.8"
+version: "3.9"
 services:
   dagster:
-    image: dagster/dagster:1.7.20
-    command: ["dagster-webserver", "-h", "0.0.0.0", "-p", "3001", "-w", "/opt/dagster/app/workspace.yaml"]
+    image: dagster/dagster:1.6.15
+    container_name: dagster
+    restart: unless-stopped
+    # Expects a 'dagster' folder in workspace with a minimal workspace.yaml or a hello project.
+    command: ["dagster", "dev", "-h", "0.0.0.0", "-p", "3000", "-w", "/opt/dagster/app/workspace.yaml"]
     ports:
-      - "${DAGSTER_WEB_PORT:-3001}:3001"
+      - "3000:3000"   # Dagster UI
     volumes:
       - ./dagster:/opt/dagster/app
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:3001/server_info"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
       interval: 10s
-      timeout: 3s
-      retries: 30
+      timeout: 5s
+      retries: 20

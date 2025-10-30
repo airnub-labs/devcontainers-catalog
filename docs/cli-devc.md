@@ -1,90 +1,92 @@
 # devc — Dev Container Generator (education-agnostic, lesson-capable)
 
-`@airnub/devc` helps you:
-- Validate a manifest that describes a dev environment.
-- Generate a **prebuild context** (for a prebuilt image).
-- Generate a **workspace scaffold** that references the prebuilt image.
-- Assemble an **aggregate.compose.yml** that pulls in service fragments (Redis, Supabase, Kafka/KRaft, Temporal, Airflow, Prefect, Dagster).
+`@airnub/devc` hardens the catalog workflows while staying useful outside of education. It can:
 
-It’s useful for any developer. It also fully supports classroom “lessons” by treating lessons as a specific type of environment.
+- Validate manifests against the catalog schema (local checkout or remote ref).
+- Generate **prebuild contexts** and **workspace scaffolds** from any working directory.
+- Assemble and refresh `aggregate.compose.yml` bundles, copying or fetching service fragments on demand.
+- Patch existing workspaces with new services or extensions.
+- Build/push multi-arch images with `docker buildx --provenance=false`.
 
-## Install
+## Catalog discovery
 
-> When published to npm:
-```bash
-npm i -g @airnub/devc
-```
+The CLI no longer assumes you run it from the catalog. It locates catalog assets in three tiers:
 
-For local dev (repo checkout):
+1. `--catalog-root=/path/to/catalog` (explicit override).
+2. Auto-discovery by walking up from `cwd` for a checkout containing `schemas/` or `services/`.
+3. Remote fallback — downloads the pinned ref (default `main`) from GitHub into `~/.cache/airnub-devc/<ref>/`.
 
-```bash
-cd tools/airnub-devc
-npm install
-npm run build
-node dist/index.js --help
-```
+Related globals (available to every command):
 
-## Two common flows
-
-1. **Flexible Template Mode**
-
-   Copy a template from `templates/*` into your repo (uses Features; slower cold start, very flexible).
-
-2. **Fast Prebuilt Mode (recommended for classrooms)**
-
-   Use `devc generate` to produce a prebuild context and a scaffold that references the prebuilt image.
-
-   Build/push the image once; students start instantly with identical environments.
+- `--catalog-root <path>` — use a local checkout.
+- `--catalog-ref <ref>` — remote ref when a checkout is absent (defaults to `main`).
+- `--workspace-root <path>` — point at a workspace when not running from inside it.
 
 ## Commands
 
 ```
-devc validate <manifest>               # schema validation
-devc generate <manifest> [opts]        # emits images/presets/generated/<id> + templates/generated/<id>
-devc build --ctx <dir> --tag <tag>     # buildx multi-arch + push (provenance disabled)
-devc scaffold <manifest> --out <dir>   # copy a ready scaffold to an external repo
-devc doctor <manifest>                 # check service fragments presence (and optionally fetch)
+devc validate <manifest>
+    Schema validation for LessonEnv manifests.
+
+devc generate <manifest> [opts]
+    Emits images/presets/generated/<slug>/ and templates/generated/<slug>/ from any folder.
+
+devc scaffold <manifest> --out <dir>
+    Copies a ready-to-use scaffold (with aggregate compose + fragments) into another repo.
+
+devc build --ctx <dir> --tag <image>
+    Multi-arch buildx (linux/amd64, linux/arm64) with --provenance=false baked in.
+
+devc doctor <manifest>
+    Checks for missing service fragments locally or in the catalog cache.
+
+devc add service <name...>
+    Materialises service fragments inside an existing workspace and refreshes aggregate.compose.yml.
+
+devc add extension <extId...>
+    Idempotently appends VS Code extensions to .devcontainer/devcontainer.json.
+
+devc sync [--manifest <path>]
+    Rebuilds aggregate.compose.yml for the current workspace (from manifest or on-disk fragments).
 ```
 
-Key options:
+Service-aware commands respect `--fetch-missing-fragments` and `--fetch-ref <ref>` to pin remote fragment sources. When the CLI is operating from a remote catalog cache, fetching is enabled by default.
 
-- `--fetch-missing-fragments` fetches service fragments from the catalog repo if not found locally.
-- `--fetch-ref <ref>` pin raw fetch to a branch/tag/SHA (default: `main`).
-- `--force` allows overwriting existing generated directories.
+## Workspace vs. catalog mode
 
-## Manifest
+- **Catalog mode** — running from a checkout: outputs land in `images/presets/generated/` and `templates/generated/` relative to your `cwd`.
+- **Workspace mode** — running from `.devcontainer` directories: `devc add` and `devc sync` keep fragments under `.devcontainer/services/` and regenerate `aggregate.compose.yml` with consistent networks, profiles, and health checks.
 
-See `schemas/lesson-env.schema.json` and `examples/lesson-manifests/intro-ai-week02.yaml`.
+Both modes honour the “local = remote = low-power” contract: generated devcontainers reference prebuilt images, and service fragments are safe to run locally or in Codespaces without tweaks.
 
-## Secrets
-
-Never bake secrets into images. Use `.env.example`, Codespaces secrets, or your SaaS secure storage.
-
-Non-secret defaults can live in `.env.defaults`.
-
-## Local = Remote = Low-power
-
-Referencing a prebuilt image avoids feature re-installs and makes low-power devices (e.g., iPad) viable via hosted Dev Container providers.
-
----
-
-## Example runbook (what the CI will do locally)
+## Example runbook (CI-friendly)
 
 ```bash
-# Validate
-node tools/airnub-devc/dist/index.js validate examples/lesson-manifests/intro-ai-week02.yaml
+# Validate manifest using remote fallback (no checkout required)
+devc validate examples/lesson-manifests/intro-ai-week02.yaml --catalog-ref main
 
-# Generate both outputs
-node tools/airnub-devc/dist/index.js generate examples/lesson-manifests/intro-ai-week02.yaml --fetch-missing-fragments
+# Generate both outputs into ./out/ using the published catalog
+devc generate examples/lesson-manifests/intro-ai-week02.yaml \
+  --out-images ./out/images \
+  --out-templates ./out/templates \
+  --catalog-ref main
 
-# Build/push a throwaway tag (adjust to your GHCR)
-node tools/airnub-devc/dist/index.js build \
-  --ctx images/presets/generated/my-school-intro-ai-week02 \
+# Build and push a throwaway lesson image (multi-arch, provenance disabled)
+devc build \
+  --ctx ./out/images/my-school-intro-ai-week02 \
   --tag ghcr.io/airnub-labs/ci-e2e-sandboxes/my-school-intro-ai-week02:ubuntu-24.04
 
-# Scaffold for a classroom workspace repo
-node tools/airnub-devc/dist/index.js scaffold \
-  examples/lesson-manifests/intro-ai-week02.yaml \
-  --out ../my-classroom-workspace \
-  --fetch-missing-fragments
+# Patch an existing scaffold with Temporal + Prefect fragments
+cd templates/generated/my-school-intro-ai-week02
+
+# Copy fragments locally (fetching from the catalog cache if needed)
+devc add service temporal prefect
+
+devc sync
 ```
+
+## Guardrails recap
+
+- Never embed secrets; generated folders surface `.env.example` and `.env.defaults` when manifests request them.
+- `aggregate.compose.yml` always uses the `devnet` network and service-specific profiles for clean toggles.
+- Service fragments copied into workspaces match their catalog READMEs so instructors know expectations and ports.

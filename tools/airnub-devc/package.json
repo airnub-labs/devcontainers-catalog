@@ -23,6 +23,7 @@
     "execa": "^9.3.0",
     "fs-extra": "^11.2.0",
     "globby": "^14.0.2",
+    "tar": "^7.4.3",
     "yaml": "^2.6.0"
   },
   "devDependencies": {

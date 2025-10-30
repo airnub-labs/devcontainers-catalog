@@ -100,7 +100,7 @@ jobs:
                 -f services/prefect/docker-compose.prefect.yml
               )
               check_mode="http"
-              health_url="http://localhost:4200/api/health"
+              health_url="http://localhost:4200/"
               ;;
             airflow)
               compose_args=(
@@ -114,16 +114,14 @@ jobs:
                 -f services/dagster/docker-compose.dagster.yml
               )
               check_mode="http"
-              health_url="http://localhost:3001/server_info"
+              health_url="http://localhost:3000/"
               ;;
             temporal)
               compose_args=(
                 -f services/temporal/docker-compose.temporal.yml
-                -f services/temporal/docker-compose.temporal-admin.yml
               )
-              check_mode="exec"
-              check_service="temporal-admin"
-              check_cmd=(tctl cluster health)
+              check_mode="http"
+              health_url="http://localhost:8081/"
               ;;
             *)
               echo "Unknown service: $SERVICE" >&2
@@ -188,7 +186,6 @@ jobs:
             temporal)
               compose_args=(
                 -f services/temporal/docker-compose.temporal.yml
-                -f services/temporal/docker-compose.temporal-admin.yml
               )
               ;;
             *)

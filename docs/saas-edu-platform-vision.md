@@ -210,6 +210,21 @@ services:
 
 These examples are strictly for local development and teaching. Production setups need replication, security, and observability.
 
+### 7.4 Orchestrators (Airflow, Prefect, Dagster, Temporal)
+
+Instructors often want an orchestration control plane next to data stores and APIs. Minimal fragments keep these stacks lightweight so they run the same in Codespaces and on laptops:
+
+- **Airflow** — SequentialExecutor + SQLite with a seeded admin user. Mounts `./airflow` for DAGs and logs. (`services/airflow/d
+ocker-compose.airflow.yml`)
+- **Prefect** — Prefect 2 server with `./prefect` mapped to persist profiles. (`services/prefect/docker-compose.prefect.yml`)
+- **Dagster** — `dagster dev` backed by the lesson’s `./dagster/workspace.yaml`. (`services/dagster/docker-compose.dagster.yml`)
+- **Temporal** — Temporalite plus the Temporal UI (8081) with health checks and CORS allowances. (`services/temporal/docker-co
+mpose.temporal.yml`)
+
+The aggregate compose generator deduplicates networks/volumes and preserves health checks so these orchestrators can sit alongs
+ide Redis, Supabase, Kafka, or custom services without port conflicts. Temporal defaults to Temporalite for minimal setup while
+leaving room to add admin tooling later.
+
 ## 8. Local parity with Codespaces
 
 Design for identical behavior:
