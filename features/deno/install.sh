@@ -92,6 +92,20 @@ resolve_target() {
     esac
 }
 
+verify_sha256() {
+    local expected="$1"
+    local file="$2"
+
+    if command -v sha256sum >/dev/null 2>&1; then
+        printf '%s  %s\n' "${expected}" "${file}" | sha256sum --check --status
+    elif command -v shasum >/dev/null 2>&1; then
+        printf '%s  %s\n' "${expected}" "${file}" | shasum -a 256 --check --status
+    else
+        echo "[deno] Neither sha256sum nor shasum is available for checksum verification." >&2
+        return 1
+    fi
+}
+
 install_deno() {
     local requested
     requested=$(normalize_version "${VERSION}")
@@ -130,6 +144,25 @@ install_deno() {
     echo "[deno] Downloading ${url}"
     if ! curl -fsSL "${url}" -o "${tmp_dir}/deno.zip"; then
         echo "[deno] Failed to download ${url}" >&2
+        exit 1
+    fi
+
+    local sums_url="https://dl.deno.land/release/${requested}/SHA256SUMS"
+    local sums_file="${tmp_dir}/SHA256SUMS"
+    if ! curl -fsSL "${sums_url}" -o "${sums_file}"; then
+        echo "[deno] Failed to download ${sums_url}" >&2
+        exit 1
+    fi
+
+    local expected
+    expected=$(awk -v target="deno-${target}.zip" '$2 == target {print $1}' "${sums_file}")
+    if [ -z "${expected}" ]; then
+        echo "[deno] Unable to locate checksum for deno-${target}.zip in ${sums_url}" >&2
+        exit 1
+    fi
+
+    if ! verify_sha256 "${expected}" "${tmp_dir}/deno.zip"; then
+        echo "[deno] Checksum verification failed for deno-${target}.zip" >&2
         exit 1
     fi
 

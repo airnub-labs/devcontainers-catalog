@@ -116,6 +116,20 @@ check:
 	@[ -f schemas/lesson-env.schema.json ] || (echo "[fail] schema missing" && exit 1)
 	$(PYTHON) scripts/validate_lessons.py
 	$(MAKE) gen-all
+	if command -v npm >/dev/null 2>&1; then \
+		npm --prefix tools/airnub-devc ci; \
+		npm --prefix tools/airnub-devc test; \
+	else \
+		echo "[warn] npm not available; skipping CLI unit tests"; \
+	fi
+	if command -v shellcheck >/dev/null 2>&1; then \
+		SHELL_FILES="$$(git ls-files '*.sh' '*.bash' 2>/dev/null)"; \
+		if [ -n "$$SHELL_FILES" ]; then \
+			shellcheck $$SHELL_FILES; \
+		fi; \
+	else \
+		echo "[warn] shellcheck not installed; skipping shell lint"; \
+	fi
 	if ! command -v docker >/dev/null 2>&1; then \\
 		echo "docker not available; skipping docker compose validation"; \\
 	else \\
