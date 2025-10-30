@@ -1,0 +1,8 @@
+{
+  "version": "1.0.0",
+  "id": "classroom-linux-chrome",
+  "name": "Classroom — Linux Chrome",
+  "description": "Headful Chrome container wiring (placeholder) for classrooms that need a managed browser sidecar.",
+  "documentationURL": "https://github.com/airnub-labs/devcontainers-catalog",
+  "publisher": "airnub-labs"
+}

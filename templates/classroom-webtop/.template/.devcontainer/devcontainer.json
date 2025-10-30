@@ -1,0 +1,17 @@
+{
+  "name": "Classroom — Webtop (Desktop via Browser)",
+  "dockerComposeFile": [
+    "../docker-compose.yml",
+    "../../../../services/webtop/docker-compose.webtop.yml"
+  ],
+  "service": "devcontainer",
+  "runServices": ["webtop"],
+  "workspaceFolder": "/work",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "remote.downloadExtensionsLocally": "always"
+      }
+    }
+  }
+}

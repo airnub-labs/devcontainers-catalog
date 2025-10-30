@@ -1,0 +1,17 @@
+{
+  "name": "Classroom — Linux Chrome (Headful)",
+  "dockerComposeFile": [
+    "../docker-compose.yml",
+    "../../../../services/linux-chrome/docker-compose.linux-chrome.yml"
+  ],
+  "service": "devcontainer",
+  "runServices": ["linux-chrome"],
+  "workspaceFolder": "/work",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "remote.downloadExtensionsLocally": "always"
+      }
+    }
+  }
+}

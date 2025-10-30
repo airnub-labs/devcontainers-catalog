@@ -91,37 +91,39 @@ jobs:
               compose_args=(
                 -f services/redis/docker-compose.redis.yml
               )
+              check_mode="exec"
               check_service="redis"
-              check_cmd="redis-cli ping"
+              check_cmd=(redis-cli ping)
               ;;
             prefect)
               compose_args=(
                 -f services/prefect/docker-compose.prefect.yml
               )
-              check_service="prefect"
-              check_cmd="prefect --version"
+              check_mode="http"
+              health_url="http://localhost:4200/api/health"
               ;;
             airflow)
               compose_args=(
                 -f services/airflow/docker-compose.airflow.yml
               )
-              check_service="airflow"
-              check_cmd="airflow db check"
+              check_mode="http"
+              health_url="http://localhost:8080/health"
               ;;
             dagster)
               compose_args=(
                 -f services/dagster/docker-compose.dagster.yml
               )
-              check_service="dagster"
-              check_cmd="dagster --version"
+              check_mode="http"
+              health_url="http://localhost:3001/server_info"
               ;;
             temporal)
               compose_args=(
                 -f services/temporal/docker-compose.temporal.yml
                 -f services/temporal/docker-compose.temporal-admin.yml
               )
+              check_mode="exec"
               check_service="temporal-admin"
-              check_cmd="tctl cluster health"
+              check_cmd=(tctl cluster health)
               ;;
             *)
               echo "Unknown service: $SERVICE" >&2
@@ -133,16 +135,23 @@ jobs:
           docker compose "${compose_args[@]}" up -d
 
           attempt=0
-          until [ $attempt -ge 12 ]; do
-            if docker compose "${compose_args[@]}" exec -T "$check_service" $check_cmd >/tmp/smoke.log 2>&1; then
-              cat /tmp/smoke.log
-              break
+          until [ $attempt -ge 18 ]; do
+            if [ "$check_mode" = "http" ]; then
+              if curl -fsS "$health_url" >/tmp/smoke.log 2>&1; then
+                cat /tmp/smoke.log
+                break
+              fi
+            else
+              if docker compose "${compose_args[@]}" exec -T "$check_service" "${check_cmd[@]}" >/tmp/smoke.log 2>&1; then
+                cat /tmp/smoke.log
+                break
+              fi
             fi
             attempt=$((attempt + 1))
-            sleep 10
+            sleep 5
           done
 
-          if [ $attempt -ge 12 ]; then
+          if [ $attempt -ge 18 ]; then
             echo "Service $SERVICE did not pass smoke check" >&2
             docker compose "${compose_args[@]}" logs
             exit 1

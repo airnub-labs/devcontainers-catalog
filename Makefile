@@ -109,17 +109,29 @@ $(addprefix push-,$(PRESETS)):
 
 
 check:
+	@echo "Schema + lints + generator dry-run"
+	@command -v jq >/dev/null 2>&1 || echo "[warn] jq not installed"
+	@command -v yq >/dev/null 2>&1 || echo "[warn] yq not installed"
+	@[ -f schemas/lesson-env.schema.json ] || (echo "[fail] schema missing" && exit 1)
 	$(PYTHON) scripts/validate_lessons.py
 	$(MAKE) gen-all
-	if ! command -v docker >/dev/null 2>&1; then \
-	echo "docker not available; skipping docker compose validation"; \
-	else \
-	for manifest in $(LESSON_MANIFESTS); do \
-	slug=$$($(PYTHON) scripts/manifest_slug.py $$manifest); \
-	compose_file="images/presets/generated/$$slug/docker-compose.classroom.yml"; \
-	if [ -f "$$compose_file" ]; then \
-	echo "[check] docker compose config $$compose_file"; \
-	docker compose -f "$$compose_file" config >/dev/null; \
-	fi; \
-	done; \
+	if ! command -v docker >/dev/null 2>&1; then \\
+		echo "docker not available; skipping docker compose validation"; \\
+	else \\
+		for manifest in $(LESSON_MANIFESTS); do \\
+			slug=$$($(PYTHON) scripts/manifest_slug.py $$manifest); \\
+			compose_file="images/presets/generated/$$slug/docker-compose.classroom.yml"; \\
+			if [ -f "$$compose_file" ]; then \\
+				echo "[check] docker compose config $$compose_file"; \\
+				docker compose -f "$$compose_file" config >/dev/null; \\
+			fi; \\
+			done; \\
 	fi
+
+.PHONY: stack-up stack-down
+stack-up:
+	REDIS?=0 SUPABASE?=0 KAFKA?=0 AIRFLOW?=0 PREFECT?=0 DAGSTER?=0 TEMPORAL?=0 WEBTOP?=0 CHROME_CDP?=0 \\
+	bash scripts/compose_aggregate.sh
+
+stack-down:
+	docker compose down || true
