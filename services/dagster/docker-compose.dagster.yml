@@ -1,57 +1,14 @@
-version: "3.9"
+version: "3.8"
 services:
-  dagster-postgres:
-    image: postgres:13
-    environment:
-      POSTGRES_USER: dagster
-      POSTGRES_PASSWORD: dagster
-      POSTGRES_DB: dagster
-    volumes:
-      - dagster-db-data:/var/lib/postgresql/data
-    networks: [classroom]
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dagster"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-
-  dagster-webserver:
-    image: dagster/dagster:1.7.14
-    command: dagster-webserver -h 0.0.0.0 -p 3000
-    environment:
-      DAGSTER_PG_USERNAME: dagster
-      DAGSTER_PG_PASSWORD: dagster
-      DAGSTER_PG_DB: dagster
-      DAGSTER_PG_HOST: dagster-postgres
-    volumes:
-      - dagster-home:/opt/dagster/home
-      - ./example_dagster_repo:/opt/dagster/app
+  dagster:
+    image: dagster/dagster:1.7.20
+    command: ["dagster-webserver", "-h", "0.0.0.0", "-p", "3001", "-w", "/opt/dagster/app/workspace.yaml"]
     ports:
-      - "3000:3000"
-    depends_on:
-      dagster-postgres:
-        condition: service_healthy
-    networks: [classroom]
-
-  dagster-daemon:
-    image: dagster/dagster:1.7.14
-    command: dagster-daemon run
-    environment:
-      DAGSTER_PG_USERNAME: dagster
-      DAGSTER_PG_PASSWORD: dagster
-      DAGSTER_PG_DB: dagster
-      DAGSTER_PG_HOST: dagster-postgres
+      - "${DAGSTER_WEB_PORT:-3001}:3001"
     volumes:
-      - dagster-home:/opt/dagster/home
-      - ./example_dagster_repo:/opt/dagster/app
-    depends_on:
-      dagster-postgres:
-        condition: service_healthy
-    networks: [classroom]
-
-volumes:
-  dagster-db-data:
-  dagster-home:
-
-networks:
-  classroom: { name: classroom }
+      - ./dagster:/opt/dagster/app
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3001/server_info"]
+      interval: 10s
+      timeout: 3s
+      retries: 30

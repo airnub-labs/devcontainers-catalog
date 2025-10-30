@@ -9,6 +9,7 @@ dist/
 # Local overrides
 .env
 .env.*
+!.env.example
 !services/**/.env.example
 !services/**/.env.example-*
 

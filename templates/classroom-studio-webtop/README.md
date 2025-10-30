@@ -5,3 +5,5 @@ Multi-container template featuring a headless development container plus a `linu
 - Pick whether the webtop mounts managed Chrome policies (`policyMode`).
 - Override the policy file that gets mounted via `chromePolicies` (leave blank to follow the selected policy mode).
 - Adjust the forwarded desktop port (`webtopPort`).
+
+The template composes the catalog's shared [`services/webtop`](../../services/webtop/docker-compose.webtop.yml) fragment and starts the `webtop` container alongside the primary `devcontainer` service. Access the desktop via `http://localhost:<webtopPort>` (defaults to `3000`).
