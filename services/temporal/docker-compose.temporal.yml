@@ -21,15 +21,14 @@ services:
     environment:
       TEMPORAL_ADDRESS: "temporal:7233"
       TEMPORAL_GRPC_ENDPOINT: "temporal:7233"
-      TEMPORAL_WEB_PORT: "${TEMPORAL_UI_PORT:-8233}"
       # Disable auth for local dev
       TEMPORAL_AUTH_ENABLED: "false"
     depends_on:
       - temporal
     ports:
-      - "${TEMPORAL_UI_PORT:-8233}:8233"
+      - "${TEMPORAL_UI_PORT:-8233}:8080"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8233/health | grep -q 'ok' || wget -qO- http://localhost:8233/ | grep -qi temporal"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health | grep -q 'ok' || wget -qO- http://localhost:8080/ | grep -qi temporal"]
       interval: 10s
       timeout: 5s
       retries: 30
