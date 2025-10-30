@@ -1,19 +1,17 @@
 {
   "name": "classroom-studio-webtop",
-  "build": {
-    "dockerfile": "Dockerfile",
-    "context": "."
+  "dockerComposeFile": [
+    "./compose.yaml"
+  ],
+  "service": "dev",
+  "runServices": ["dev", "webtop"],
+  "workspaceFolder": "/workspaces",
+  "containerEnv": {
+    "CHROME_POLICY_SOURCE": "{{templateOption.chromePolicies}}"
   },
-  "features": {
-    "ghcr.io/airnub-labs/devcontainer-features/chrome-cdp:1": {
-      "channel": "stable",
-      "port": 9225
-    },
-    "ghcr.io/airnub-labs/devcontainer-features/agent-tooling-clis:1": {}
-  },
-  "forwardPorts": [9225],
+  "forwardPorts": ["{{templateOption.webtopPort}}"],
   "portsAttributes": {
-    "9225": { "label": "Chrome DevTools" }
+    "{{templateOption.webtopPort}}": { "label": "Classroom Webtop" }
   },
   "postCreateCommand": "bash .devcontainer/postCreate.sh",
   "customizations": {

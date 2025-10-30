@@ -1,4 +1,5 @@
-SHELL := /bin/bash
+SHELL := /usr/bin/env bash
+.SHELLFLAGS := -eu -o pipefail -c
 .ONESHELL:
 
 REGISTRY ?= ghcr.io/airnub-labs/templates
@@ -58,7 +59,6 @@ gen-all:
 	done
 
 lesson-build: gen
-	set -euo pipefail; \
 	export BUILDKIT_COLLECT_BUILD_INFO=1; \
 	export BUILDKIT_SBOM_SCAN_STAGE=export; \
 	devcontainer build \
@@ -67,7 +67,6 @@ lesson-build: gen
 	  --build-arg GIT_SHA=$(GIT_SHA)
 
 lesson-push: gen
-	set -euo pipefail; \
 	export BUILDKIT_COLLECT_BUILD_INFO=1; \
 	export BUILDKIT_SBOM_SCAN_STAGE=export; \
 	devcontainer build \
@@ -87,13 +86,13 @@ lesson-scaffold: gen
 	cp -a templates/generated/$(LESSON_SLUG)/. "$(DEST)/"
 	@echo "[ok] Scaffold copied to $(DEST)"
 
+
 compose-aggregate: gen
-	set -euo pipefail; \
 	src="images/presets/generated/$(LESSON_SLUG)"; \
 	bundle="${DEST:-$(COMPOSE_BUNDLE)}"; \
 	if [ ! -f "$$src/docker-compose.classroom.yml" ]; then \
-		echo "[warn] No aggregate compose emitted for $(LESSON_SLUG)"; \
-		exit 0; \
+	        echo "[warn] No aggregate compose emitted for $(LESSON_SLUG)"; \
+	        exit 0; \
 	fi; \
 	install -d "$$bundle"; \
 	cp "$$src/docker-compose.classroom.yml" "$$bundle/"; \
@@ -106,8 +105,8 @@ $(addprefix build-,$(PRESETS)):
 $(addprefix push-,$(PRESETS)):
 	devcontainer build --workspace-folder images/presets/$(@:push-%=%) --image-name $(REGISTRY)/$(@:push-%=%):$(TAG) --push
 
+
 check:
-	set -euo pipefail
 	$(PYTHON) scripts/validate_lessons.py
 	$(MAKE) gen-all
 	if ! command -v docker >/dev/null 2>&1; then \
