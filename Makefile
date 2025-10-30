@@ -1,6 +1,8 @@
 SHELL := /usr/bin/env bash
-.SHELLFLAGS := -eu -o pipefail -c
+.SHELLFLAGS := -euo pipefail -c
 .ONESHELL:
+MAKEFLAGS += --no-builtin-rules
+.SUFFIXES:
 
 REGISTRY ?= ghcr.io/airnub-labs/templates
 TAG      ?= ubuntu-24.04

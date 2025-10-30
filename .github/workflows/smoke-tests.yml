@@ -108,7 +108,7 @@ jobs:
               check_cmd="dagster --version"
               ;;
             temporal)
-              file="services/temporal/docker-compose.temporal.yml"
+              file="services/temporal/docker-compose.temporal.yml:services/temporal/docker-compose.temporal-admin.yml"
               check_service="temporal-admin-tools"
               check_cmd="tctl cluster health"
               ;;
@@ -150,7 +150,7 @@ jobs:
             prefect) file="services/prefect/docker-compose.prefect.yml" ;;
             airflow) file="services/airflow/docker-compose.airflow.yml" ;;
             dagster) file="services/dagster/docker-compose.dagster.yml" ;;
-            temporal) file="services/temporal/docker-compose.temporal.yml" ;;
+            temporal) file="services/temporal/docker-compose.temporal.yml:services/temporal/docker-compose.temporal-admin.yml" ;;
             *) exit 0 ;;
           esac
           export COMPOSE_FILE="$file"

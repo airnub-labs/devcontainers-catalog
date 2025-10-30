@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+  temporal-admin-tools:
+    image: temporalio/admin-tools:1.25.0
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+    entrypoint: ["/bin/sh", "-lc"]
+    command: ["sleep infinity"]
+    depends_on:
+      - temporal
+    networks: [classroom]
+
+networks:
+  classroom: { name: classroom }

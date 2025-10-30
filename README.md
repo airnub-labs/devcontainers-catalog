@@ -15,10 +15,15 @@
 - `images/dev-base/` — A thin base on top of `mcr.microsoft.com/devcontainers/base` with overridable build args.
 - `docs/` — Guides, architecture notes, and CI examples.
 
-### Source vs Artifact (mental model)
+## Source vs Artifact (Templates vs Presets)
 
-- **templates/** = SOURCE (scaffold you copy). Great when each repo needs flexibility.
-- **images/presets/** = ARTIFACT (prebuilt image you pull). Great when you want the fastest start (e.g., Codespaces for classrooms, workshops, or CI).
+- **templates/** = **SOURCE scaffolds** (Dev Container Templates per spec).
+  Use these to *copy* a `.devcontainer/` into your repo for flexible, per-repo edits.
+
+- **images/presets/** = **ARTIFACT contexts** used to **prebuild OCI images** (published to GHCR).
+  External workspaces reference these prebuilt images for **fast, identical starts** on Codespaces and local Docker.
+
+**Classroom tip:** Prefer **prebuilt lesson images** for students (fast start, no features to re-run). Instructors select services (Redis, Supabase, Kafka/KRaft, Airflow, Prefect, Dagster, Temporal, Webtop) and the generator emits an **aggregate compose** so the whole stack runs with one command.
 
 ## Using stacks (templates)
 
