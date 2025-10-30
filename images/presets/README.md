@@ -7,6 +7,10 @@ Prebuildable `devcontainer.json` presets that lean on Features instead of baking
 - `node-pnpm`: Adds Node.js 24 via the official Feature, enables pnpm (with a shared volume-backed store), and installs common web extensions.
 - `python`: Installs Python 3.12 and JupyterLab via the Python Feature with matching VS Code extensions.
 - `full`: Combines the Node + pnpm and Python Features for full-stack work.
+- `python-prefect`: Adds Prefect orchestration tooling and pins ports/health checks for classroom demos.
+- `python-airflow`: Packages Airflow SequentialExecutor + UI defaults with health checks and env placeholders.
+- `python-dagster`: Ships Dagster dev server wiring with workspace mounts ready for generated lessons.
+- `ts-temporal`: Bundles the Temporal TypeScript SDK environment for worker development against the `temporal` service fragment.
 
 ## Prebuilding locally
 

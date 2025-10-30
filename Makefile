@@ -1,5 +1,6 @@
 SHELL := /usr/bin/env bash
-.SHELLFLAGS := -euo pipefail -c
+.SHELLFLAGS := -Eeuo pipefail -c
+.SHELL := /usr/bin/env bash
 .ONESHELL:
 MAKEFLAGS += --no-builtin-rules
 .SUFFIXES:

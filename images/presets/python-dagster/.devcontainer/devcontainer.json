@@ -1,5 +1,6 @@
 {
   "name": "Python + Dagster",
+  "remoteUser": "vscode",
   "build": {
     "dockerfile": "../Dockerfile",
     "context": "..",

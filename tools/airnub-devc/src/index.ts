@@ -4,7 +4,7 @@ import path from "path";
 import fs from "fs-extra";
 import chalk from "chalk";
 import { loadManifest, loadSchema } from "./lib/schema.js";
-import { buildAndPushImage } from "./lib/build.js";
+import { buildImage } from "./lib/build.js";
 import {
   generatePresetBuildContext,
   generateWorkspaceScaffold,
@@ -14,6 +14,8 @@ import { resolveCatalog, CatalogContext } from "./lib/catalog.js";
 import { discoverWorkspaceRoot } from "./lib/fsutil.js";
 import { buildAggregateCompose, readAggregateMetadata } from "./lib/compose.js";
 import { materializeServices, listServiceDirs } from "./lib/services.js";
+import { LessonEnv } from "./types.js";
+import { execa } from "execa";
 
 interface GlobalOptions {
   catalogRoot?: string;
@@ -56,6 +58,27 @@ function defaultFetchRef(optionRef: string | undefined, globals: GlobalOptions, 
   return optionRef || globals.catalogRef || (catalog.mode === "remote" ? catalog.ref : "main");
 }
 
+function canonicalLessonTag(manifest: LessonEnv, version: string) {
+  const slug = idFromManifest(manifest);
+  const base = (manifest.spec.image_tag_strategy || "ubuntu-24.04").replace(/[^a-z0-9.-]+/gi, "-");
+  return `ghcr.io/airnub-labs/templates/lessons/${slug}:${base}-${slug}-${version}`;
+}
+
+function assertTagPolicy(tag: string, manifest: LessonEnv | undefined, version: string) {
+  const match = tag.match(/^ghcr\.io\/airnub-labs\/templates\/lessons\/[a-z0-9-]+:[a-z0-9.-]+-[a-z0-9-]+-v[0-9a-z.-]+$/i);
+  if (!match) {
+    throw new Error(
+      "Tag must follow ghcr.io/airnub-labs/templates/lessons/<slug>:<base>-<slug>-v<iteration>",
+    );
+  }
+  if (manifest) {
+    const expected = canonicalLessonTag(manifest, version);
+    if (expected !== tag) {
+      throw new Error(`Tag '${tag}' does not match canonical '${expected}'. Override --version or manifest metadata.`);
+    }
+  }
+}
+
 const program = new Command();
 program
   .name("devc")
@@ -89,7 +112,8 @@ program
   .option("--fetch-missing-fragments", "fetch service fragments from catalog if missing")
   .option("--fetch-ref <ref>", "branch/tag/SHA for fragment fetch")
   .option("--force", "overwrite existing generated directories", false)
-  .action(async function (this: Command, manifestPath, opts) {
+  .option("--git-sha <sha>", "git revision stamped into labels", process.env.GITHUB_SHA || process.env.GIT_SHA)
+  .action(async function (this: Command, manifestPath: string, opts: Record<string, any>) {
     await withCatalog(this, async (catalog, globals) => {
       const validate = await loadSchema(catalog.root);
       const manifest = await loadManifest(manifestPath);
@@ -112,6 +136,7 @@ program
       const scaffoldOutDir = path.join(templatesBase, id);
       const fetchMissing = opts.fetchMissingFragments ?? catalog.mode === "remote";
       const fetchRef = defaultFetchRef(opts.fetchRef, globals, catalog);
+      const gitSha = opts.gitSha || process.env.GIT_SHA || process.env.GITHUB_SHA || catalog.ref;
 
       const presetResult = await generatePresetBuildContext({
         repoRoot: catalog.root,
@@ -121,6 +146,7 @@ program
         fetchMissingFragments: fetchMissing,
         fetchRef,
         catalogRef: catalog.ref,
+        gitSha,
       });
 
       const scaffoldResult = await generateWorkspaceScaffold({
@@ -131,6 +157,7 @@ program
         fetchMissingFragments: fetchMissing,
         fetchRef,
         catalogRef: catalog.ref,
+        gitSha,
       });
 
       console.log(chalk.green("Generated:"));
@@ -142,9 +169,60 @@ program
 program
   .command("build")
   .requiredOption("--ctx <dir>", "generated preset context dir")
-  .requiredOption("--tag <imageTag>", "ghcr tag, e.g., ghcr.io/airnub-labs/templates/lessons/foo:ubuntu-24.04")
-  .action(async (opts) => {
-    await buildAndPushImage(opts.ctx, opts.tag);
+  .requiredOption(
+    "--tag <imageTag>",
+    "ghcr tag, ghcr.io/airnub-labs/templates/lessons/<slug>:<base>-<slug>-v<iteration>",
+  )
+  .option("--manifest <path>", "lesson manifest to validate tag policy")
+  .option("--version <v>", "lesson iteration (v-prefixed)", "v1")
+  .option("--push", "push the resulting image", false)
+  .option("--oci-output <dir>", "directory to store OCI archive when not pushing")
+  .option("--platforms <list>", "override build platforms", "linux/amd64,linux/arm64")
+  .option("--git-sha <sha>", "git revision used for provenance", process.env.GITHUB_SHA || process.env.GIT_SHA)
+  .action(async function (this: Command, opts: Record<string, any>) {
+    await withCatalog(this, async (catalog) => {
+      const version = opts.version || "v1";
+      if (!/^v[0-9][0-9a-z.-]*$/i.test(version)) {
+        throw new Error("--version must look like v1 or v1.2");
+      }
+
+      let manifest: LessonEnv | undefined;
+      if (opts.manifest) {
+        const validate = await loadSchema(catalog.root);
+        const loaded = (await loadManifest(opts.manifest)) as LessonEnv;
+        if (!validate(loaded)) {
+          console.error(chalk.red("Schema validation errors:"));
+          console.error(validate.errors);
+          process.exit(1);
+        }
+        manifest = loaded;
+      }
+
+      assertTagPolicy(opts.tag, manifest, version);
+
+      if (opts.gitSha && !/^[0-9a-f]{7,40}$/i.test(opts.gitSha)) {
+        console.warn(chalk.yellow(`git sha '${opts.gitSha}' does not look like a commit hash.`));
+      }
+      if (!opts.gitSha) {
+        console.warn(chalk.yellow("No --git-sha provided; downstream workflows should pass GIT_SHA for labeling."));
+      }
+
+      const ctxDir = path.isAbsolute(opts.ctx) ? opts.ctx : path.resolve(process.cwd(), opts.ctx);
+      const outputDir = opts.ociOutput ? path.resolve(process.cwd(), opts.ociOutput) : undefined;
+
+      await buildImage({
+        ctxDir,
+        tag: opts.tag,
+        push: !!opts.push,
+        outputDir,
+        platforms: opts.platforms,
+      });
+
+      if (!opts.push && outputDir) {
+        console.log(chalk.green(`OCI archive written to ${outputDir}`));
+      }
+      console.log(chalk.green(`Build complete for ${opts.tag}`));
+    });
   });
 
 program
@@ -154,7 +232,8 @@ program
   .option("--fetch-missing-fragments", "fetch service fragments if missing")
   .option("--fetch-ref <ref>", "branch/tag/SHA for fragment fetch")
   .option("--force", "overwrite target directory", false)
-  .action(async function (this: Command, manifestPath, opts) {
+  .option("--git-sha <sha>", "git revision stamped into labels", process.env.GITHUB_SHA || process.env.GIT_SHA)
+  .action(async function (this: Command, manifestPath: string, opts: Record<string, any>) {
     await withCatalog(this, async (catalog, globals) => {
       const validate = await loadSchema(catalog.root);
       const manifest = await loadManifest(manifestPath);
@@ -170,6 +249,7 @@ program
       const tmpOut = path.join(tmpRoot, "scaffold");
       const fetchMissing = opts.fetchMissingFragments ?? catalog.mode === "remote";
       const fetchRef = defaultFetchRef(opts.fetchRef, globals, catalog);
+      const gitSha = opts.gitSha || process.env.GIT_SHA || process.env.GITHUB_SHA || catalog.ref;
 
       try {
         const result = await generateWorkspaceScaffold({
@@ -180,6 +260,7 @@ program
           fetchMissingFragments: fetchMissing,
           fetchRef,
           catalogRef: catalog.ref,
+          gitSha,
         });
 
         await fs.copy(result.outDir, resolvedOut, {
@@ -198,47 +279,94 @@ program
   .command("doctor")
   .argument("<manifest>", "path to manifest")
   .option("--fetch-missing-fragments", "attempt to fetch missing service fragments")
-  .action(async function (this: Command, manifestPath, opts) {
+  .option("--tag <tag>", "lesson image tag to validate")
+  .option("--version <v>", "expected lesson iteration", "v1")
+  .action(async function (this: Command, manifestPath: string, opts: Record<string, any>) {
     await withCatalog(this, async (catalog) => {
       const validate = await loadSchema(catalog.root);
-      const manifest = await loadManifest(manifestPath);
+      const manifest = (await loadManifest(manifestPath)) as LessonEnv;
       if (!validate(manifest)) {
         console.error(chalk.red("Schema validation errors:"));
         console.error(validate.errors);
         process.exit(1);
       }
 
+      const version = opts.version || "v1";
+      if (!/^v[0-9][0-9a-z.-]*$/i.test(version)) {
+        throw new Error("--version must look like v1 or v2.1");
+      }
+
+      if (opts.tag) {
+        try {
+          assertTagPolicy(opts.tag, manifest, version);
+          console.log(chalk.green(`Tag '${opts.tag}' matches manifest metadata.`));
+        } catch (error) {
+          if (error instanceof Error) {
+            console.error(chalk.red(error.message));
+          }
+          process.exit(1);
+        }
+      }
+
+      const canonicalTag = canonicalLessonTag(manifest, version);
+      console.log(chalk.blue(`Canonical tag: ${canonicalTag}`));
+
+      const presetPath = path.join(catalog.root, "images", "presets", manifest.spec.base_preset);
+      if (!await fs.pathExists(presetPath)) {
+        console.warn(
+          chalk.yellow(
+            `Preset '${manifest.spec.base_preset}' not found under images/presets. Run devc generate with --fetch-missing-fragments.`,
+          ),
+        );
+      } else {
+        console.log(chalk.green(`Preset '${manifest.spec.base_preset}' located.`));
+      }
+
       const services = manifestServiceNames(manifest);
       if (!services.length) {
         console.log(chalk.yellow("No services requested — nothing to doctor."));
-        return;
-      }
-
-      const searchRoots = [path.join(process.cwd(), "services"), path.join(catalog.root, "services")];
-      const missing: string[] = [];
-      for (const svc of services) {
-        let present = false;
-        for (const root of searchRoots) {
-          const dir = path.join(root, svc);
-          if (await fs.pathExists(dir)) {
-            present = true;
-            break;
+      } else {
+        const searchRoots = [path.join(process.cwd(), "services"), path.join(catalog.root, "services")];
+        const missing: string[] = [];
+        for (const svc of services) {
+          let present = false;
+          for (const root of searchRoots) {
+            const dir = path.join(root, svc);
+            if (await fs.pathExists(dir)) {
+              present = true;
+              break;
+            }
+          }
+          if (!present) {
+            missing.push(svc);
           }
         }
-        if (!present) {
-          missing.push(svc);
+
+        if (missing.length) {
+          console.warn(chalk.yellow("Missing service fragments:"), missing.join(", "));
+          if (!opts.fetchMissingFragments) {
+            console.warn("Run with --fetch-missing-fragments or add them under services/.");
+          } else {
+            console.warn("Fragments will be fetched from the catalog during generation.");
+          }
+        } else {
+          console.log(chalk.green("All requested service fragments appear present."));
+          for (const svc of services) {
+            const pathsToCheck = searchRoots.map((root) => path.join(root, svc, ".env.example"));
+            if (!pathsToCheck.some((candidate) => fs.existsSync(candidate))) {
+              console.warn(chalk.yellow(`Consider adding .env.example for service '${svc}' to document credentials.`));
+            }
+          }
         }
       }
 
-      if (missing.length) {
-        console.warn(chalk.yellow("Missing service fragments:"), missing.join(", "));
-        if (!opts.fetchMissingFragments) {
-          console.warn("Run with --fetch-missing-fragments or add them under services/.");
-        } else {
-          console.warn("Fragments will be fetched from the catalog during generation.");
-        }
-      } else {
-        console.log(chalk.green("All requested service fragments appear present."));
+      try {
+        await execa("docker", ["buildx", "version"], { stdio: "pipe" });
+        console.log(chalk.green("docker buildx is available."));
+      } catch {
+        console.warn(
+          chalk.yellow("docker buildx not available; multi-arch builds will fail. Install Docker Buildx extensions."),
+        );
       }
     });
   });
@@ -250,7 +378,7 @@ addCmd
   .argument("<name...>", "service fragment(s) to add")
   .option("--fetch-missing-fragments", "download missing fragments from catalog", true)
   .option("--fetch-ref <ref>", "catalog ref to use when fetching")
-  .action(async function (this: Command, names: string[], opts) {
+  .action(async function (this: Command, names: string[], opts: Record<string, any>) {
     await withCatalog(this, async (catalog, globals) => {
       const workspaceRoot = resolveWorkspace(globals);
       const devDir = path.join(workspaceRoot, ".devcontainer");
@@ -264,6 +392,8 @@ addCmd
         repoRoot: catalog.root,
         fetchIfMissing: fetchMissing,
         searchRoots: [path.join(workspaceRoot, "services")],
+        fetchRef,
+        catalogRef: catalog.ref,
       });
 
       const aggregatePath = path.join(devDir, "aggregate.compose.yml");
@@ -310,7 +440,7 @@ program
   .option("--manifest <path>", "manifest to derive services from")
   .option("--fetch-missing-fragments", "download missing fragments from catalog")
   .option("--fetch-ref <ref>", "catalog ref to use when fetching")
-  .action(async function (this: Command, opts) {
+  .action(async function (this: Command, opts: Record<string, any>) {
     await withCatalog(this, async (catalog, globals) => {
       const workspaceRoot = resolveWorkspace(globals);
       const devDir = path.join(workspaceRoot, ".devcontainer");
@@ -344,6 +474,8 @@ program
         repoRoot: catalog.root,
         fetchIfMissing: fetchMissing,
         searchRoots: [path.join(workspaceRoot, "services")],
+        fetchRef,
+        catalogRef: catalog.ref,
       });
 
       await buildAggregateCompose({

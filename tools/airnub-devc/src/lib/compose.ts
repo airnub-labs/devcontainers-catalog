@@ -23,7 +23,7 @@ interface LoadedFragment {
   networks: Record<string, any>;
 }
 
-async function locateFragmentFile(baseDir: string) {
+async function locateFragmentFile(baseDir: string, svc: string) {
   const matches = await globby(["docker-compose.*.yml", "docker-compose.*.yaml"], {
     cwd: baseDir,
     onlyFiles: true,
@@ -32,7 +32,9 @@ async function locateFragmentFile(baseDir: string) {
   if (matches.length === 0) {
     return null;
   }
-  return path.join(baseDir, matches[0]);
+  const exact = matches.find((candidate) => candidate === `docker-compose.${svc}.yml` || candidate === `docker-compose.${svc}.yaml`);
+  const selected = exact ?? matches[0];
+  return path.join(baseDir, selected);
 }
 
 async function loadFragment(opts: AggregateOptions, svc: string): Promise<LoadedFragment> {
@@ -45,7 +47,7 @@ async function loadFragment(opts: AggregateOptions, svc: string): Promise<Loaded
     if (!await fs.pathExists(fragmentDir)) {
       continue;
     }
-    const file = await locateFragmentFile(fragmentDir);
+    const file = await locateFragmentFile(fragmentDir, svc);
     if (!file) {
       continue;
     }
@@ -132,7 +134,7 @@ export async function buildAggregateCompose(opts: AggregateOptions) {
     };
 
     aggregate = merge(aggregate, normalized, {
-      arrayMerge: (target, source) => Array.from(new Set([...(target as unknown[]), ...(source as unknown[])])),
+      arrayMerge: (target: unknown[], source: unknown[]) => Array.from(new Set([...(target as unknown[]), ...(source as unknown[])])),
     });
   }
 

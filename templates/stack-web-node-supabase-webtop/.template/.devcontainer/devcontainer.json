@@ -1,5 +1,6 @@
 {
   "name": "stack-web-node-supabase-webtop",
+  "remoteUser": "vscode",
   "build": {
     "dockerfile": "Dockerfile",
     "context": "."

@@ -1,5 +1,6 @@
 {
   "name": "Classroom — Linux Chrome (Headful)",
+  "remoteUser": "vscode",
   "dockerComposeFile": [
     "../docker-compose.yml",
     "../../../../services/linux-chrome/docker-compose.linux-chrome.yml"

@@ -10,6 +10,7 @@ This fragment launches a single Airflow webserver backed by the SequentialExecut
 
 - Mounts `./airflow` into `/opt/airflow` so you can add DAGs, plugins, or a `requirements.txt` from the generated preset/workspace.
 - Creates an admin user (`admin` / `admin`) during startup; override via environment variables if needed.
+- `.env.example` records the demo credentials and Fernet key placeholder so teams know which secrets to rotate before production.
 
 ## Aggregate Compose
 
