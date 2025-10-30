@@ -1,0 +1,39 @@
+services:
+  supabase-db:
+    image: supabase/postgres:15.1.1.67
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-supabase}
+    ports: ["54322:5432"]
+  supabase-rest:
+    image: supabase/postgrest:v11.2.1
+    depends_on:
+      - supabase-db
+    env_file:
+      - .env
+    environment:
+      - PGRST_DB_URI=${PGRST_DB_URI:-postgres://postgres:${POSTGRES_PASSWORD:-supabase}@supabase-db:5432/postgres}
+      - PGRST_DB_ANON_ROLE=${PGRST_DB_ANON_ROLE:-anon}
+    ports: ["54323:3000"]
+  supabase-realtime:
+    image: supabase/realtime:v2.25.35
+    depends_on:
+      - supabase-db
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=${DB_HOST:-supabase-db}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-supabase}
+    ports: ["54324:4000"]
+  supabase-studio:
+    image: supabase/studio:20240408-4e7ac8e
+    depends_on:
+      - supabase-rest
+      - supabase-realtime
+    env_file:
+      - .env
+    environment:
+      - STUDIO_PG_META_URL=${STUDIO_PG_META_URL:-http://supabase-rest:3000}
+    ports: ["54326:3000"]

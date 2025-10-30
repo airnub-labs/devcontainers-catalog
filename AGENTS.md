@@ -1,197 +1,113 @@
-# AGENTS.md — Catalog Guardrails (Do Not Break)
+# AGENTS.md — Catalog Guardrails (Never-Regress)
 
-This repository hosts the **DevContainers Catalog**: reusable **Features**, **Templates (source)**, **Presets (prebuilt image contexts)**, and **docs**.
-All contributors (human or agent) **MUST** follow the policies below. CI will enforce them.
+This repository is the **Devcontainers Catalog**: reusable **Features**, **Templates**, **Presets/Images**, **Service fragments**, and **schemas** used by a future SaaS platform to deliver **chat-to-classroom** environments.
 
 ---
 
-## 0) Non-Negotiable, Never-Regress Principles
+| Path                     | Role                           | Notes |
+|--------------------------|--------------------------------|------|
+| `features/*`            | Dev Container Features         | Idempotent installers only. No daemons, no secrets. |
+| `templates/*`           | Source scaffolds               | Repo-agnostic `.devcontainer` payloads. |
+| `images/presets/*`      | Prebuilt image contexts        | Build/publish OCI images (GHCR) via CI. |
+| `services/*`            | Compose fragments              | Redis, Supabase, Kafka, Prefect, Airflow, Dagster, Temporal, etc. |
+| `schemas/*`             | JSON Schemas                   | Catalog and SaaS contracts (lesson env, chat intents). |
+| `tools/*`               | Generators/CLIs                | Deterministic emit of build ctx + student scaffold. |
+| `docs/*`                | Catalog docs                   | Updated with every change; source of truth. |
+| `.github/workflows/*`   | CI automation                  | Lint, validate schemas, build/push images, smoke tests. |
 
-1. **Local = Remote (Exact Parity)**
-   Every devcontainer **must work locally** the **exact same** as on Codespaces and any Dev Container spec-compliant platform.
+---
 
-   * No host-specific assumptions.
-   * No hard-coded paths to Codespaces.
-   * No reliance on desktop OS tooling outside the container.
+## Non-Negotiable, Never-Regress Principles
+
+### 1) Local = Remote Parity
+Dev Containers must behave **identically** on:
+- Local Docker / VS Code Dev Containers,
+- GitHub Codespaces,
+- Any devcontainer-spec compliant host.  
+No host-only assumptions (e.g., listeners must prefer **service names** over hostnames).
+
+### 2) Education SaaS Alignment (Chat-to-Classroom)
+The catalog must **enable** a SaaS where instructors can, via **chat**, request a lesson, and the platform:
+- **Generates a Lesson Manifest** (schema-valid),
+- **Builds a prebuilt image** (from a preset; no secrets inside),
+- **Emits a student scaffold** that references that image,
+- **Optionally seeds lesson content** (no runtime cloning for students),
+- **Optionally emits an aggregate docker-compose** for realistic service stacks (Redis, Supabase, Kafka, Prefect, Airflow, Dagster, Temporal, etc.).
+
+This chat-to-classroom flow is a **product invariant**. Never regress.
+
+### 3) Device-Agnostic Access
+Students on low-power devices (Chromebook, iPad) must have **equal startup experience**:
+- Prebuilt images for fast cold starts.
+- GUI workflows available via **webtop/noVNC** when needed (no local GPU assumed).
+- No dependency on local hardware accelerators.
+
+### 4) MCP + LLM Agent Orchestration (via SaaS)
+The SaaS mediates **MCP agents** and **LLM agents** that:
+- Accept **instructor chat requests** → derive a **validated manifest**.
+- Call catalog MCP methods to **list templates**, **validate manifests**, **generate build contexts**, **publish images**, and **emit scaffolds**.
+- Are **deterministic** (idempotent actions; no hidden side-effects) and **auditable** (provenance labels on images, run logs retained).
+- Never embed secrets in images or templates; secrets flow via Codespaces/host **Secrets** or `.env` files provided by instructors.
+
+### 5) Safety, Privacy, and Provenance
+- **No secrets in Features, Templates, or Presets**. Use placeholders only.
+- Images must carry **OCI labels**: source repo, git sha, org/course/lesson identifiers, schema version.
+- Telemetry, content collection, or outbound network access from generators/agents must be **explicitly documented** and disabled by default.
+
+---
+
+## Agent Contracts & Guardrails
+
+**MCP Methods (SaaS → Catalog):**
+- `catalog.listPresets()` → presets (name, base image, features).
+- `catalog.listServices()` → service fragments (name, ports, docs path).
+- `manifest.validate(manifest)` → against `schemas/lesson-env.schema.json`.
+- `lesson.generate(manifest)` → emits:
+  - `images/presets/generated/<slug>/` build context (with OCI labels),
+  - `templates/generated/<slug>/.devcontainer/devcontainer.json` scaffold,
+  - optional `docker-compose.classroom.yml` aggregate if services selected.
+- `image.buildPush({ slug, tag })` → multi-arch to GHCR.
+- `scaffold.smokeTest({ slug })` → runs `devcontainer build` and `docker compose config`.
+
+**Determinism:**
+- Same manifest = same artifacts (modulo timestamps, digests).
+- No network fetches for code at generation time except optional “seed lesson content” that is **declared** in the manifest (`starter_repo`).
+
+**Reproducibility:**
+- All emitted files are **derived** only from manifest + catalog sources.
+- CI validates schemas, builds/pushes images, and smoke-tests generated scaffolds.
+
+**Privacy & Security:**
+- Secrets flow only via the host platform secrets manager or instructor-provided `.env`.
+- No credentials baked into images or templates.
+- Aggregate Compose uses private networks by default; ports explicitly mapped only as documented.
+
+---
 
 2. **Education SaaS Support (First-Class)**
    Everything in this catalog **must continue enabling** the classroom SaaS vision:
 
-   * **Templates (SOURCE)** for flexible scaffolds instructors can copy into lesson repos.
-   * **Presets (ARTIFACT/Prebuilt Images)** for fast-start cohorts (no feature re-installs).
-   * **Service fragments** (Redis, Supabase, Kafka/KRaft, etc.) for “whole ecosystem” lessons.
-   * **Lesson Manifest schema** compatibility and forward evolution.
+- **Features** → `ghcr.io/airnub-labs/devcontainer-features/<id>:<semver>`
+- **Presets/Images** → `ghcr.io/airnub-labs/templates/<preset>:<tag>`
+- **Lesson Images** → `ghcr.io/airnub-labs/templates/lessons/<org-course-lesson>:<tag>`
 
-3. **Device Agnostic + Low-Power Friendly**
-   Students with only an internet connection must have an **equal experience** to those with high-powered machines.
-
-   * Presets must be runnable via hosted providers (e.g., Codespaces) + **webtop/noVNC** access patterns for iPad/Chromebook.
-   * Heavy compute is **prebuilt/reused**; never force clients to compile big toolchains.
-
-> These three are **red lines**. CI blocks merges that violate them.
+Tags must include a **base tag** (e.g., `ubuntu-24.04`) and may include date/version suffixes.
 
 ---
 
-## 1) Directory Ownership
+## CI Requirements
 
-| Path                  | Owner/Role                   | Notes                                                                                     |
-| --------------------- | ---------------------------- | ----------------------------------------------------------------------------------------- |
-| `features/*`          | Dev Container **Features**   | Idempotent installers. **No daemons. No secrets.**                                        |
-| `templates/*`         | Dev Container **Templates**  | **Source** folders that scaffold `.devcontainer/` into lesson/workspace repos.            |
-| `images/presets/*`    | **Prebuilt Preset Contexts** | **Artifact build contexts** used to bake/publish images to GHCR for fast classroom start. |
-| `services/*`          | **Compose fragments**        | Pluggable YAML for Redis, Supabase, Kafka/KRaft, etc. No secrets.                         |
-| `schemas/*`           | **Manifests & schemas**      | LessonEnv schema + examples. Backwards compatible changes only (SemVer).                  |
-| `docs/*`              | **Documentation**            | Beginner-friendly; update alongside code changes.                                         |
-| `.github/workflows/*` | **CI automation**            | Publishes features/images; smoke tests parity local vs remote.                            |
+- Validate **all** schemas.
+- For each example manifest: `lesson.generate` → `image.buildPush` (dry-run in PRs).
+- `devcontainer build` on generated scaffold (smoke).
+- `docker compose -f docker-compose.classroom.yml config` (if exists).
+- Check that images have required **OCI labels**.
 
 ---
 
-## 2) Source vs Artifact (Do Not Confuse)
+## Don’ts
 
-* **Templates (`templates/*`) = SOURCE**
-
-  * Copied into a repo; can include **Features** for flexibility.
-  * May be slower on cold start (Features run at first boot).
-
-* **Presets (`images/presets/*`) = ARTIFACT**
-
-  * Minimal folders that exist only to **build & publish** OCI images (GHCR).
-  * External repos reference `"image": "ghcr.io/..."` → **instant class start**.
-
-**Rule:** Never add workspace-specific logic to Preset contexts. Keep them general and cache-friendly.
-
----
-
-## 3) Invariants & Design Rules
-
-* **No Secrets in Git or Images.**
-  Use Codespaces/Provider secrets or local `.env` (git-ignored). Provide `.env.example` if needed.
-
-* **No Long-Running Services in Features.**
-  Services must live in `services/*` compose fragments, not Feature installers.
-
-* **Multi-arch by Default.**
-  All images and presets should build for `linux/amd64` and `linux/arm64`.
-
-* **Minimal Base, Upgradable via ARG.**
-  Base Dockerfiles accept `ARG UBUNTU_VERSION=24.04` (or similar) for easy bumps. Avoid baking Node/Python in base unless it’s a preset intentionally including them.
-
-* **Extensions & Settings Hygiene.**
-
-  * VS Code extension IDs **lowercase**.
-  * Set `"remote.downloadExtensionsLocally": "always"` in presets to reduce first-open latency.
-  * For Node presets, run `corepack enable || true` in post-create.
-
-* **No Host Assumptions.**
-  Use container DNS and loopbacks; expose services to `127.0.0.1` when needed. No reliance on host package managers.
-
----
-
-## 4) Education SaaS Contract
-
-### 4.1 Lesson Manifest (Schema-first)
-
-* **Schema:** `schemas/lesson-env.schema.json`
-* **Examples:** `examples/lesson-manifests/*.yaml`
-* Manifest describes **base preset**, **services**, **VS Code extensions/settings**, **env**, optional **starter_repo**, and **image_tag_strategy**.
-* **Policy:** Backwards compatible changes only (bump **minor** for additive, **major** for breaking).
-
-### 4.2 Generator (Thin, Reproducible)
-
-* Tool reads the manifest → emits:
-
-  * a **generated preset build context** under `images/presets/generated/<org>/<course>/<lesson>/`
-  * a **generated template scaffold** under `templates/generated/<org>/<course>/<lesson>/` (references the prebuilt image)
-* Optional CI workflow for prebuilding & pushing to GHCR.
-
-### 4.3 Service Fragments (Plug-and-Play)
-
-* `services/redis/*.yml`, `services/supabase/*`, `services/kafka/*.yml`, etc.
-* Composable with the main dev container; used both locally and on Codespaces.
-
-### 4.4 Low-Power Devices (Webtop/noVNC)
-
-* Presets must be compatible with **webtop/noVNC** flows for iPad/Chromebook usage on a remote provider.
-* Do not require local window servers; any GUI access must be optional and proxied via web when enabled.
-
----
-
-## 5) CI Gates (Merge Blockers)
-
-**All PRs must pass these checks:**
-
-1. **Parity Smoke Tests (Local vs Remote)**
-
-   * Bring up a representative template locally (Docker) and in Codespaces.
-   * Verify `postCreateCommand`/`postStartCommand` complete identically; verify simple task (`node --version`, `python --version`, `redis-cli PING`, etc., where applicable).
-
-2. **Preset Pull-and-Run**
-
-   * For at least one preset image, pull from GHCR and start **without** running any Features.
-   * Confirm VS Code extensions are installed via `"remote.downloadExtensionsLocally": "always"`.
-
-3. **Service Fragments Compose Lint**
-
-   * Validate `services/*/*.yml` with `docker compose config`.
-   * Ensure no `secrets:` values are hard-coded.
-
-4. **Schema Compatibility**
-
-   * Validate all `examples/lesson-manifests/*.yaml` against `schemas/lesson-env.schema.json`.
-   * Reject breaking schema changes unless version is bumped to **major**.
-
-5. **Multi-arch Build Check**
-
-   * Ensure at least one preset builds for `linux/amd64,linux/arm64`, or has a queued multi-arch build pipeline.
-
-6. **Content Hygiene**
-
-   * Lowercase VS Code extension IDs.
-   * No references to repo-local absolute paths.
-   * No Features starting daemons or embedding secrets.
-
----
-
-## 6) Naming & Publishing
-
-* **Features** → `ghcr.io/airnub-labs/devcontainer-features/<feature-id>:<semver>`
-* **Templates (source)** → `ghcr.io/airnub-labs/devcontainer-templates/<template-id>:<semver>` (for distribution via Template spec)
-* **Presets (images)** → `ghcr.io/airnub-labs/templates/<preset-name>:<tag>`
-
-  * **Tags:** `ubuntu-24.04`, or lesson-scoped tags if needed (e.g., `org-course-lesson-YYYY.MM.DD`)
-
-**Always publish via CI.** Never publish the parent folder as a package.
-
----
-
-## 7) Helpful Commands
-
-* Test Features:
-  `npx --yes @devcontainers/cli@latest features test --project-root . --features-root features`
-* Build a preset context:
-  `devcontainer build --workspace-folder images/presets/<preset> --image-name ghcr.io/airnub-labs/templates/<preset>:ubuntu-24.04`
-* Multi-arch (via buildx):
-  `docker buildx build --platform linux/amd64,linux/arm64 images/presets/<preset>`
-
----
-
-## 8) Don’ts (Hard Stops)
-
-* ❌ Reintroduce `.devcontainer/` or workspace files at repo root.
-* ❌ Start background services in **Feature** installers.
-* ❌ Bake secrets or school-specific assets into images.
-* ❌ Add host-specific logic that breaks **local = remote** parity.
-* ❌ Force high-powered hardware; must remain runnable via hosted provider + web UI (webtop/noVNC).
-
----
-
-## 9) Definition of Done (for any change)
-
-* [ ] Passes **CI Gates** in §5 (parity, preset run, fragments lint, schema, multi-arch, hygiene).
-* [ ] Docs updated (beginner-friendly): explain **what changed** and **how to use it**.
-* [ ] Does not violate §0 Core Principles.
-* [ ] Preserves **Source vs Artifact** clarity and **SaaS** compatibility.
-
----
-
-**Thanks for keeping the catalog reliable, accessible, and classroom-ready.**
+- ❌ Start background daemons in feature installers.
+- ❌ Embed secrets anywhere in repo or images.
+- ❌ Depend on host-only DNS/IPs; always prefer service names in Compose.
+- ❌ Remove or weaken the Non-Negotiable principles without an ADR and major-version bump.

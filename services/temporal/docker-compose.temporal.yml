@@ -1,0 +1,49 @@
+version: "3.9"
+services:
+  temporal-db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: temporal
+      POSTGRES_PASSWORD: temporal
+      POSTGRES_DB: temporal
+    volumes:
+      - temporal-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U temporal"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [classroom]
+
+  temporal:
+    image: temporalio/auto-setup:1.25.0
+    environment:
+      DB: postgresql
+      DB_PORT: 5432
+      POSTGRES_USER: temporal
+      POSTGRES_PWD: temporal
+      POSTGRES_SEEDS: temporal-db
+      DYNAMIC_CONFIG_FILE_PATH: config/dynamicconfig/development-sql.yaml
+    ports:
+      - "7233:7233"
+    depends_on:
+      temporal-db:
+        condition: service_healthy
+    networks: [classroom]
+
+  temporal-ui:
+    image: temporalio/ui:2.28.2
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_CORS_ORIGINS: http://localhost:3000,http://localhost:8080,http://localhost:4200
+    ports:
+      - "8080:8080"
+    depends_on:
+      - temporal
+    networks: [classroom]
+
+volumes:
+  temporal-db-data:
+
+networks:
+  classroom: { name: classroom }

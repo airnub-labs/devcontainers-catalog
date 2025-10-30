@@ -1,0 +1,10 @@
+services:
+  kafka-producer:
+    image: edenhill/kafkacat:1.6.0
+    depends_on: [kafka]
+    entrypoint: ["/bin/sh", "-lc", "while true; do echo \"hello $(date)\" | kafkacat -b kafka:9092 -t demo-topic; sleep 2; done"]
+
+  kafka-consumer:
+    image: edenhill/kafkacat:1.6.0
+    depends_on: [kafka]
+    entrypoint: ["kafkacat", "-b", "kafka:9092", "-t", "demo-topic", "-C"]
