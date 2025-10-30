@@ -27,7 +27,9 @@
         "ms-python.python",
         "ms-toolsai.jupyter",
         "dbaeumer.vscode-eslint",
-        "esbenp.prettier-vscode"
+        "esbenp.prettier-vscode",
+        "github.copilot",
+        "github.copilot-chat"
       ]
     }
   }

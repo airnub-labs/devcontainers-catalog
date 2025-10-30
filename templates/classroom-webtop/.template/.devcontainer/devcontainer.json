@@ -12,7 +12,11 @@
     "vscode": {
       "settings": {
         "remote.downloadExtensionsLocally": "always"
-      }
+      },
+      "extensions": [
+        "github.copilot",
+        "github.copilot-chat"
+      ]
     }
   }
 }

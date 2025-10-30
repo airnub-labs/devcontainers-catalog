@@ -14,7 +14,12 @@
   "customizations": {
     "vscode": {
       "settings": { "remote.downloadExtensionsLocally": "always", "telemetry.telemetryLevel": "off" },
-      "extensions": ["ms-python.python", "ms-python.vscode-pylance"]
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "github.copilot",
+        "github.copilot-chat"
+      ]
     }
   }
 }
