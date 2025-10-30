@@ -2,6 +2,32 @@ import path from "path";
 import os from "os";
 import fs from "fs-extra";
 
+export const browserServices = [
+  {
+    id: "neko-webrtc",
+    label: "Neko (WebRTC) Chrome",
+    templatePath: "templates/classroom-neko-webrtc/.template",
+  },
+  {
+    id: "kasm-chrome",
+    label: "Kasm Chrome (KasmVNC)",
+    templatePath: "templates/classroom-kasm-chrome/.template",
+  },
+];
+
+export const stackTemplates = [
+  {
+    id: "stack-nextjs-supabase-neko",
+    label: "Stack: Next.js + Supabase + Neko",
+    templatePath: "templates/stack-nextjs-supabase-neko/.template",
+  },
+  {
+    id: "stack-nextjs-supabase-kasm",
+    label: "Stack: Next.js + Supabase + Kasm",
+    templatePath: "templates/stack-nextjs-supabase-kasm/.template",
+  },
+];
+
 export interface MaterializeServicesOptions {
   services: string[];
   destination: string;

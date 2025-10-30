@@ -1,0 +1,21 @@
+{
+  "name": "classroom-neko-webrtc",
+  "dockerComposeFile": ["./docker-compose.yml"],
+  "service": "devcontainer",
+  "workspaceFolder": "/workspaces",
+  "runServices": ["devcontainer", "neko"],
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      },
+      "extensions": []
+    }
+  },
+  "forwardPorts": [8080, 59000],
+  "portsAttributes": {
+    "8080": { "label": "Neko (Web UI)", "onAutoForward": "openBrowser" },
+    "59000": { "label": "Neko (WebRTC TCP mux)", "onAutoForward": "silent" }
+  },
+  "remoteUser": "vscode"
+}

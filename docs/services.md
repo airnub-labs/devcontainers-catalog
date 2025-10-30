@@ -83,3 +83,10 @@ docker compose -f aggregate.compose.yml up -d
 This works locally and in Codespaces the same way (no secrets baked; use .env or Codespaces secrets).
 
 ---
+
+## Browser sidecars
+
+| Service            | Transport                    | Works in Codespaces | Notes |
+|--------------------|------------------------------|---------------------|-------|
+| Neko (Chrome)      | WebRTC (TCP mux by default)  | ✅ (TCP mux)        | Optional UDP range locally for low latency; supports STUN/TURN. |
+| Kasm (Chrome)      | HTTPS + WebSocket (KasmVNC)  | ✅                  | WebRTC fast-path when available, falls back to WS/HTTPS cleanly. |

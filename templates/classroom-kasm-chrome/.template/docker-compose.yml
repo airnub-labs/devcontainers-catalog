@@ -1,0 +1,15 @@
+services:
+  devcontainer:
+    image: mcr.microsoft.com/devcontainers/base:ubuntu-24.04
+    volumes:
+      - ..:/workspaces:cached
+    command: sleep infinity
+
+  kasm-chrome:
+    image: kasmweb/chrome:1.17.0
+    shm_size: "2gb"
+    restart: unless-stopped
+    ports:
+      - "6901:6901"      # HTTPS + WebSocket UI
+    environment:
+      VNC_PW: "student"  # change me!

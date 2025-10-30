@@ -51,3 +51,19 @@ Generated lesson artifacts under `images/presets/generated/` and `templates/gene
 - Periodically refresh vendored service fragments (Supabase, Kafka) so they match upstream defaults.
 
 With this flow, every student receives the same workspace with predictable start times, whether they launch in a browser or on a local machine.
+
+### Full graphical Chrome options
+
+- **Neko (WebRTC)**: `templates/classroom-neko-webrtc`
+  - Default TCP-mux works through Codespaces’ TCP/HTTPS port proxy.
+  - For home labs, enable UDP range and add STUN/TURN for best results.
+
+- **Kasm Chrome (KasmVNC)**: `templates/classroom-kasm-chrome`
+  - Pure HTTPS + WebSocket transport, very proxy-friendly.
+  - Increase `shm_size` for heavy devtools and media testing.
+
+#### One-click stacks (Next.js + Supabase + full Chrome)
+- `stack-nextjs-supabase-neko` (WebRTC / TCP mux)
+- `stack-nextjs-supabase-kasm` (HTTPS + WebSocket)
+
+Both include a demo page at `/classroom-browser` and auto-labeled forwarded ports.
