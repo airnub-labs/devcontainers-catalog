@@ -14,7 +14,8 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
-      - uses: devcontainers/cli@v0.80.0
+      - name: Install Dev Containers CLI
+        run: npm install -g @devcontainers/cli@0.80.1
       - name: Publish each feature as its own OCI package
         uses: devcontainers/action@v1
         with:
