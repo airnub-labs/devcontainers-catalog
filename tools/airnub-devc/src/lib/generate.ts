@@ -11,6 +11,7 @@ export interface GenerateBaseOptions {
   fetchMissingFragments?: boolean;
   fetchRef?: string;
   catalogRef?: string;
+  gitSha?: string;
 }
 
 export interface GeneratePresetOptions extends GenerateBaseOptions {
@@ -48,13 +49,15 @@ export async function generatePresetBuildContext(opts: GeneratePresetOptions) {
   const servicesRequested = ensureArray(manifest.spec.services).map((svc) => svc.name);
   let servicesDir: string | null = null;
   if (servicesRequested.length) {
-    servicesDir = path.join(opts.outDir, "services");
+    const localServicesDir = path.join(opts.outDir, "services");
+    servicesDir = localServicesDir;
     await materializeServices({
       services: servicesRequested,
-      destination: servicesDir,
+      destination: localServicesDir,
       repoRoot: opts.repoRoot,
       fetchIfMissing: opts.fetchMissingFragments,
       fetchRef: opts.fetchRef,
+      catalogRef: opts.catalogRef,
     });
   }
 
@@ -89,10 +92,19 @@ export async function generatePresetBuildContext(opts: GeneratePresetOptions) {
   mergedDevcontainer.build.labels = {
     ...existingLabels,
     "org.airnub.schema": manifest.apiVersion,
+    "org.airnub.schemaVersion": manifest.apiVersion,
     "org.airnub.id": id,
+    "org.airnub.org": manifest.metadata.org,
     ...(manifest.metadata.course ? { "org.airnub.course": manifest.metadata.course } : {}),
     ...(manifest.metadata.lesson ? { "org.airnub.lesson": manifest.metadata.lesson } : {}),
+    ...(opts.gitSha ? { "org.airnub.gitSha": opts.gitSha } : {}),
+    "org.opencontainers.image.source": "https://github.com/airnub-labs/devcontainers-catalog",
   };
+
+  mergedDevcontainer.build.args = mergedDevcontainer.build.args ?? {};
+  if (!mergedDevcontainer.build.args.GIT_SHA) {
+    mergedDevcontainer.build.args.GIT_SHA = opts.gitSha ?? "local-dev";
+  }
 
   await writeJson(devcontainerPath, mergedDevcontainer);
 
@@ -174,6 +186,7 @@ export async function generateWorkspaceScaffold(opts: GenerateScaffoldOptions) {
       repoRoot: opts.repoRoot,
       fetchIfMissing: opts.fetchMissingFragments,
       fetchRef: opts.fetchRef,
+      catalogRef: opts.catalogRef,
     });
 
     if (shouldEmitAggregate) {

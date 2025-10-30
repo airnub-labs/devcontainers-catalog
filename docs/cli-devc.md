@@ -28,20 +28,20 @@ Related globals (available to every command):
 devc validate <manifest>
     Schema validation for LessonEnv manifests.
 
-devc generate <manifest> [opts]
-    Emits images/presets/generated/<slug>/ and templates/generated/<slug>/ from any folder.
+devc generate <manifest>
+    Emits images/presets/generated/<slug>/ and templates/generated/<slug>/ (respects --fetch-missing-fragments, --git-sha, --force).
 
 devc scaffold <manifest> --out <dir>
     Copies a ready-to-use scaffold (with aggregate compose + fragments) into another repo.
 
-devc build --ctx <dir> --tag <image>
-    Multi-arch buildx (linux/amd64, linux/arm64) with --provenance=false baked in.
+devc build --ctx <dir> --tag <ghcr tag>
+    Multi-arch buildx (linux/amd64, linux/arm64) with `--provenance=false` baked in. Validate tags with --manifest/--version, push with --push, export OCI archives when offline.
 
 devc doctor <manifest>
-    Checks for missing service fragments locally or in the catalog cache.
+    Validates schema, prints canonical tag, confirms preset + fragment availability, warns when `.env.example` placeholders are missing, and checks `docker buildx` readiness.
 
 devc add service <name...>
-    Materialises service fragments inside an existing workspace and refreshes aggregate.compose.yml.
+    Materialises service fragments inside an existing workspace and refreshes aggregate.compose.yml (fetches from catalog cache if requested).
 
 devc add extension <extId...>
     Idempotently appends VS Code extensions to .devcontainer/devcontainer.json.
@@ -50,7 +50,17 @@ devc sync [--manifest <path>]
     Rebuilds aggregate.compose.yml for the current workspace (from manifest or on-disk fragments).
 ```
 
-Service-aware commands respect `--fetch-missing-fragments` and `--fetch-ref <ref>` to pin remote fragment sources. When the CLI is operating from a remote catalog cache, fetching is enabled by default.
+Service-aware commands respect `--fetch-missing-fragments` and `--fetch-ref <ref>` to pin remote fragment sources. When the CLI is operating from a remote catalog cache, fetching is enabled by default. Missing fragments are downloaded directly from GitHub (README, docker-compose files, `.env.example`) so `devc doctor` and `devc add service` work outside the catalog checkout.
+
+### Canonical lesson tag format
+
+`devc build` and `devc doctor` enforce the lesson tag convention:
+
+```
+ghcr.io/airnub-labs/templates/lessons/<slug>:<base>-<slug>-v<iteration>
+```
+
+`<slug>` is derived from `metadata.org/course/lesson`, `<base>` is the `spec.image_tag_strategy` (defaults to `ubuntu-24.04`), and `v<iteration>` distinguishes successive publishes. Pass `--version v2` (or similar) when regenerating a lesson.
 
 ## Workspace vs. catalog mode
 

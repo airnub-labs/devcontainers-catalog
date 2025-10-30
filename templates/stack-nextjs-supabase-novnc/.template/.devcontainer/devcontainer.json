@@ -1,5 +1,6 @@
 {
   "name": "stack-nextjs-supabase-novnc",
+  "remoteUser": "vscode",
   "build": {
     "dockerfile": "Dockerfile",
     "context": "."

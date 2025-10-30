@@ -1,5 +1,6 @@
 {
   "name": "Python + Airflow",
+  "remoteUser": "vscode",
   "build": {
     "dockerfile": "../Dockerfile",
     "context": "..",

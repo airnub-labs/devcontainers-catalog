@@ -1,5 +1,6 @@
 {
   "name": "airnub-labs — python",
+  "remoteUser": "vscode",
   "build": {
     "dockerfile": "Dockerfile",
     "context": ".",

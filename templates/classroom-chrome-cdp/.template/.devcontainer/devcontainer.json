@@ -1,5 +1,6 @@
 {
   "name": "Classroom — Chrome CDP (Headless)",
+  "remoteUser": "vscode",
   "dockerComposeFile": [
     "../docker-compose.yml",
     "../../../../services/chrome-cdp/docker-compose.chrome-cdp.yml"

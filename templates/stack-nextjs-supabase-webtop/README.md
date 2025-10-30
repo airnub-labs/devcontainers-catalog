@@ -42,3 +42,18 @@ Add a `stack.lock.json` (example below) to pin image digests and feature version
   }
 }
 ```
+
+## Quick modes
+
+| Mode | Commands | Notes |
+| --- | --- | --- |
+| **Fast (Prebuilt)** | 1. Configure `spec.base_preset: node-pnpm` in your lesson manifest.<br>2. `npx @airnub/devc generate <manifest> --out-images images/presets/generated --out-templates templates/generated` | Gives learners a prebuilt Next.js + Supabase desktop with Redis/CDP ready to go. |
+| **Flexible (Feature)** | `devcontainer templates apply --template-id ghcr.io/airnub-labs/devcontainer-templates/stack-nextjs-supabase-webtop:1.0.0 --workspace-folder .` | Start from source when you need to tweak GUI providers or Compose wiring. |
+
+## Local ↔ Codespaces parity checklist
+
+- **Ports** — App (3000), GUI (3001/6080), and CDP (`{{templateOption.chromeCdpPort}}`) labelled to mirror Codespaces & local dev.
+- **Health** — Redis and GUI fragments include health checks; aggregate compose waits so Next.js boot logs aren’t lost.
+- **Secrets** — Generated presets surface Supabase keys in `.env.example`; commit docs remind instructors to hydrate Codespaces secrets.
+- **Resources** — 4-core / 8 GB works well; disable Redis or agent tooling for smaller SKUs.
+- **Aggregate compose** — Additional catalog services (Temporal, Prefect) keep using `devnet` for consistent URLs across environments.

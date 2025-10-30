@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v4
       - id: collect
         run: |
-          set -euo pipefail
+          set -Eeuo pipefail
           mapfile -t files < <(find examples/lesson-manifests -maxdepth 1 -type f \( -name '*.yml' -o -name '*.yaml' \) -print | sort)
           if [ ${#files[@]} -eq 0 ]; then
             echo "manifests=[]" >> "$GITHUB_OUTPUT"
@@ -60,6 +60,7 @@ jobs:
 
       - name: Install tooling
         run: |
+          set -Eeuo pipefail
           python -m pip install --upgrade pip
           python -m pip install ./tools/generate-lesson jsonschema[yaml]
 
@@ -89,7 +90,9 @@ if errors:
 PY
 
       - name: Generate lesson build context
-        run: make gen LESSON_MANIFEST=${{ env.LESSON_MANIFEST }}
+        run: |
+          set -Eeuo pipefail
+          make gen LESSON_MANIFEST=${{ env.LESSON_MANIFEST }}
 
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
@@ -103,6 +106,7 @@ PY
       - name: Derive slug
         id: slug
         run: |
+          set -Eeuo pipefail
           python - <<'PY'
 import os
 import re
@@ -129,6 +133,7 @@ PY
 
       - name: Validate aggregate compose
         run: |
+          set -Eeuo pipefail
           FILE="images/presets/generated/${{ steps.slug.outputs.slug }}/docker-compose.classroom.yml"
           if [ -f "$FILE" ]; then
             docker compose -f "$FILE" config
@@ -155,3 +160,45 @@ PY
             org.airnub.lesson.course=${{ steps.slug.outputs.course }}
             org.airnub.lesson.lesson=${{ steps.slug.outputs.lesson }}
             org.airnub.lesson.schema=airnub.devcontainers/v1
+
+  cli-e2e:
+    name: CLI end-to-end smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install devc dependencies
+        run: |
+          set -Eeuo pipefail
+          cd tools/airnub-devc
+          npm install
+          npm run build
+
+      - name: CLI validation + generate + build + compose smoke
+        env:
+          TAG: ghcr.io/airnub-labs/templates/lessons/airnub-intro-ai-week02:ubuntu-24.04-airnub-intro-ai-week02-v1
+        run: |
+          set -Eeuo pipefail
+          cd tools/airnub-devc
+          node dist/index.js validate ../..//examples/lesson-manifests/intro-ai-week02.yaml
+          node dist/index.js generate ../..//examples/lesson-manifests/intro-ai-week02.yaml \
+            --out-images ../../images/presets/generated \
+            --out-templates ../../templates/generated \
+            --force \
+            --git-sha ${GITHUB_SHA}
+          node dist/index.js build \
+            --ctx ../../images/presets/generated/airnub-intro-ai-week02 \
+            --tag ${TAG} \
+            --oci-output ../../dist/cli-e2e \
+            --manifest ../..//examples/lesson-manifests/intro-ai-week02.yaml \
+            --version v1 \
+            --git-sha ${GITHUB_SHA}
+          docker compose -f ../../images/presets/generated/airnub-intro-ai-week02/aggregate.compose.yml up -d --wait
+          docker compose -f ../../images/presets/generated/airnub-intro-ai-week02/aggregate.compose.yml ps
+          docker compose -f ../../images/presets/generated/airnub-intro-ai-week02/aggregate.compose.yml down
+          rm -rf ../../dist/cli-e2e

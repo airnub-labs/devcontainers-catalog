@@ -15,17 +15,53 @@
 - `images/dev-base/` — A thin base on top of `mcr.microsoft.com/devcontainers/base` with overridable build args.
 - `docs/` — Guides, architecture notes, and CI examples.
 
+## If you only have 5 minutes
+
+```mermaid
+flowchart LR
+    A[Pick manifest or template] -->|Flexible (Feature) Mode| B(devcontainer templates apply)
+    A -->|Fast (Prebuilt) Mode| C(devc generate → devc build → devc scaffold)
+    C --> D[Students pull prebuilt image]
+    B --> E[Local + Codespaces run same compose]
+```
+
+- **Flexible mode** → apply templates directly when you want to hand-tune features or Compose fragments. See the parity checklists inside each template README.
+- **Fast mode** → declare `spec.base_preset` in a manifest, run `devc generate`, and ship the prebuilt image + scaffold for instant Codespaces starts.
+
+## Quick-start tiles
+
+| Persona | Flow | Commands | Cold / warm timing |
+| --- | --- | --- | --- |
+| I’m a **teacher on iPad** | Fast (Prebuilt) lesson | `devc generate examples/lesson-manifests/intro-ai-week02.yaml --out-images images/presets/generated --out-templates templates/generated`<br>`devc build --ctx images/presets/generated/airnub-intro-ai-week02 --tag ghcr.io/airnub-labs/templates/lessons/airnub-intro-ai-week02:ubuntu-24.04-airnub-intro-ai-week02-v1`<br>`devc scaffold examples/lesson-manifests/intro-ai-week02.yaml --out workspaces/intro-ai-week02` | ~2 min cold to first Codespace; <1 min warm once image cached |
+| I’m an **advanced dev** | Flexible template tweaks | `devcontainer templates apply --template-id ghcr.io/airnub-labs/devcontainer-templates/stack-nextjs-supabase-webtop:1.0.0 --workspace-folder .`<br>`devc add service supabase redis` | Depends on features; 3–4 min first build, <30 s reopen |
+| I’m **offline** today | Generate scaffold + aggregate compose | `devc generate examples/lesson-manifests/intro-ai-week02.yaml --out-images ./offline/images --out-templates ./offline/templates --force`<br>`docker compose -f ./offline/images/airnub-intro-ai-week02/aggregate.compose.yml up -d` | ~5 min for first build on laptop |
+
 ## Source vs Artifact (Templates vs Presets)
 
-- **templates/** = **SOURCE scaffolds** (Dev Container Templates per spec).  
+- **templates/** = **SOURCE scaffolds** (Dev Container Templates per spec).
   Copy a `.devcontainer/` into your repo for flexible, per-repo edits.
 
-- **images/presets/** = **ARTIFACT build contexts** used to **prebuild OCI images** (published to GHCR).  
+- **images/presets/** = **ARTIFACT build contexts** used to **prebuild OCI images** (published to GHCR).
   External workspaces reference these prebuilt images for **fast, identical starts** (Codespaces & local Docker).
 
 **Classroom tip:** Prefer **prebuilt lesson images** for students (no feature re-installs). Instructors select service fragments (Redis, Supabase, Kafka/KRaft, Airflow, Prefect, Dagster, Temporal, Webtop/CDP) and the generator emits an **aggregate compose** so the whole stack runs with one command.
 
 See: [docs/quick-start-fast-classroom.md](docs/quick-start-fast-classroom.md) · [docs/saas-edu-platform-vision.md](docs/saas-edu-platform-vision.md)
+
+## Templates ↔ presets map
+
+| Template (source) | Matching preset (artifact) | When to reach for the template | When to reach for the preset |
+| --- | --- | --- | --- |
+| `templates/base` | `images/presets/full` | You want a minimal scaffold to add bespoke Features/Compose fragments. | You need a full-toolchain base (Node + pnpm + Python) prebuilt for fast student startups. |
+| `templates/web` | `images/presets/node-pnpm` | Experiment locally with Chrome CDP + Supabase features. | Publish a headless web workspace so learners avoid reinstalling Node/pnpm. |
+| `templates/nextjs-supabase` | `images/presets/node-pnpm` | Customise Next.js scaffolding flags before committing. | Ship a prebuilt Next.js + Supabase lesson image. |
+| `templates/stack-nextjs-supabase-novnc` | `images/presets/node-pnpm` | Toggle Redis/GUI providers for bespoke stacks. | Push a ready-to-run stack with GUI + Supabase for Codespaces/iPad learners. |
+| `templates/stack-nextjs-supabase-webtop` | `images/presets/node-pnpm` | Mix and match GUI providers locally. | Deliver a full desktop + Supabase stack in a single prebuilt image. |
+| `templates/stack-web-node-supabase-webtop` | `images/presets/node-pnpm` | Customise CLI bundles or service mix. | Hand students a Node/Supabase desktop that boots instantly. |
+| `templates/classroom-studio-webtop` | `images/presets/full` | Adjust Chrome policies or Compose overrides. | Provide a turnkey studio desktop with policies baked in. |
+| `templates/classroom-webtop` | `images/presets/full` | Layer additional sidecars before sharing. | Publish a fast-start desktop-first lesson image. |
+| `templates/classroom-chrome-cdp` | `images/presets/node-pnpm` | Iterate on headless automation locally. | Deliver a headless Chrome CDP environment with preinstalled tooling. |
+| `templates/classroom-linux-chrome` | `images/presets/full` | Prototype headful Chrome wiring. | Roll out a managed browser once the vetted image ships. |
 
 ## Using stacks (templates)
 
@@ -44,6 +80,14 @@ Each stack template specifies:
 
 - In **stack templates** via Compose sidecars and/or CLI-managed local via a Feature and `postStart` helper.
 - Prefer Supabase **CLI-managed local**; provide a separate template flavor for a fully containerized Supabase stack when needed.
+
+## Secrets flow at a glance
+
+| Context | Where secrets live | Notes |
+| --- | --- | --- |
+| Local development | `.devcontainer/.env.defaults` (non-secret defaults) + `.env` (ignored) | `devc generate` writes `.env.example` so teammates know which keys to provide locally. |
+| GitHub Codespaces | Codespaces / repository secrets injected as environment variables | Map manifest `spec.secrets_placeholders` to secrets (e.g., `SUPABASE_ANON_KEY`) and consume via `.devcontainer/.env.example`. |
+| Classroom SaaS | Platform vault + manifest metadata | MCP agents request secrets from the SaaS vault; nothing is baked into presets or templates. |
 
 ## Minimal taxonomy
 

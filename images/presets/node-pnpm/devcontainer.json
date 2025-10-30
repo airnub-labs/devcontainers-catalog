@@ -1,5 +1,6 @@
 {
   "name": "airnub-labs — node + pnpm",
+  "remoteUser": "vscode",
   "build": {
     "dockerfile": "Dockerfile",
     "context": ".",

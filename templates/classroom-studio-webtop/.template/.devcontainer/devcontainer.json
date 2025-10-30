@@ -1,5 +1,6 @@
 {
   "name": "classroom-studio-webtop",
+  "remoteUser": "vscode",
   "dockerComposeFile": [
     "../docker-compose.yml",
     "../../../../services/webtop/docker-compose.webtop.yml",

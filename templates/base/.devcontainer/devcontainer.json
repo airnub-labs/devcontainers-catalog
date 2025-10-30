@@ -1,5 +1,6 @@
 {
   "name": "airnub-labs (base)",
+  "remoteUser": "vscode",
   "dockerComposeFile": [
     ".devcontainer/compose.yaml"
   ],

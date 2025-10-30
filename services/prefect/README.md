@@ -10,6 +10,7 @@ Runs Prefect Server 2.x in a single container so flows can be registered and vie
 
 - Mounts `./prefect` into `/root/.prefect` to persist profiles, API keys, and flow storage between restarts.
 - Defaults to non-debug mode; override environment variables in the generated preset if you need verbose logging.
+- `.env.example` points at the in-cluster API endpoint and logging level so local vs. Codespaces URLs stay in sync.
 
 ## Aggregate Compose
 
