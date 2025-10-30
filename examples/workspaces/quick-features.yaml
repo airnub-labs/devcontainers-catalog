@@ -1,0 +1,20 @@
+apiVersion: airnub.devcontainers/v1
+kind: Workspace
+metadata:
+  name: classroom-features
+spec:
+  mode: features
+  image_tag_strategy: ubuntu-24.04
+  features:
+    node:
+      version: "22"
+      installPnpm: true
+    python:
+      version: "3.12"
+      installJupyterlab: true
+  services:
+    - supabase
+  vscode:
+    extensions:
+      - ms-python.python
+      - ms-toolsai.jupyter

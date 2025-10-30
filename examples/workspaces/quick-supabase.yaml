@@ -1,0 +1,17 @@
+apiVersion: airnub.devcontainers/v1
+kind: Workspace
+metadata:
+  name: classroom-supabase
+spec:
+  mode: preset
+  preset: full-classroom
+  image_tag_strategy: ubuntu-24.04
+  services:
+    - supabase
+  vscode:
+    extensions:
+      - Supabase.vscode-supabase
+      - ms-azuretools.vscode-docker
+  env:
+    PNPM_HOME: /home/vscode/.local/share/pnpm
+    PNPM_STORE_PATH: /home/vscode/.pnpm-store

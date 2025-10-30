@@ -9,36 +9,30 @@
     "kind":       { "type": "string", "const": "LessonEnv" },
     "metadata": {
       "type": "object",
-      "required": ["org", "course", "lesson"],
+      "required": ["org"],
       "additionalProperties": false,
       "properties": {
         "org":    { "type": "string", "minLength": 1 },
         "course": { "type": "string", "minLength": 1 },
-        "lesson": { "type": "string", "minLength": 1 }
+        "lesson": { "type": "string", "minLength": 1 },
+        "name":   { "type": "string", "minLength": 1 }
       }
     },
     "spec": {
       "type": "object",
-      "required": ["base_preset", "image_tag_strategy"],
+      "required": ["base_preset"],
       "additionalProperties": false,
       "properties": {
         "base_preset": {
           "type": "string",
-          "enum": [
-            "full",
-            "node-pnpm",
-            "python",
-            "python-prefect",
-            "python-airflow",
-            "python-dagster",
-            "ts-temporal"
-          ]
+          "minLength": 1
         },
         "image_tag_strategy": {
           "type": "string",
-          "enum": ["ubuntu-24.04"]
+          "minLength": 1,
+          "default": "ubuntu-24.04"
         },
-        "vscode_extensions": { "type": "array", "items": { "type": "string" } },
+        "vscode_extensions": { "type": "array", "items": { "type": "string", "minLength": 1 } },
         "settings": { "type": "object", "additionalProperties": true },
         "features": {
           "type": "object",
@@ -51,29 +45,14 @@
             "required": ["name"],
             "additionalProperties": false,
             "properties": {
-              "name": {
-                "type": "string",
-                "enum": [
-                  "redis",
-                  "supabase",
-                  "kafka",
-                  "inbucket",
-                  "prefect",
-                  "airflow",
-                  "dagster",
-                  "temporal"
-                ]
-              },
+              "name": { "type": "string", "minLength": 1 },
               "vars": { "type": "object", "additionalProperties": true }
             }
           }
         },
-        "emit_aggregate_compose": {
-          "type": "boolean",
-          "default": true
-        },
+        "emit_aggregate_compose": { "type": "boolean" },
         "env": { "type": "object", "additionalProperties": { "type": "string" } },
-        "secrets_placeholders": { "type": "array", "items": { "type": "string" } },
+        "secrets_placeholders": { "type": "array", "items": { "type": "string", "minLength": 1 } },
         "resources": {
           "type": "object",
           "additionalProperties": false,
@@ -88,7 +67,7 @@
           "additionalProperties": false,
           "properties": {
             "url": { "type": "string", "format": "uri", "minLength": 1 },
-            "path": { "type": "string", "minLength": 1, "default": "/workspace" }
+            "path": { "type": "string", "minLength": 1 }
           }
         }
       }

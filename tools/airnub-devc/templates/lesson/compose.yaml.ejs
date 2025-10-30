@@ -1,0 +1,17 @@
+version: "3.9"
+services:
+  devcontainer:
+    image: <%= image %>
+    init: true
+    env_file:
+      - .env
+    volumes:
+      - ..:/workspaces/<%= slug %>:cached
+    labels:
+      airnub.devcontainers.catalog-ref: "<%= catalogRef %>"
+      airnub.devcontainers.generator: "@airnub/devc v<%= version %>"
+    networks:
+      - classroom
+networks:
+  classroom:
+    name: <%= slug %>-network
