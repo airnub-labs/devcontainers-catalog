@@ -15,6 +15,19 @@ export const browserServices = [
   },
 ];
 
+export const stackTemplates = [
+  {
+    id: "stack-nextjs-supabase-neko",
+    label: "Stack: Next.js + Supabase + Neko",
+    templatePath: "templates/stack-nextjs-supabase-neko/.template",
+  },
+  {
+    id: "stack-nextjs-supabase-kasm",
+    label: "Stack: Next.js + Supabase + Kasm",
+    templatePath: "templates/stack-nextjs-supabase-kasm/.template",
+  },
+];
+
 export interface MaterializeServicesOptions {
   services: string[];
   destination: string;

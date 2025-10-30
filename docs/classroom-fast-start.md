@@ -61,3 +61,9 @@ With this flow, every student receives the same workspace with predictable start
 - **Kasm Chrome (KasmVNC)**: `templates/classroom-kasm-chrome`
   - Pure HTTPS + WebSocket transport, very proxy-friendly.
   - Increase `shm_size` for heavy devtools and media testing.
+
+#### One-click stacks (Next.js + Supabase + full Chrome)
+- `stack-nextjs-supabase-neko` (WebRTC / TCP mux)
+- `stack-nextjs-supabase-kasm` (HTTPS + WebSocket)
+
+Both include a demo page at `/classroom-browser` and auto-labeled forwarded ports.

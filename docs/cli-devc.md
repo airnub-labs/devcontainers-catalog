@@ -52,6 +52,13 @@ devc sync [--manifest <path>]
 
 Service-aware commands respect `--fetch-missing-fragments` and `--fetch-ref <ref>` to pin remote fragment sources. When the CLI is operating from a remote catalog cache, fetching is enabled by default. Missing fragments are downloaded directly from GitHub (README, docker-compose files, `.env.example`) so `devc doctor` and `devc add service` work outside the catalog checkout.
 
+### Stack templates
+
+Examples:
+
+- `airnub-devc generate stack --template stack-nextjs-supabase-neko`
+- `airnub-devc generate stack --template stack-nextjs-supabase-kasm`
+
 ### Canonical lesson tag format
 
 `devc build` and `devc doctor` enforce the lesson tag convention:
