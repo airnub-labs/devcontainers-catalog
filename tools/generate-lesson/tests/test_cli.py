@@ -32,7 +32,7 @@ class CLITests(unittest.TestCase):
             "unknown_field": True,
         }
         unsupported, unknown = cli.partition_spec_fields(spec)
-        self.assertEqual(unsupported, ("resources",))
+        self.assertEqual(unsupported, tuple())
         self.assertEqual(unknown, ("unknown_field",))
 
     def test_merge_services_includes_vars(self):
@@ -68,6 +68,7 @@ class CLITests(unittest.TestCase):
                 "image_tag_strategy": "ubuntu-24.04",
                 "features": {"ghcr.io/devcontainers/features/node": {"version": "20"}},
                 "env": {"NODE_ENV": "development"},
+                "resources": {"cpu": "4", "memory": "16GB"},
             },
         }
         with tempfile.TemporaryDirectory() as tmp:
@@ -78,6 +79,9 @@ class CLITests(unittest.TestCase):
             self.assertIn("features", data)
             self.assertIn("containerEnv", data)
             self.assertEqual(data["containerEnv"]["NODE_ENV"], "development")
+            self.assertIn("hostRequirements", data)
+            self.assertEqual(data["hostRequirements"]["cpus"], 4)
+            self.assertEqual(data["hostRequirements"]["memory"], "16GB")
 
     def test_write_stack_lock_collects_images(self):
         manifest = {
@@ -106,6 +110,118 @@ class CLITests(unittest.TestCase):
             self.assertIsNotNone(target)
             payload = json.loads(Path(target).read_text(encoding="utf-8"))
             self.assertEqual(payload["url"], "https://example.com/repo.git")
+
+    def test_write_secrets_placeholders(self):
+        spec = {"secrets_placeholders": ["API_KEY", "API_KEY", "  ", "TOKEN"]}
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            path = cli.write_secrets_placeholders(spec, tmp_path)
+            self.assertIsNotNone(path)
+            content = Path(path).read_text(encoding="utf-8")
+            self.assertIn("API_KEY=", content)
+            self.assertIn("TOKEN=", content)
+
+    def test_write_generation_summary_includes_sections(self):
+        manifest = {
+            "metadata": {"org": "acme", "course": "math", "lesson": "algebra"},
+            "spec": {
+                "base_preset": "full",
+                "image_tag_strategy": "ubuntu-24.04",
+                "secrets_placeholders": ["API_KEY"],
+                "resources": {"cpu": "8", "memory": "32GB"},
+            },
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            env_example = tmp_path / ".env.example-redis"
+            env_example.write_text("", encoding="utf-8")
+            services_readme = tmp_path / "README-SERVICES.md"
+            services_readme.write_text("", encoding="utf-8")
+            secrets_file = tmp_path / "secrets.placeholders.env"
+            secrets_file.write_text("API_KEY=\n", encoding="utf-8")
+            artifacts = cli.ServiceArtifacts(
+                names=("redis",),
+                fragments={"redis": tuple()},
+                env_examples={"redis": env_example},
+                vars={},
+                missing=tuple(),
+            )
+            summary_path = cli.write_generation_summary(
+                manifest,
+                "acme-math-algebra",
+                tmp_path,
+                artifacts,
+                secrets_file,
+                services_readme,
+            )
+            summary = Path(summary_path).read_text(encoding="utf-8")
+            self.assertIn("Secrets to Provide", summary)
+            self.assertIn("Service Environment Files", summary)
+            self.assertIn("Resource Guidance", summary)
+
+    def test_cli_main_generates_artifacts_end_to_end(self):
+        manifest_text = textwrap.dedent(
+            """
+            apiVersion: airnub.devcontainers/v1
+            kind: LessonEnv
+            metadata:
+              org: acme
+              course: math
+              lesson: algebra
+            spec:
+              base_preset: full
+              image_tag_strategy: ubuntu-24.04
+              services:
+                - name: redis
+              secrets_placeholders:
+                - REDIS_PASSWORD
+              resources:
+                cpu: "4"
+                memory: 8GB
+            """
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            repo_root = Path(tmp) / "repo"
+            repo_root.mkdir()
+            services_dir = repo_root / "services" / "redis"
+            services_dir.mkdir(parents=True)
+            (services_dir / "docker-compose.redis.yml").write_text(
+                textwrap.dedent(
+                    """
+                    services:
+                      redis:
+                        image: redis:7
+                    """
+                ).strip()
+                + "\n",
+                encoding="utf-8",
+            )
+            (services_dir / ".env.example").write_text("REDIS_PASSWORD=\n", encoding="utf-8")
+            manifest_path = repo_root / "manifest.yaml"
+            manifest_path.write_text(manifest_text, encoding="utf-8")
+
+            original_root = cli.ROOT
+            original_argv = sys.argv
+            cli.ROOT = repo_root
+            sys.argv = ["generate-lesson", "--manifest", str(manifest_path)]
+            try:
+                exit_code = cli.main()
+            finally:
+                cli.ROOT = original_root
+                sys.argv = original_argv
+
+            self.assertEqual(exit_code, 0)
+            slug_dir = repo_root / "images" / "presets" / "generated" / "acme-math-algebra"
+            self.assertTrue((slug_dir / "Dockerfile").exists())
+            self.assertTrue((slug_dir / "secrets.placeholders.env").exists())
+            self.assertTrue((slug_dir / "GENERATION_SUMMARY.md").exists())
+            compose_path = slug_dir / "docker-compose.classroom.yml"
+            self.assertTrue(compose_path.exists())
+            summary_text = (slug_dir / "GENERATION_SUMMARY.md").read_text(encoding="utf-8")
+            self.assertIn("REDIS_PASSWORD", summary_text)
+            template_dir = repo_root / "templates" / "generated" / "acme-math-algebra"
+            self.assertTrue((template_dir / ".devcontainer" / "devcontainer.json").exists())
+            self.assertTrue((template_dir / "secrets.placeholders.env").exists())
 
 
 if __name__ == "__main__":
