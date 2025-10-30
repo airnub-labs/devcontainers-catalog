@@ -2,7 +2,7 @@
 
 This repository is the **Devcontainers Catalog**: reusable **Features**, **Templates**, **Presets/Images**, **Service fragments**, and **schemas** used by a future SaaS platform to deliver **chat-to-classroom** environments.
 
-## Directory Ownership
+---
 
 | Path                     | Role                           | Notes |
 |--------------------------|--------------------------------|------|
@@ -84,7 +84,8 @@ The SaaS mediates **MCP agents** and **LLM agents** that:
 
 ---
 
-## Naming & Publishing
+2. **Education SaaS Support (First-Class)**
+   Everything in this catalog **must continue enabling** the classroom SaaS vision:
 
 - **Features** → `ghcr.io/airnub-labs/devcontainer-features/<id>:<semver>`
 - **Presets/Images** → `ghcr.io/airnub-labs/templates/<preset>:<tag>`
