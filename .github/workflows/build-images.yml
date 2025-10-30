@@ -13,6 +13,8 @@ jobs:
       contents: read
       packages: write
       id-token: write
+    env:
+      TRIVY_EXIT_CODE: 0
     steps:
       - uses: actions/checkout@v4
       - name: Set up QEMU
@@ -44,6 +46,20 @@ jobs:
           labels: |
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
+      - name: Run Trivy vulnerability scan (dev-base)
+        if: ${{ hashFiles('images/dev-base/**') != '' }}
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ghcr.io/airnub-labs/devcontainer-images/dev-base:latest
+          format: 'sarif'
+          output: trivy-dev-base.sarif
+          exit-code: ${{ env.TRIVY_EXIT_CODE }}
+          ignore-unfixed: true
+      - name: Upload Trivy results (dev-base)
+        if: ${{ hashFiles('images/dev-base/**') != '' }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-dev-base.sarif
       - name: Build & push dev-web
         if: ${{ hashFiles('images/dev-web/**') != '' }}
         uses: docker/build-push-action@v6
@@ -63,3 +79,17 @@ jobs:
           labels: |
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
+      - name: Run Trivy vulnerability scan (dev-web)
+        if: ${{ hashFiles('images/dev-web/**') != '' }}
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ghcr.io/airnub-labs/devcontainer-images/dev-web:latest
+          format: 'sarif'
+          output: trivy-dev-web.sarif
+          exit-code: ${{ env.TRIVY_EXIT_CODE }}
+          ignore-unfixed: true
+      - name: Upload Trivy results (dev-web)
+        if: ${{ hashFiles('images/dev-web/**') != '' }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-dev-web.sarif

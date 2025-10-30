@@ -1,0 +1,50 @@
+name: "Catalog enhancement"
+description: "Suggest a new feature, template, or workflow improvement"
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        We love ideas that make it easier for instructors to spin up classrooms via chat. Tell us how we can improve!
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: One sentence that captures the value of the enhancement.
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What educator workflow or platform outcome does this improve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Outline the change, including affected catalog areas and acceptance criteria.
+      placeholder: |
+        * Context
+        * Proposed solution
+        * Success criteria
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: textarea
+    id: references
+    attributes:
+      label: Related links or manifests
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Submission checklist
+      options:
+        - label: I have read the CONTRIBUTING.md guidelines.
+          required: true
+        - label: This proposal keeps student environments deterministic and reproducible.
+          required: true
