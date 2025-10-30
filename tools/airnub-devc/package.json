@@ -6,7 +6,7 @@
     "devc": "dist/index.js"
   },
   "engines": {
-    "node": ">=18.18.0"
+    "node": ">=24.0.0"
   },
   "license": "Apache-2.0",
   "repository": "https://github.com/airnub-labs/devcontainers-catalog",

@@ -1,4 +1,5 @@
 import path from "path";
+import os from "os";
 import fs from "fs-extra";
 
 export interface MaterializeServicesOptions {
@@ -20,26 +21,37 @@ async function fetchRemoteFragment(service: string, ref: string, destDir: string
     ".env.example",
   ];
 
-  await fs.ensureDir(destDir);
+  const stagingDir = await fs.mkdtemp(path.join(os.tmpdir(), `airnub-service-${service}-`));
   let foundCompose = false;
 
-  for (const file of candidates) {
-    const url = `${base}/${file}`;
-    const res = await fetch(url);
-    if (!res.ok) {
-      continue;
+  try {
+    for (const file of candidates) {
+      const url = `${base}/${file}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        continue;
+      }
+      const text = await res.text();
+      await fs.outputFile(path.join(stagingDir, file), text, { encoding: "utf8" });
+      if (file.startsWith("docker-compose.")) {
+        foundCompose = true;
+      }
     }
-    const text = await res.text();
-    await fs.outputFile(path.join(destDir, file), text, { encoding: "utf8" });
-    if (file.startsWith("docker-compose.")) {
-      foundCompose = true;
-    }
-  }
 
-  if (!foundCompose) {
-    throw new Error(
-      `Service fragment '${service}' not found remotely at ref ${ref}. Ensure services/${service}/docker-compose.${service}.yml exists.`,
-    );
+    if (!foundCompose) {
+      throw new Error(
+        `Service fragment '${service}' not found remotely at ref ${ref}. Ensure services/${service}/docker-compose.${service}.yml exists.`,
+      );
+    }
+
+    await fs.remove(destDir).catch((error: NodeJS.ErrnoException) => {
+      if (error && error.code !== "ENOENT") {
+        throw error;
+      }
+    });
+    await fs.move(stagingDir, destDir, { overwrite: true });
+  } finally {
+    await fs.remove(stagingDir).catch(() => {});
   }
 }
 
@@ -77,8 +89,19 @@ export async function materializeServices(opts: MaterializeServicesOptions) {
     }
 
     if (sourceDir !== destDir) {
-      await fs.remove(destDir).catch(() => {});
-      await fs.copy(sourceDir, destDir);
+      const stagingDir = await fs.mkdtemp(path.join(os.tmpdir(), `airnub-stage-${svc}-`));
+      try {
+        await fs.copy(sourceDir, stagingDir);
+        await fs.remove(destDir).catch((error: NodeJS.ErrnoException) => {
+          if (error && error.code !== "ENOENT") {
+            throw error;
+          }
+        });
+        await fs.move(stagingDir, destDir, { overwrite: true });
+      } catch (error) {
+        await fs.remove(stagingDir).catch(() => {});
+        throw error;
+      }
     }
   }
 }

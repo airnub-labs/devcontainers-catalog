@@ -11,6 +11,20 @@ PROFILE_DIR="/etc/profile.d"
 
 mkdir -p "${FEATURE_DIR}"
 
+verify_sha256() {
+    local expected="$1"
+    local file="$2"
+
+    if command -v sha256sum >/dev/null 2>&1; then
+        printf '%s  %s\n' "${expected}" "${file}" | sha256sum --check --status
+    elif command -v shasum >/dev/null 2>&1; then
+        printf '%s  %s\n' "${expected}" "${file}" | shasum -a 256 --check --status
+    else
+        echo "[supabase-cli] Neither sha256sum nor shasum is installed; cannot verify checksums." >&2
+        return 1
+    fi
+}
+
 normalize_version() {
     local raw="$1"
     if [ -z "${raw}" ] || [ "${raw}" = "latest" ]; then
@@ -96,13 +110,54 @@ install_supabase_cli() {
         return 0
     fi
 
-    local deb_url="https://github.com/supabase/cli/releases/download/${requested}/supabase_${requested#v}_linux_${arch}.deb"
+    local deb_basename="supabase_${requested#v}_linux_${arch}.deb"
+    local deb_url="https://github.com/supabase/cli/releases/download/${requested}/${deb_basename}"
     local tmp_deb
     tmp_deb=$(mktemp -d)
     trap 'rm -rf "${tmp_deb:-}"' EXIT
 
     echo "[supabase-cli] Downloading ${deb_url}"
     curl -fsSL "${deb_url}" -o "${tmp_deb}/supabase.deb"
+
+    local checksum_candidates=(
+        "https://github.com/supabase/cli/releases/download/${requested}/supabase_${requested#v}_SHA256SUMS"
+        "https://github.com/supabase/cli/releases/download/${requested}/supabase_${requested#v}_checksums.txt"
+        "https://github.com/supabase/cli/releases/download/${requested}/${deb_basename}.sha256"
+    )
+
+    local checksum_file=""
+    for url in "${checksum_candidates[@]}"; do
+        if curl -fsSL "${url}" -o "${tmp_deb}/checksums.txt"; then
+            checksum_file="${tmp_deb}/checksums.txt"
+            break
+        fi
+    done
+
+    if [ -z "${checksum_file}" ]; then
+        echo "[supabase-cli] Failed to download checksum for ${deb_basename}" >&2
+        exit 1
+    fi
+
+    local expected
+    expected=$(awk -v file="${deb_basename}" '
+        $1 ~ /^[0-9a-fA-F]{64}$/ && ($2 == file || $NF == file) { print $1; exit }
+        match($0, /SHA256\s*\(([^)]+)\)\s*=\s*([0-9a-fA-F]{64})/, parts) {
+            if (parts[1] == file) { print parts[2]; exit }
+        }
+        match($0, /([0-9a-fA-F]{64})\s+\*?(.+)/, parts) {
+            if (parts[2] == file) { print parts[1]; exit }
+        }
+    ' "${checksum_file}")
+
+    if [ -z "${expected}" ]; then
+        echo "[supabase-cli] Unable to parse checksum for ${deb_basename}" >&2
+        exit 1
+    fi
+
+    if ! verify_sha256 "${expected}" "${tmp_deb}/supabase.deb"; then
+        echo "[supabase-cli] Checksum verification failed for ${deb_basename}" >&2
+        exit 1
+    fi
 
     apt-get update
 
