@@ -15,39 +15,6 @@ except ModuleNotFoundError:  # pragma: no cover - fallback when PyYAML is unavai
 ROOT = Path(__file__).resolve().parents[3]
 
 
-SERVICE_INSTRUCTIONS: Mapping[str, Sequence[str]] = {
-    "redis": ("Redis — `docker compose -f services/redis/docker-compose.redis.yml up -d`",),
-    "supabase": (
-        "Supabase — `docker compose -f services/supabase/docker-compose.supabase.yml up -d`",
-        "Copy `.env.example-supabase` to `.env` before launching Supabase.",
-    ),
-    "kafka": (
-        "Kafka — `docker compose -f services/kafka/docker-compose.kafka-kraft.yml up -d`",
-        "Optional utils: `docker compose -f services/kafka/docker-compose.kafka-utils.yml up -d`",
-    ),
-    "inbucket": (
-        "Inbucket — `docker compose -f services/inbucket/docker-compose.inbucket.yml up -d`",
-    ),
-    "prefect": (
-        "Prefect — `docker compose -f services/prefect/docker-compose.prefect.yml up -d`",
-        "Review `.env.example-prefect` for optional overrides before launching.",
-    ),
-    "airflow": (
-        "Airflow — `docker compose -f services/airflow/docker-compose.airflow.yml up -d`",
-        "Set admin credentials in `.env.example-airflow` and copy to `.env` if needed.",
-    ),
-    "dagster": (
-        "Dagster — `docker compose -f services/dagster/docker-compose.dagster.yml up -d`",
-        "Copy `.env.example-dagster` to `.env` if your pipelines depend on environment variables.",
-        "Update `services/dagster/example_dagster_repo` with your own project before class.",
-    ),
-    "temporal": (
-        "Temporal — `docker compose -f services/temporal/docker-compose.temporal.yml up -d`",
-        "Adjust `.env.example-temporal` for custom CORS origins before launching the UI.",
-    ),
-}
-
-
 SERVICE_PORT_LABELS: Mapping[str, Mapping[int, str]] = {
     "redis": {6379: "Redis"},
     "supabase": {
@@ -119,10 +86,16 @@ SUPPORTED_SPEC_FIELDS = {
     "emit_aggregate_compose",
     "env",
     "starter_repo",
+    "secrets_placeholders",
+    "resources",
 }
 
 
-UNIMPLEMENTED_SPEC_FIELDS = {"secrets_placeholders", "resources"}
+UNIMPLEMENTED_SPEC_FIELDS: set = set()
+
+
+REQUIRED_METADATA_FIELDS = ("org", "course", "lesson")
+REQUIRED_SPEC_FIELDS = ("base_preset", "image_tag_strategy")
 
 
 @dataclass(frozen=True)
@@ -131,12 +104,19 @@ class ServiceArtifacts:
     fragments: Dict[str, Tuple[Path, ...]]
     env_examples: Dict[str, Path]
     vars: Dict[str, Dict[str, str]]
+    missing: Tuple[str, ...]
 
 
 def _slugify_component(value: str) -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", value.lower().strip())
     slug = re.sub(r"-+", "-", slug).strip("-")
     return slug or "lesson"
+
+
+def _format_service_heading(name: str) -> str:
+    tokens = re.split(r"[-_]+", str(name or "").strip())
+    formatted = " ".join(token.capitalize() for token in tokens if token)
+    return formatted or str(name)
 
 
 def derive_lesson_slug(metadata: Dict[str, str]) -> str:
@@ -245,6 +225,37 @@ def load_manifest(path: Path) -> dict:
     return parse_simple_yaml(text)
 
 
+def validate_manifest_structure(manifest) -> Tuple[Dict[str, str], Dict[str, object], Tuple[str, ...]]:
+    errors: List[str] = []
+    if not isinstance(manifest, Mapping):
+        errors.append("manifest root must be a mapping")
+        return {}, {}, tuple(errors)
+
+    metadata_raw = manifest.get("metadata")
+    if not isinstance(metadata_raw, Mapping):
+        errors.append("manifest.metadata must be an object with org/course/lesson")
+        metadata: Dict[str, str] = {}
+    else:
+        metadata = {str(key): str(value) for key, value in metadata_raw.items() if isinstance(key, str)}
+        for field in REQUIRED_METADATA_FIELDS:
+            value = metadata_raw.get(field)
+            if not str(value or "").strip():
+                errors.append(f"manifest.metadata.{field} is required")
+
+    spec_raw = manifest.get("spec")
+    if not isinstance(spec_raw, Mapping):
+        errors.append("manifest.spec must be an object with required fields")
+        spec: Dict[str, object] = {}
+    else:
+        spec = dict(spec_raw)
+        for field in REQUIRED_SPEC_FIELDS:
+            value = spec_raw.get(field)
+            if not str(value or "").strip():
+                errors.append(f"manifest.spec.{field} is required")
+
+    return metadata, spec, tuple(errors)
+
+
 def ensure_dir(path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True)
 
@@ -269,6 +280,7 @@ def merge_services(services, out_dir: Path) -> ServiceArtifacts:
     fragments: Dict[str, Tuple[Path, ...]] = {}
     env_examples: Dict[str, Path] = {}
     service_vars: Dict[str, Dict[str, str]] = {}
+    missing: List[str] = []
 
     for svc in services or []:
         if isinstance(svc, dict):
@@ -281,6 +293,8 @@ def merge_services(services, out_dir: Path) -> ServiceArtifacts:
             continue
         src_dir = ROOT / "services" / name
         if not src_dir.exists():
+            if name not in missing:
+                missing.append(name)
             continue
 
         if name not in ordered:
@@ -316,7 +330,7 @@ def merge_services(services, out_dir: Path) -> ServiceArtifacts:
         if vars_payload:
             service_vars[name] = vars_payload
 
-    return ServiceArtifacts(tuple(ordered), fragments, env_examples, service_vars)
+    return ServiceArtifacts(tuple(ordered), fragments, env_examples, service_vars, tuple(missing))
 
 
 def _build_vscode_customizations(spec: dict) -> Dict[str, dict]:
@@ -344,6 +358,21 @@ def _coerce_string_map(raw_mapping) -> Dict[str, str]:
     return coerced
 
 
+def _collect_secrets_placeholders(spec: dict) -> Tuple[str, ...]:
+    raw = spec.get("secrets_placeholders")
+    if not isinstance(raw, Iterable):
+        return tuple()
+    collected: List[str] = []
+    seen = set()
+    for entry in raw:
+        candidate = str(entry or "").strip()
+        if not candidate or candidate in seen:
+            continue
+        collected.append(candidate)
+        seen.add(candidate)
+    return tuple(collected)
+
+
 def _apply_optional_devcontainer_overrides(devc: Dict[str, object], spec: dict) -> None:
     features = spec.get("features")
     if isinstance(features, Mapping) and features:
@@ -351,6 +380,25 @@ def _apply_optional_devcontainer_overrides(devc: Dict[str, object], spec: dict) 
     env_map = _coerce_string_map(spec.get("env"))
     if env_map:
         devc["containerEnv"] = env_map
+    resources = spec.get("resources")
+    if isinstance(resources, Mapping) and resources:
+        host_requirements: Dict[str, object] = {}
+        cpu_value = resources.get("cpu")
+        if cpu_value is not None:
+            try:
+                cpu_float = float(str(cpu_value).strip())
+            except ValueError:
+                host_requirements["cpus"] = str(cpu_value)
+            else:
+                if cpu_float.is_integer():
+                    host_requirements["cpus"] = int(cpu_float)
+                else:
+                    host_requirements["cpus"] = cpu_float
+        memory_value = resources.get("memory")
+        if memory_value is not None:
+            host_requirements["memory"] = str(memory_value)
+        if host_requirements:
+            devc["hostRequirements"] = host_requirements
 
 
 def partition_spec_fields(spec: Mapping[str, object]) -> Tuple[Tuple[str, ...], Tuple[str, ...]]:
@@ -521,6 +569,115 @@ def write_generated_repo_scaffold(
         handle.write("\n")
 
 
+def write_secrets_placeholders(spec: dict, out_dir: Path) -> Optional[Path]:
+    placeholders = _collect_secrets_placeholders(spec)
+    if not placeholders:
+        return None
+    ensure_dir(out_dir)
+    target = out_dir / "secrets.placeholders.env"
+    lines = [
+        "# Populate these secrets via Codespaces secrets, the Dev Containers secret store,",
+        "# or a local .env file before launching classroom services.",
+        "",
+    ]
+    lines.extend(f"{name}=" for name in placeholders)
+    target.write_text("\n".join(lines).strip() + "\n", encoding="utf-8")
+    return target
+
+
+def _relative_path(base: Path, target: Path) -> str:
+    try:
+        return str(target.relative_to(base))
+    except ValueError:
+        return str(target)
+
+
+def write_generation_summary(
+    manifest: dict,
+    slug: str,
+    out_dir: Path,
+    artifacts: ServiceArtifacts,
+    secrets_file: Optional[Path],
+    services_readme: Optional[Path],
+) -> Path:
+    spec = manifest.get("spec", {})
+    metadata = manifest.get("metadata", {})
+    placeholders = _collect_secrets_placeholders(spec)
+    resources_payload = spec.get("resources")
+    resources = resources_payload if isinstance(resources_payload, Mapping) else None
+
+    lines: List[str] = ["# Lesson Generation Summary", ""]
+    lines.append(
+        f"- Lesson: `{metadata.get('org', 'unknown')}` / `{metadata.get('course', 'unknown')}` / `{metadata.get('lesson', 'unknown')}`"
+    )
+    lines.append(f"- Slug: `{slug}`")
+    lines.append("")
+
+    if placeholders:
+        lines.append("## Secrets to Provide")
+        lines.append(
+            "Configure the following secrets via GitHub Codespaces secrets, the Dev Containers secret store, or a `.env` file before class:"
+        )
+        lines.append("")
+        for placeholder in placeholders:
+            lines.append(f"- `{placeholder}`")
+        if secrets_file:
+            lines.append("")
+            lines.append(
+                f"A starter file is available at `{_relative_path(out_dir, secrets_file)}` (copy to `.env` and fill values)."
+            )
+        lines.append("")
+
+    if artifacts.env_examples:
+        lines.append("## Service Environment Files")
+        lines.append(
+            "Copy each `.env.example-*` file to `.env` and update credentials before launching `docker compose`."
+        )
+        lines.append("")
+        for service, env_path in sorted(artifacts.env_examples.items()):
+            lines.append(
+                f"- `{service}` → `{_relative_path(out_dir, env_path)}`"
+            )
+        lines.append("")
+
+    if services_readme:
+        lines.append("## Classroom Services")
+        lines.append(
+            f"Review `{_relative_path(out_dir, services_readme)}` for launch commands and orchestration notes."
+        )
+        lines.append("")
+
+    if artifacts.missing:
+        lines.append("## Missing Service Fragments")
+        lines.append(
+            "The manifest referenced services that were not found in the catalog. Update the manifest or add the fragments before regenerating."
+        )
+        lines.append("")
+        for missing in artifacts.missing:
+            lines.append(f"- `{missing}`")
+        lines.append("")
+
+    if resources:
+        cpu_hint = resources.get("cpu")
+        mem_hint = resources.get("memory")
+        lines.append("## Resource Guidance")
+        lines.append("Suggested Codespaces machine or host requirements:")
+        lines.append("")
+        if cpu_hint is not None:
+            lines.append(f"- CPU: `{cpu_hint}`")
+        if mem_hint is not None:
+            lines.append(f"- Memory: `{mem_hint}`")
+        lines.append("")
+
+    lines.append("## Next Steps")
+    lines.append("- Build the lesson image and publish it so students pull the pinned tag before class.")
+    lines.append("- Share the generated `.devcontainer` scaffold with students or commit it to a starter repo.")
+
+    target = out_dir / "GENERATION_SUMMARY.md"
+    target.write_text("\n".join(line for line in lines if line is not None).strip() + "\n", encoding="utf-8")
+    return target
+
+
 def write_starter_repo_metadata(spec: dict, out_dir: Path) -> Optional[Path]:
     starter_repo = spec.get("starter_repo")
     if not isinstance(starter_repo, Mapping):
@@ -640,14 +797,25 @@ def write_services_readme(artifacts: ServiceArtifacts, out_dir: Path) -> Optiona
 
     wrote_instruction = False
     for name in artifacts.names:
-        instructions = SERVICE_INSTRUCTIONS.get(name)
-        if not instructions:
+        fragments = artifacts.fragments.get(name, ())
+        env_example = artifacts.env_examples.get(name)
+        overrides = artifacts.vars.get(name, {})
+        if not fragments and not env_example and not overrides:
             continue
+
         wrote_instruction = True
         lines.append("")
-        for index, entry in enumerate(instructions):
-            prefix = "- " if index == 0 else "  "
-            lines.append(f"{prefix}{entry}")
+        lines.append(f"### {_format_service_heading(name)}")
+        for fragment in fragments:
+            rel_path = _relative_path(out_dir, fragment)
+            lines.append(f"- Launch: `docker compose -f {rel_path} up -d`")
+        if env_example is not None:
+            rel_env = _relative_path(out_dir, env_example)
+            lines.append(f"- Copy `{rel_env}` to `.env` before starting the service.")
+        if overrides:
+            lines.append("- Manifest environment overrides:")
+            for key in sorted(overrides):
+                lines.append(f"  - `{key}` = `{overrides[key]}`")
 
     if not wrote_instruction:
         return None
@@ -669,7 +837,15 @@ def main() -> int:
         return 1
 
     manifest = load_manifest(manifest_path)
-    spec = manifest.get("spec") or {}
+    metadata, spec, validation_errors = validate_manifest_structure(manifest)
+    if validation_errors:
+        for error in validation_errors:
+            print(f"[error] {error}", file=sys.stderr)
+        return 1
+
+    manifest["metadata"] = metadata or dict(manifest.get("metadata", {}))
+    manifest["spec"] = dict(spec)
+    spec = manifest["spec"]
     unsupported_fields, unknown_fields = partition_spec_fields(spec)
     for field in unsupported_fields:
         print(
@@ -682,12 +858,30 @@ def main() -> int:
             file=sys.stderr,
         )
 
+    resources_payload = spec.get("resources")
+    resources = resources_payload if isinstance(resources_payload, Mapping) else None
+    if resources:
+        supported_resource_keys = {"cpu", "memory"}
+        for key in sorted(resources):
+            if key not in supported_resource_keys:
+                print(
+                    f"[warn] spec.resources.{key} is not recognized; only cpu and memory are supported today.",
+                    file=sys.stderr,
+                )
+
     metadata = manifest["metadata"]
     slug = derive_lesson_slug(metadata)
 
     gen_preset_dir = ROOT / "images" / "presets" / "generated" / slug
     write_generated_preset_ctx(manifest, gen_preset_dir)
+    secrets_placeholder_path = write_secrets_placeholders(spec, gen_preset_dir)
     artifacts = merge_services(spec.get("services"), gen_preset_dir)
+
+    for missing in artifacts.missing:
+        print(
+            f"[warn] spec.services requested '{missing}', but no matching fragment exists under services/{missing}",
+            file=sys.stderr,
+        )
 
     for name, env_path in sorted(artifacts.env_examples.items()):
         print(f"[hint] Copied {name} .env example to {env_path}")
@@ -699,6 +893,9 @@ def main() -> int:
     starter_meta = write_starter_repo_metadata(spec, gen_preset_dir)
     if starter_meta:
         print(f"[hint] Starter repo metadata recorded at {starter_meta}")
+
+    if secrets_placeholder_path:
+        print(f"[hint] Secrets placeholders recorded at {secrets_placeholder_path}")
 
     aggregate_path: Optional[Path] = None
     try:
@@ -714,10 +911,23 @@ def main() -> int:
     if services_readme:
         print(f"[hint] Service README available at {services_readme}")
 
+    summary_path = write_generation_summary(
+        manifest,
+        slug,
+        gen_preset_dir,
+        artifacts,
+        secrets_placeholder_path,
+        services_readme,
+    )
+    print(f"[hint] Generation summary available at {summary_path}")
+
     ports_attributes = collect_ports_attributes(artifacts)
 
     gen_template_dir = ROOT / "templates" / "generated" / slug
     write_generated_repo_scaffold(manifest, gen_template_dir, slug, ports_attributes)
+    template_secrets = write_secrets_placeholders(spec, gen_template_dir)
+    if template_secrets:
+        print(f"[hint] Secrets placeholders recorded at {template_secrets}")
 
     if stack_lock_path:
         copied_stack_lock = gen_template_dir / "stack.lock.json"
