@@ -142,10 +142,15 @@ PY
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ env.REGISTRY }}/lessons/${{ steps.slug.outputs.slug }}:${{ env.LESSON_TAG }}
+          build-args: |
+            GIT_SHA=${{ github.sha }}
+          provenance: mode=max
+          sbom: true
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.description=Lesson image for ${{ steps.slug.outputs.org }}/${{ steps.slug.outputs.course }}/${{ steps.slug.outputs.lesson }}
-            edu.airnub.org=${{ steps.slug.outputs.org }}
-            edu.airnub.course=${{ steps.slug.outputs.course }}
-            edu.airnub.lesson=${{ steps.slug.outputs.lesson }}
-            edu.airnub.schema=airnub.devcontainers/v1
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.airnub.lesson.org=${{ steps.slug.outputs.org }}
+            org.airnub.lesson.course=${{ steps.slug.outputs.course }}
+            org.airnub.lesson.lesson=${{ steps.slug.outputs.lesson }}
+            org.airnub.lesson.schema=airnub.devcontainers/v1

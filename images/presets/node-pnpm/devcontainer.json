@@ -1,6 +1,12 @@
 {
   "name": "airnub-labs — node + pnpm",
-  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".",
+    "args": {
+      "BASE_IMAGE": "ghcr.io/airnub-labs/devcontainer-images/dev-base:ubuntu-24.04"
+    }
+  },
   "workspaceFolder": "/airnub-labs",
   "features": {
     "ghcr.io/devcontainers/features/node:1": {
@@ -19,6 +25,7 @@
     "vscode": {
       "settings": {
         "remote.downloadExtensionsLocally": "always",
+        "telemetry.telemetryLevel": "off",
         "typescript.tsdk": "node_modules/typescript/lib",
         "editor.formatOnSave": true
       },

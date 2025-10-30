@@ -1,12 +1,18 @@
 {
   "name": "Python + Dagster",
-  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "build": {
+    "dockerfile": "../Dockerfile",
+    "context": "..",
+    "args": {
+      "BASE_IMAGE": "ghcr.io/airnub-labs/devcontainer-images/dev-base:ubuntu-24.04"
+    }
+  },
   "features": {
     "ghcr.io/devcontainers/features/python:1": { "version": "3.12" }
   },
   "customizations": {
     "vscode": {
-      "settings": { "remote.downloadExtensionsLocally": "always" },
+      "settings": { "remote.downloadExtensionsLocally": "always", "telemetry.telemetryLevel": "off" },
       "extensions": ["ms-python.python", "ms-python.vscode-pylance"]
     }
   }

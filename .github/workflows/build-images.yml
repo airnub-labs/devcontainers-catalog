@@ -31,10 +31,18 @@ jobs:
           context: images/dev-base
           platforms: linux/amd64,linux/arm64
           push: true
+          build-args: |
+            GIT_SHA=${{ github.sha }}
+          provenance: mode=max
+          sbom: true
           tags: |
             ghcr.io/airnub-labs/devcontainer-images/dev-base:1.0.0
             ghcr.io/airnub-labs/devcontainer-images/dev-base:1
+            ghcr.io/airnub-labs/devcontainer-images/dev-base:ubuntu-24.04
             ghcr.io/airnub-labs/devcontainer-images/dev-base:latest
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
       - name: Build & push dev-web
         if: ${{ hashFiles('images/dev-web/**') != '' }}
         uses: docker/build-push-action@v6
@@ -42,7 +50,15 @@ jobs:
           context: images/dev-web
           platforms: linux/amd64,linux/arm64
           push: true
+          build-args: |
+            GIT_SHA=${{ github.sha }}
+          provenance: mode=max
+          sbom: true
           tags: |
             ghcr.io/airnub-labs/devcontainer-images/dev-web:1.0.0
             ghcr.io/airnub-labs/devcontainer-images/dev-web:1
+            ghcr.io/airnub-labs/devcontainer-images/dev-web:ubuntu-24.04
             ghcr.io/airnub-labs/devcontainer-images/dev-web:latest
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}

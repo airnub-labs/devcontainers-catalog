@@ -24,5 +24,17 @@
       "label": "Chrome DevTools"
     }
   },
-  "postCreateCommand": "bash .devcontainer/postCreate.sh"
+  "postCreateCommand": "bash .devcontainer/postCreate.sh",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "remote.downloadExtensionsLocally": "always",
+        "telemetry.telemetryLevel": "off"
+      },
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode"
+      ]
+    }
+  }
 }
