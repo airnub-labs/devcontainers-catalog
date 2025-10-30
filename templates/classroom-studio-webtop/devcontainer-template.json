@@ -2,7 +2,7 @@
   "version": "1.0.0",
   "id": "classroom-studio-webtop",
   "name": "Classroom Studio (Webtop)",
-  "description": "Primary dev container with Supabase tooling and a Chrome-enabled webtop sidecar for touch devices.",
+  "description": "Headless dev container plus a linuxserver/webtop sidecar (served over noVNC at http://localhost:{{templateOption.webtopPort}}).",
   "documentationURL": "https://github.com/airnub-labs/devcontainers-catalog",
   "publisher": "airnub-labs",
   "options": {
@@ -14,13 +14,13 @@
     },
     "webtopPort": {
       "type": "integer",
-      "default": 3001,
+      "default": 3000,
       "description": "Forwarded port for the desktop (webtop) service."
     },
     "chromePolicies": {
       "type": "string",
       "default": ".devcontainer/policies/managed.json",
-      "description": "Path to the Chrome policy file mounted into the webtop container. Leave as-is to use the managed/none presets."
+      "description": "Path to the Chrome policy file mounted into the webtop container. Leave as-is to follow the selected policy mode."
     }
   }
 }

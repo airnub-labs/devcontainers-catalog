@@ -1,10 +1,12 @@
 {
   "name": "classroom-studio-webtop",
   "dockerComposeFile": [
-    "./compose.yaml"
+    "../docker-compose.yml",
+    "../../../../services/webtop/docker-compose.webtop.yml",
+    "../docker-compose.webtop.override.yml"
   ],
-  "service": "dev",
-  "runServices": ["dev", "webtop"],
+  "service": "devcontainer",
+  "runServices": ["webtop"],
   "workspaceFolder": "/workspaces",
   "containerEnv": {
     "CHROME_POLICY_SOURCE": "{{templateOption.chromePolicies}}"

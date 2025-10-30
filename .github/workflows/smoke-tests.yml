@@ -88,28 +88,39 @@ jobs:
           set -euo pipefail
           case "$SERVICE" in
             redis)
-              file="services/redis/docker-compose.redis.yml"
+              compose_args=(
+                -f services/redis/docker-compose.redis.yml
+              )
               check_service="redis"
               check_cmd="redis-cli ping"
               ;;
             prefect)
-              file="services/prefect/docker-compose.prefect.yml"
+              compose_args=(
+                -f services/prefect/docker-compose.prefect.yml
+              )
               check_service="prefect"
-              check_cmd="prefect version"
+              check_cmd="prefect --version"
               ;;
             airflow)
-              file="services/airflow/docker-compose.airflow.yml"
-              check_service="airflow-webserver"
+              compose_args=(
+                -f services/airflow/docker-compose.airflow.yml
+              )
+              check_service="airflow"
               check_cmd="airflow db check"
               ;;
             dagster)
-              file="services/dagster/docker-compose.dagster.yml"
-              check_service="dagster-webserver"
+              compose_args=(
+                -f services/dagster/docker-compose.dagster.yml
+              )
+              check_service="dagster"
               check_cmd="dagster --version"
               ;;
             temporal)
-              file="services/temporal/docker-compose.temporal.yml:services/temporal/docker-compose.temporal-admin.yml"
-              check_service="temporal-admin-tools"
+              compose_args=(
+                -f services/temporal/docker-compose.temporal.yml
+                -f services/temporal/docker-compose.temporal-admin.yml
+              )
+              check_service="temporal-admin"
               check_cmd="tctl cluster health"
               ;;
             *)
@@ -118,13 +129,12 @@ jobs:
               ;;
           esac
 
-          export COMPOSE_FILE="$file"
           export COMPOSE_PROJECT_NAME="smoke-${SERVICE}"
-          docker compose up -d
+          docker compose "${compose_args[@]}" up -d
 
           attempt=0
           until [ $attempt -ge 12 ]; do
-            if docker compose exec -T "$check_service" $check_cmd >/tmp/smoke.log 2>&1; then
+            if docker compose "${compose_args[@]}" exec -T "$check_service" $check_cmd >/tmp/smoke.log 2>&1; then
               cat /tmp/smoke.log
               break
             fi
@@ -134,7 +144,7 @@ jobs:
 
           if [ $attempt -ge 12 ]; then
             echo "Service $SERVICE did not pass smoke check" >&2
-            docker compose logs
+            docker compose "${compose_args[@]}" logs
             exit 1
           fi
 
@@ -146,12 +156,34 @@ jobs:
           set -euo pipefail
           export COMPOSE_PROJECT_NAME="smoke-${SERVICE}"
           case "$SERVICE" in
-            redis) file="services/redis/docker-compose.redis.yml" ;;
-            prefect) file="services/prefect/docker-compose.prefect.yml" ;;
-            airflow) file="services/airflow/docker-compose.airflow.yml" ;;
-            dagster) file="services/dagster/docker-compose.dagster.yml" ;;
-            temporal) file="services/temporal/docker-compose.temporal.yml:services/temporal/docker-compose.temporal-admin.yml" ;;
-            *) exit 0 ;;
+            redis)
+              compose_args=(
+                -f services/redis/docker-compose.redis.yml
+              )
+              ;;
+            prefect)
+              compose_args=(
+                -f services/prefect/docker-compose.prefect.yml
+              )
+              ;;
+            airflow)
+              compose_args=(
+                -f services/airflow/docker-compose.airflow.yml
+              )
+              ;;
+            dagster)
+              compose_args=(
+                -f services/dagster/docker-compose.dagster.yml
+              )
+              ;;
+            temporal)
+              compose_args=(
+                -f services/temporal/docker-compose.temporal.yml
+                -f services/temporal/docker-compose.temporal-admin.yml
+              )
+              ;;
+            *)
+              exit 0
+              ;;
           esac
-          export COMPOSE_FILE="$file"
-          docker compose down -v
+          docker compose "${compose_args[@]}" down -v
