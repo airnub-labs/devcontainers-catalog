@@ -159,6 +159,92 @@ services:
   - Generator references Supabase’s official `docker-compose.yml` into the final compose (volume paths carefully mapped).
 - **Option B — curated “mini Supabase” compose** (Postgres + Studio + Realtime + API + Inbucket).
 
+## Future: Collaborative Neko Rooms (Shared-Control Browser for Teaching)
+
+### Problem
+Screen-sharing tools don’t let instructors and students truly co-drive a browser with DevTools across iPads/Chromebooks. Remote control is laggy, permissions are brittle, and students often can’t replicate the exact environment.
+
+### Our Bet
+Embed **Neko** as a first-class browser sidecar with **multi-user shared control**:
+- Both instructor and student can interact with the same Chrome (tabs, typing, clicks, DevTools).
+- Works identically in **Codespaces** (TCP-mux) and **local Docker** (optional UDP), no installs.
+- Policy-aware for classrooms (download/clipboard gating, private ports, SSO).
+
+### Why it’s valuable
+- **True co-control**: Instructor and student can click, type, inspect DevTools simultaneously — essential for coding agents, Python ML, model training UIs, and dataset exploration.
+- **Device-agnostic**: Works on iPads/Chromebooks with zero local installs, ideal for blended home/school environments.
+- **Lower support burden**: Everyone shares the exact same browser state (cookies, extensions, console logs), reducing “works on my machine” issues.
+- **Instructional leverage**: Instructors can scaffold tasks (open notebooks, set breakpoints, launch agents) and then hand control to students.
+
+### Differentiation
+- **Versus Zoom/Meet + screen share**: lower latency interaction, multi-cursor editing, persistent environment, guaranteed DevTools.
+- **Versus CRD/Guacamole/noVNC**: WebRTC-first with classroom policy hooks and composable fragments inside DevContainer stacks.
+- **Versus Replit Multiplayer/VS Code Live Share**: complements editor pairing with a real browser for agent UIs, notebooks, and model dashboards.
+
+### Feature set (phased)
+- **MVP**
+  - Multi-user Neko rooms (role-based: owner/instructor, co-driver/student, viewers)
+  - “Pass the wheel” control toggle + cursors/initials
+  - DevTools access (Elements/Console/Network/etc.)
+  - Room templates (blank Chrome, agent dashboard, Jupyter, sandbox page)
+  - Ephemeral rooms, private Codespaces ports by default
+- **V1**
+  - “Follow mode” (camera follows instructor viewport/tab)
+  - Clipboard & file handoff (policy-gated)
+  - Quick-launch URLs, bookmarks, preloaded cookies
+  - Org SSO (Google Workspace / Microsoft 365)
+- **V2**
+  - Session recording/replay (cursor timeline + console log)
+  - Scenarios/Quests (scripted steps with hints)
+  - Fine-grained policy gates (copy/paste off, downloads off, extension allowlist)
+  - Attendance + activity metrics (time-in-control, tasks completed)
+- **V3**
+  - Multi-room orchestration (lab with N rooms, breakout rooms)
+  - “Ghost instructor” overlays (explainers, hotspots)
+  - AI “coach” annotating mistakes in real time (policy-safe)
+
+### Pricing ideas & earnings potential (illustrative)
+- **Solo Instructor** €49–€99 / instructor / month → 1–3 concurrent rooms, soft participant cap, basic recording.
+- **Classroom** €299–€999 / classroom / month → 5–20 concurrent rooms, 30–100 students, recordings & reporting.
+- **Campus/Dept** €2k–€10k / month → SSO, policy packs, SLAs, bulk seats.
+- **Per-event (workshops/bootcamps)** €199–€499 / event / day (includes transient compute).
+
+### MRR scenarios (examples)
+- 50 instructors @ €79 → ~€3,950/mo
+- 200 classrooms avg €499 → ~€99,800/mo
+- 10 campuses avg €5,000 → ~€50,000/mo
+- Combination example: 150 instructors + 60 classrooms + 5 campuses → €120k–€170k MRR potential.
+
+### Cost drivers (order-of-magnitude)
+- **Compute per active room**: ~0.3–1.5 vCPU average, 256–1024 MB RAM typical; bursty with video playback/DevTools.
+- **Bandwidth**: ~1–3 Mbps per viewer at 720p, 5–7 Mbps at 1080p with active motion.
+- **TURN**: €5–€40 per 1000 GB egress depending on provider; mitigate via TCP-mux in Codespaces and school networks.
+- **Storage (recordings)**: ~300–800 MB/hr/room depending on codec.
+- Infra can remain <20–30% of revenue with sensible idling and auto-sleep timeboxing.
+
+### Risks & Mitigations
+- **Privacy/compliance**: DPIA, consent banners for recording, regional storage, audit logs.
+- **Misuse/abuse**: Role-based controls, request-control workflow, session locks, content filtering, per-org allowlists.
+- **Network constraints**: TCP-mux fallback (Codespaces), bitrate adaptation, optional TURN, preflight room health checks.
+- **Support load**: Built-in diagnostics (latency/packet-loss), 1-click room reset, instructor guides.
+
+### Go-to-market
+- Bootcamps & colleges teaching web dev, Python/ML, agents → start with departmental pilots, expand to campus licenses.
+- Teacher professional development bundles → teach GenAI agents safely.
+- Grant-aligned programs → Chromebooks/iPads, no-install labs for digital inclusion.
+- Integrations → Google Classroom/Workspace SSO, GitHub Classroom, Codespaces templates.
+
+### Integration Plan
+- **Fragments**: `fragment:neko-room`, `fragment:neko-recording`, `fragment:turn-managed`, `fragment:policy-pack-classroom`.
+- **Stack variants**: `stack-nextjs-supabase-neko` (one-click classroom demo), compatible with teacher dashboards.
+- **Gates**: SpecKit/ADF policies enforce private ports, password envs, and recording consent.
+
+### Milestones
+1. **MVP** (4–6 weeks): multi-user room, control toggle, Codespaces profile, demo stack page.
+2. **V1** (6–10 weeks): follow-mode, SSO, clipboard gating, instructor metrics.
+3. **V2** (8–12 weeks): recording/replay, scenarios, policy packs.
+4. **V3** (R&D): AI coach, overlays, breakout orchestration.
+
 Supabase’s official stack evolves; safest is to vendor their compose and update periodically.
 
 ### 7.3 Kafka in KRaft mode (single broker for local dev)
