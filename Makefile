@@ -63,20 +63,22 @@ gen-all:
 lesson-build: gen
 	export BUILDKIT_COLLECT_BUILD_INFO=1; \
 	export BUILDKIT_SBOM_SCAN_STAGE=export; \
-	devcontainer build \
-	  --workspace-folder images/presets/generated/$(LESSON_SLUG) \
-	  --image-name $(LESSON_IMAGE) \
-	  --build-arg GIT_SHA=$(GIT_SHA)
+      devcontainer build \
+        --workspace-folder images/presets/generated/$(LESSON_SLUG) \
+        --image-name $(LESSON_IMAGE) \
+        --build-arg GIT_SHA=$(GIT_SHA) \
+        --provenance=false
 
 lesson-push: gen
 	export BUILDKIT_COLLECT_BUILD_INFO=1; \
 	export BUILDKIT_SBOM_SCAN_STAGE=export; \
-	devcontainer build \
-	  --workspace-folder images/presets/generated/$(LESSON_SLUG) \
-	  --image-name $(LESSON_IMAGE) \
-	  --build-arg GIT_SHA=$(GIT_SHA) \
-	  --platform linux/amd64,linux/arm64 \
-	  --push
+      devcontainer build \
+        --workspace-folder images/presets/generated/$(LESSON_SLUG) \
+        --image-name $(LESSON_IMAGE) \
+        --build-arg GIT_SHA=$(GIT_SHA) \
+        --platform linux/amd64,linux/arm64 \
+        --push \
+        --provenance=false
 
 lesson-scaffold: gen
 	@if [ -z "$(DEST)" ]; then \

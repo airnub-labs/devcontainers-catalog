@@ -8,3 +8,4 @@ services:
       - TEMPORAL_CLI_ADDRESS=temporal:7233
     entrypoint: ["/bin/sh", "-lc"]
     command: ["sleep infinity"]
+

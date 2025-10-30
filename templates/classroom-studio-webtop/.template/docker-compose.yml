@@ -6,3 +6,4 @@ services:
     volumes:
       - ..:/workspaces:cached
     shm_size: "2gb"
+

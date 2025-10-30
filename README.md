@@ -7,14 +7,6 @@
 
 > There’s no formal **“Stack”** object in the devcontainers spec. In this catalog, a **stack** is just a **flavor of Template** that combines features + sidecars + ports into a tested combo.
 
-## What’s in this repo
-
-- `features/` — Install-only, idempotent add-ons. No services baked in.
-- `templates/` — **Dev Container Templates (scaffolds)** you copy into a repo (follow the Dev Container Template spec with `devcontainer-template.json`).
-- `images/presets/` — **Prebuildable image presets**. Each folder contains a `devcontainer.json` used by `devcontainer build` to bake/publish a fast-start image to GHCR.
-- `images/dev-base/` — A thin base on top of `mcr.microsoft.com/devcontainers/base` with overridable build args.
-- `docs/` — Guides, architecture notes, and CI examples.
-
 ## Source vs Artifact (Templates vs Presets)
 
 - **templates/** = **SOURCE scaffolds** (Dev Container Templates per spec).  
@@ -24,6 +16,14 @@
   External workspaces reference these prebuilt images for **fast, identical starts** on Codespaces and local Docker.
 
 **Classroom tip:** Prefer **prebuilt lesson images** for students (fast start, no features to re-run). Instructors select services (Redis, Supabase, Kafka/KRaft, Airflow, Prefect, Dagster, Temporal, Webtop) and the generator emits an **aggregate compose** so the whole stack runs with one command.
+
+## What’s in this repo
+
+- `features/` — Install-only, idempotent add-ons. No services baked in.
+- `templates/` — **Dev Container Templates (scaffolds)** you copy into a repo (follow the Dev Container Template spec with `devcontainer-template.json`).
+- `images/presets/` — **Prebuildable image presets**. Each folder contains a `devcontainer.json` used by `devcontainer build` to bake/publish a fast-start image to GHCR.
+- `images/dev-base/` — A thin base on top of `mcr.microsoft.com/devcontainers/base` with overridable build args.
+- `docs/` — Guides, architecture notes, and CI examples.
 
 ## Using stacks (templates)
 

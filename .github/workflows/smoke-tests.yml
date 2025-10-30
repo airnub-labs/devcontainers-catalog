@@ -86,32 +86,32 @@ jobs:
           SERVICE: ${{ matrix.service }}
         run: |
           set -euo pipefail
-          declare -a files=()
+          declare -a files
           case "$SERVICE" in
             redis)
-              files=( services/redis/docker-compose.redis.yml )
+              files=("services/redis/docker-compose.redis.yml")
               check_service="redis"
               check_cmd="redis-cli ping"
               ;;
             prefect)
-              files=( services/prefect/docker-compose.prefect.yml )
+              files=("services/prefect/docker-compose.prefect.yml")
               check_service="prefect"
-              check_cmd="prefect version"
+              check_cmd="curl -fsS http://localhost:4200/api/health"
               ;;
             airflow)
-              files=( services/airflow/docker-compose.airflow.yml )
+              files=("services/airflow/docker-compose.airflow.yml")
               check_service="airflow"
-              check_cmd="airflow db check"
+              check_cmd="curl -fsS http://localhost:8080/health"
               ;;
             dagster)
-              files=( services/dagster/docker-compose.dagster.yml )
+              files=("services/dagster/docker-compose.dagster.yml")
               check_service="dagster"
-              check_cmd="dagster --version"
+              check_cmd="curl -fsS http://localhost:3001/server_info"
               ;;
             temporal)
-              files=( \
-                services/temporal/docker-compose.temporal.yml \
-                services/temporal/docker-compose.temporal-admin.yml \
+              files=(
+                "services/temporal/docker-compose.temporal.yml"
+                "services/temporal/docker-compose.temporal-admin.yml"
               )
               check_service="temporal-admin"
               check_cmd="tctl cluster health"
@@ -122,13 +122,8 @@ jobs:
               ;;
           esac
 
-          if [ ${#files[@]} -eq 0 ]; then
-            echo "No compose files configured for $SERVICE" >&2
-            exit 1
-          fi
-
           export COMPOSE_PROJECT_NAME="smoke-${SERVICE}"
-          export COMPOSE_FILE=$(IFS=:; printf '%s' "${files[*]}")
+          export COMPOSE_FILE="$(IFS=:; printf '%s' "${files[*]}")"
           docker compose up -d
 
           attempt=0
@@ -153,21 +148,20 @@ jobs:
           SERVICE: ${{ matrix.service }}
         run: |
           set -euo pipefail
-          declare -a files=()
           export COMPOSE_PROJECT_NAME="smoke-${SERVICE}"
+          declare -a files
           case "$SERVICE" in
-            redis) files=( services/redis/docker-compose.redis.yml ) ;;
-            prefect) files=( services/prefect/docker-compose.prefect.yml ) ;;
-            airflow) files=( services/airflow/docker-compose.airflow.yml ) ;;
-            dagster) files=( services/dagster/docker-compose.dagster.yml ) ;;
-            temporal) files=( \
-              services/temporal/docker-compose.temporal.yml \
-              services/temporal/docker-compose.temporal-admin.yml \
-            ) ;;
+            redis) files=("services/redis/docker-compose.redis.yml") ;;
+            prefect) files=("services/prefect/docker-compose.prefect.yml") ;;
+            airflow) files=("services/airflow/docker-compose.airflow.yml") ;;
+            dagster) files=("services/dagster/docker-compose.dagster.yml") ;;
+            temporal)
+              files=(
+                "services/temporal/docker-compose.temporal.yml"
+                "services/temporal/docker-compose.temporal-admin.yml"
+              )
+              ;;
             *) exit 0 ;;
           esac
-          if [ ${#files[@]} -eq 0 ]; then
-            exit 0
-          fi
-          export COMPOSE_FILE=$(IFS=:; printf '%s' "${files[*]}")
+          export COMPOSE_FILE="$(IFS=:; printf '%s' "${files[*]}")"
           docker compose down -v
