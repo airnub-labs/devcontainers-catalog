@@ -1,14 +1,10 @@
-version: "3.9"
+version: "3.8"
 services:
-  temporal-admin-tools:
-    image: temporalio/admin-tools:1.25.0
-    environment:
-      TEMPORAL_ADDRESS: temporal:7233
-    entrypoint: ["/bin/sh", "-lc"]
-    command: ["sleep infinity"]
+  temporal-admin:
+    image: temporalio/admin-tools:1.23
     depends_on:
       - temporal
-    networks: [classroom]
-
-networks:
-  classroom: { name: classroom }
+    environment:
+      - TEMPORAL_CLI_ADDRESS=temporal:7233
+    entrypoint: ["/bin/sh", "-lc"]
+    command: ["sleep infinity"]
