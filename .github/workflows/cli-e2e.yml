@@ -23,20 +23,24 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Install CLI deps
+      - name: Build CLI
         working-directory: tools/airnub-devc
         run: |
-          npm install
+          npm ci
           npm run build
           echo "$(pwd)/dist" >> $GITHUB_PATH
 
-      - name: Validate example manifest
+      - name: Validate example manifests
         run: |
-          node tools/airnub-devc/dist/index.js validate examples/lesson-manifests/intro-ai-week02.yaml
+          node tools/airnub-devc/dist/index.js validate examples/lesson-manifests --recursive
 
       - name: Generate preset and scaffold
         run: |
-          node tools/airnub-devc/dist/index.js generate examples/lesson-manifests/intro-ai-week02.yaml --fetch-missing-fragments
+          node tools/airnub-devc/dist/index.js generate examples/lesson-manifests/intro-ai-week02.yaml --out images,preset,templates,scaffold
+
+      - name: Doctor (aggregate compose & fragments)
+        run: |
+          node tools/airnub-devc/dist/index.js doctor
 
       - name: Buildx setup
         uses: docker/setup-buildx-action@v3

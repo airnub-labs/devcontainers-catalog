@@ -1,18 +1,20 @@
 version: "3.9"
+
 services:
   prefect:
     image: prefecthq/prefect:2-latest
     container_name: prefect
     restart: unless-stopped
-    command: ["prefect", "server", "start", "--host", "0.0.0.0"]
+    command: bash -lc "prefect config set PREFECT_API_DATABASE_CONNECTION_URL='sqlite+aiosqlite:///root/.prefect/prefect.db' && prefect server start --host 0.0.0.0 --port ${PREFECT_PORT:-4200}"
     ports:
-      - "4200:4200"   # Prefect UI
-    environment:
-      - PREFECT_DEBUG_MODE=false
+      - "${PREFECT_PORT:-4200}:4200"
     volumes:
-      - ./prefect:/root/.prefect
+      - prefect-data:/root/.prefect
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4200/"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4200/api/health | grep -q 'healthy' || wget -qO- http://localhost:4200/health | grep -q 'OK'"]
       interval: 10s
       timeout: 5s
       retries: 20
+
+volumes:
+  prefect-data:
