@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WorkspaceManifest",
+  "type": "object",
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "additionalProperties": false,
+  "properties": {
+    "apiVersion": { "type": "string", "const": "airnub.devcontainers/v1" },
+    "kind": { "type": "string", "const": "Workspace" },
+    "metadata": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "required": ["mode", "image_tag_strategy"],
+      "additionalProperties": false,
+      "properties": {
+        "mode": { "type": "string", "enum": ["preset", "features"] },
+        "preset": { "type": "string", "minLength": 1 },
+        "features": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "image_tag_strategy": {
+          "type": "string",
+          "enum": ["ubuntu-24.04"]
+        },
+        "services": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "supabase",
+              "redis",
+              "kafka-kraft",
+              "webtop",
+              "chrome-cdp",
+              "inbucket",
+              "prefect",
+              "airflow",
+              "dagster",
+              "temporal"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "vscode": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "extensions": {
+              "type": "array",
+              "items": { "type": "string" },
+              "uniqueItems": true
+            },
+            "settings": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        },
+        "env": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "secrets_placeholders": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "mode": { "const": "preset" } }
+          },
+          "then": {
+            "required": ["preset"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "mode": { "const": "features" } }
+          },
+          "then": {
+            "required": ["features"]
+          }
+        }
+      ]
+    }
+  }
+}

@@ -42,6 +42,10 @@ Students on low-power devices (Chromebook, iPad) must have **equal startup exper
 - GUI workflows available via **webtop/noVNC** when needed (no local GPU assumed).
 - No dependency on local hardware accelerators.
 
+### 3a) Use the Generator
+- Always materialize workspaces and lesson scaffolds with `@airnub/devc`.
+- Do **not** manually vendor compose fragments or preset assets; rely on the generator + manifests.
+
 ### 4) MCP + LLM Agent Orchestration (via SaaS)
 The SaaS mediates **MCP agents** and **LLM agents** that:
 - Accept **instructor chat requests** → derive a **validated manifest**.
