@@ -1,0 +1,20 @@
+{
+  "name": "classroom-kasm-chrome",
+  "dockerComposeFile": ["./docker-compose.yml"],
+  "service": "devcontainer",
+  "workspaceFolder": "/workspaces",
+  "runServices": ["devcontainer", "kasm-chrome"],
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      },
+      "extensions": []
+    }
+  },
+  "forwardPorts": [6901],
+  "portsAttributes": {
+    "6901": { "label": "Kasm Chrome (HTTPS)", "onAutoForward": "openBrowser" }
+  },
+  "remoteUser": "vscode"
+}

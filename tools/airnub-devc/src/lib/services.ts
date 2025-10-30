@@ -2,6 +2,19 @@ import path from "path";
 import os from "os";
 import fs from "fs-extra";
 
+export const browserServices = [
+  {
+    id: "neko-webrtc",
+    label: "Neko (WebRTC) Chrome",
+    templatePath: "templates/classroom-neko-webrtc/.template",
+  },
+  {
+    id: "kasm-chrome",
+    label: "Kasm Chrome (KasmVNC)",
+    templatePath: "templates/classroom-kasm-chrome/.template",
+  },
+];
+
 export interface MaterializeServicesOptions {
   services: string[];
   destination: string;

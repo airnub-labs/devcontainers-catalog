@@ -1,0 +1,31 @@
+services:
+  devcontainer:
+    image: mcr.microsoft.com/devcontainers/base:ubuntu-24.04
+    volumes:
+      - ..:/workspaces:cached
+    command: sleep infinity
+
+  # Full Chrome via Neko (WebRTC). Defaults to TCP mux so it's Codespaces-safe.
+  neko:
+    image: ghcr.io/m1k1o/neko/google-chrome:latest
+    restart: unless-stopped
+    ports:
+      - "8080:8080"          # Web UI
+      - "59000:59000/tcp"    # WebRTC TCP mux (Codespaces compatible)
+    environment:
+      # Demo credentials - override in your env or devcontainer.json "containerEnv"
+      NEKO_MEMBER_MULTIUSER_USER_PASSWORD: "student"
+      NEKO_MEMBER_MULTIUSER_ADMIN_PASSWORD: "admin"
+
+      # Force single-port TCP mux (good for Codespaces / proxies)
+      NEKO_WEBRTC_TCPMUX: "59000"
+
+      # Supply STUN/TURN servers if you have them (JSON array). Example:
+      # NEKO_WEBRTC_ICESERVERS_FRONTEND: >-
+      #   [{"urls":["stun:stun.l.google.com:19302"]}]
+
+    # Uncomment for local-only UDP acceleration:
+    # ports:
+    #   - "56000-56100:56000-56100/udp"
+    # environment:
+    #   NEKO_WEBRTC_EPR: "56000-56100"

@@ -16,3 +16,7 @@ Ensure each stack template folder has:
 - `.template/.devcontainer/` payload (compose, devcontainer.json, hooks)
 - `README.md` explaining ports, services, features, and how to materialize
 - Optional `stack.lock.json` with pinned versions
+
+### Browser-capable classroom stacks
+- Pair **classroom-neko-webrtc** or **classroom-kasm-chrome** with any existing app template (e.g., Next.js + Supabase).
+- Use Compose `depends_on` if your app needs the browser ready before smoke tests.
