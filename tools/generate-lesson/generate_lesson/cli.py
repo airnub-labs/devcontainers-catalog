@@ -15,39 +15,6 @@ except ModuleNotFoundError:  # pragma: no cover - fallback when PyYAML is unavai
 ROOT = Path(__file__).resolve().parents[3]
 
 
-SERVICE_INSTRUCTIONS: Mapping[str, Sequence[str]] = {
-    "redis": ("Redis — `docker compose -f services/redis/docker-compose.redis.yml up -d`",),
-    "supabase": (
-        "Supabase — `docker compose -f services/supabase/docker-compose.supabase.yml up -d`",
-        "Copy `.env.example-supabase` to `.env` before launching Supabase.",
-    ),
-    "kafka": (
-        "Kafka — `docker compose -f services/kafka/docker-compose.kafka-kraft.yml up -d`",
-        "Optional utils: `docker compose -f services/kafka/docker-compose.kafka-utils.yml up -d`",
-    ),
-    "inbucket": (
-        "Inbucket — `docker compose -f services/inbucket/docker-compose.inbucket.yml up -d`",
-    ),
-    "prefect": (
-        "Prefect — `docker compose -f services/prefect/docker-compose.prefect.yml up -d`",
-        "Review `.env.example-prefect` for optional overrides before launching.",
-    ),
-    "airflow": (
-        "Airflow — `docker compose -f services/airflow/docker-compose.airflow.yml up -d`",
-        "Set admin credentials in `.env.example-airflow` and copy to `.env` if needed.",
-    ),
-    "dagster": (
-        "Dagster — `docker compose -f services/dagster/docker-compose.dagster.yml up -d`",
-        "Copy `.env.example-dagster` to `.env` if your pipelines depend on environment variables.",
-        "Update `services/dagster/example_dagster_repo` with your own project before class.",
-    ),
-    "temporal": (
-        "Temporal — `docker compose -f services/temporal/docker-compose.temporal.yml up -d`",
-        "Adjust `.env.example-temporal` for custom CORS origins before launching the UI.",
-    ),
-}
-
-
 SERVICE_PORT_LABELS: Mapping[str, Mapping[int, str]] = {
     "redis": {6379: "Redis"},
     "supabase": {
@@ -127,6 +94,10 @@ SUPPORTED_SPEC_FIELDS = {
 UNIMPLEMENTED_SPEC_FIELDS: set = set()
 
 
+REQUIRED_METADATA_FIELDS = ("org", "course", "lesson")
+REQUIRED_SPEC_FIELDS = ("base_preset", "image_tag_strategy")
+
+
 @dataclass(frozen=True)
 class ServiceArtifacts:
     names: Tuple[str, ...]
@@ -140,6 +111,12 @@ def _slugify_component(value: str) -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", value.lower().strip())
     slug = re.sub(r"-+", "-", slug).strip("-")
     return slug or "lesson"
+
+
+def _format_service_heading(name: str) -> str:
+    tokens = re.split(r"[-_]+", str(name or "").strip())
+    formatted = " ".join(token.capitalize() for token in tokens if token)
+    return formatted or str(name)
 
 
 def derive_lesson_slug(metadata: Dict[str, str]) -> str:
@@ -246,6 +223,37 @@ def load_manifest(path: Path) -> dict:
     if yaml is not None:
         return yaml.safe_load(text)
     return parse_simple_yaml(text)
+
+
+def validate_manifest_structure(manifest) -> Tuple[Dict[str, str], Dict[str, object], Tuple[str, ...]]:
+    errors: List[str] = []
+    if not isinstance(manifest, Mapping):
+        errors.append("manifest root must be a mapping")
+        return {}, {}, tuple(errors)
+
+    metadata_raw = manifest.get("metadata")
+    if not isinstance(metadata_raw, Mapping):
+        errors.append("manifest.metadata must be an object with org/course/lesson")
+        metadata: Dict[str, str] = {}
+    else:
+        metadata = {str(key): str(value) for key, value in metadata_raw.items() if isinstance(key, str)}
+        for field in REQUIRED_METADATA_FIELDS:
+            value = metadata_raw.get(field)
+            if not str(value or "").strip():
+                errors.append(f"manifest.metadata.{field} is required")
+
+    spec_raw = manifest.get("spec")
+    if not isinstance(spec_raw, Mapping):
+        errors.append("manifest.spec must be an object with required fields")
+        spec: Dict[str, object] = {}
+    else:
+        spec = dict(spec_raw)
+        for field in REQUIRED_SPEC_FIELDS:
+            value = spec_raw.get(field)
+            if not str(value or "").strip():
+                errors.append(f"manifest.spec.{field} is required")
+
+    return metadata, spec, tuple(errors)
 
 
 def ensure_dir(path: Path) -> None:
@@ -789,14 +797,25 @@ def write_services_readme(artifacts: ServiceArtifacts, out_dir: Path) -> Optiona
 
     wrote_instruction = False
     for name in artifacts.names:
-        instructions = SERVICE_INSTRUCTIONS.get(name)
-        if not instructions:
+        fragments = artifacts.fragments.get(name, ())
+        env_example = artifacts.env_examples.get(name)
+        overrides = artifacts.vars.get(name, {})
+        if not fragments and not env_example and not overrides:
             continue
+
         wrote_instruction = True
         lines.append("")
-        for index, entry in enumerate(instructions):
-            prefix = "- " if index == 0 else "  "
-            lines.append(f"{prefix}{entry}")
+        lines.append(f"### {_format_service_heading(name)}")
+        for fragment in fragments:
+            rel_path = _relative_path(out_dir, fragment)
+            lines.append(f"- Launch: `docker compose -f {rel_path} up -d`")
+        if env_example is not None:
+            rel_env = _relative_path(out_dir, env_example)
+            lines.append(f"- Copy `{rel_env}` to `.env` before starting the service.")
+        if overrides:
+            lines.append("- Manifest environment overrides:")
+            for key in sorted(overrides):
+                lines.append(f"  - `{key}` = `{overrides[key]}`")
 
     if not wrote_instruction:
         return None
@@ -818,7 +837,15 @@ def main() -> int:
         return 1
 
     manifest = load_manifest(manifest_path)
-    spec = manifest.get("spec") or {}
+    metadata, spec, validation_errors = validate_manifest_structure(manifest)
+    if validation_errors:
+        for error in validation_errors:
+            print(f"[error] {error}", file=sys.stderr)
+        return 1
+
+    manifest["metadata"] = metadata or dict(manifest.get("metadata", {}))
+    manifest["spec"] = dict(spec)
+    spec = manifest["spec"]
     unsupported_fields, unknown_fields = partition_spec_fields(spec)
     for field in unsupported_fields:
         print(
@@ -830,6 +857,17 @@ def main() -> int:
             f"[warn] spec.{field} is not recognized and will be ignored.",
             file=sys.stderr,
         )
+
+    resources_payload = spec.get("resources")
+    resources = resources_payload if isinstance(resources_payload, Mapping) else None
+    if resources:
+        supported_resource_keys = {"cpu", "memory"}
+        for key in sorted(resources):
+            if key not in supported_resource_keys:
+                print(
+                    f"[warn] spec.resources.{key} is not recognized; only cpu and memory are supported today.",
+                    file=sys.stderr,
+                )
 
     metadata = manifest["metadata"]
     slug = derive_lesson_slug(metadata)

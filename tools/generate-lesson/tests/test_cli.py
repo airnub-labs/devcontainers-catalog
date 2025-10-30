@@ -1,9 +1,12 @@
+import io
 import json
 import sys
 import tempfile
 import textwrap
 import unittest
 from pathlib import Path
+
+from contextlib import redirect_stderr
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -159,6 +162,64 @@ class CLITests(unittest.TestCase):
             self.assertIn("Service Environment Files", summary)
             self.assertIn("Resource Guidance", summary)
 
+    def test_write_services_readme_derives_from_fragments(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            service_dir = tmp_path / "services" / "redis"
+            service_dir.mkdir(parents=True)
+            compose_path = service_dir / "docker-compose.redis.yml"
+            compose_path.write_text("version: \"3.9\"\n", encoding="utf-8")
+            env_path = tmp_path / ".env.example-redis"
+            env_path.write_text("REDIS_PASSWORD=\n", encoding="utf-8")
+            artifacts = cli.ServiceArtifacts(
+                names=("redis",),
+                fragments={"redis": (compose_path,)},
+                env_examples={"redis": env_path},
+                vars={"redis": {"REDIS_PASSWORD": "classroom"}},
+                missing=tuple(),
+            )
+            readme_path = cli.write_services_readme(artifacts, tmp_path)
+            self.assertIsNotNone(readme_path)
+            readme = Path(readme_path).read_text(encoding="utf-8")
+            self.assertIn(
+                "docker compose -f services/redis/docker-compose.redis.yml up -d",
+                readme,
+            )
+            self.assertIn(".env.example-redis", readme)
+            self.assertIn("REDIS_PASSWORD", readme)
+
+    def test_main_errors_when_required_fields_missing(self):
+        manifest_text = textwrap.dedent(
+            """
+            apiVersion: airnub.devcontainers/v1
+            kind: LessonEnv
+            metadata: {}
+            spec: {}
+            """
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            repo_root = Path(tmp) / "repo"
+            repo_root.mkdir()
+            manifest_path = repo_root / "manifest.yaml"
+            manifest_path.write_text(manifest_text, encoding="utf-8")
+
+            original_root = cli.ROOT
+            original_argv = sys.argv
+            cli.ROOT = repo_root
+            sys.argv = ["generate-lesson", "--manifest", str(manifest_path)]
+            buffer = io.StringIO()
+            try:
+                with redirect_stderr(buffer):
+                    exit_code = cli.main()
+            finally:
+                cli.ROOT = original_root
+                sys.argv = original_argv
+
+            self.assertEqual(exit_code, 1)
+            stderr_output = buffer.getvalue()
+            self.assertIn("manifest.metadata.org is required", stderr_output)
+            self.assertIn("manifest.spec.base_preset is required", stderr_output)
+
     def test_cli_main_generates_artifacts_end_to_end(self):
         manifest_text = textwrap.dedent(
             """
@@ -222,6 +283,13 @@ class CLITests(unittest.TestCase):
             template_dir = repo_root / "templates" / "generated" / "acme-math-algebra"
             self.assertTrue((template_dir / ".devcontainer" / "devcontainer.json").exists())
             self.assertTrue((template_dir / "secrets.placeholders.env").exists())
+            readme_path = slug_dir / "README-SERVICES.md"
+            self.assertTrue(readme_path.exists())
+            readme_content = readme_path.read_text(encoding="utf-8")
+            self.assertIn(
+                "docker compose -f services/redis/docker-compose.redis.yml up -d",
+                readme_content,
+            )
 
 
 if __name__ == "__main__":
