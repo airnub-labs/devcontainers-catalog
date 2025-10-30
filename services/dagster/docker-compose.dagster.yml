@@ -1,17 +1,25 @@
 version: "3.9"
+
 services:
   dagster:
-    image: dagster/dagster:1.6.15
+    image: dagster/dagster:1.7.5
     container_name: dagster
     restart: unless-stopped
-    # Expects a 'dagster' folder in workspace with a minimal workspace.yaml or a hello project.
-    command: ["dagster", "dev", "-h", "0.0.0.0", "-p", "3000", "-w", "/opt/dagster/app/workspace.yaml"]
+    environment:
+      DAGSTER_HOME: /opt/dagster/dagster_home
+    working_dir: /opt/dagster/app
+    command: bash -lc "mkdir -p /opt/dagster/dagster_home && dagster dev -h 0.0.0.0 -p ${DAGSTER_PORT:-3000}"
     ports:
-      - "3000:3000"   # Dagster UI
+      - "${DAGSTER_PORT:-3000}:3000"
     volumes:
-      - ./dagster:/opt/dagster/app
+      - dagster-home:/opt/dagster/dagster_home
+      - dagster-app:/opt/dagster/app
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/ | grep -qi dagster"]
       interval: 10s
       timeout: 5s
       retries: 20
+
+volumes:
+  dagster-home:
+  dagster-app:

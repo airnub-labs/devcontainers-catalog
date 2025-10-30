@@ -1,32 +1,35 @@
 version: "3.9"
+
 services:
   temporal:
-    image: ghcr.io/temporalio/temporalite:latest
+    image: temporalio/auto-setup:1.25.0
     container_name: temporal
     restart: unless-stopped
-    command: ["--headless"] # no UI, gRPC on 7233
     ports:
-      - "7233:7233" # Temporal gRPC
+      - "7233:7233" # gRPC
     healthcheck:
-      test: ["CMD", "grpc_health_probe", "-addr=localhost:7233"]
+      # basic TCP open check; UI health is handled by temporal-ui service
+      test: ["CMD-SHELL", "bash -lc '</dev/tcp/127.0.0.1/7233'"]
       interval: 10s
       timeout: 5s
-      retries: 20
+      retries: 30
 
   temporal-ui:
-    image: temporalio/ui:2.28.2
-    container_name: temporal_ui
+    image: temporalio/ui:2.24.0
+    container_name: temporal-ui
     restart: unless-stopped
     environment:
-      - TEMPORAL_ADDRESS=temporal:7233
-      - TEMPORAL_CORS_ORIGINS=http://localhost:8080,http://localhost:3000
-    ports:
-      - "8081:8080" # Temporal UI
+      TEMPORAL_ADDRESS: "temporal:7233"
+      TEMPORAL_GRPC_ENDPOINT: "temporal:7233"
+      TEMPORAL_WEB_PORT: "${TEMPORAL_UI_PORT:-8233}"
+      # Disable auth for local dev
+      TEMPORAL_AUTH_ENABLED: "false"
     depends_on:
-      temporal:
-        condition: service_healthy
+      - temporal
+    ports:
+      - "${TEMPORAL_UI_PORT:-8233}:8233"
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8080/"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8233/health | grep -q 'ok' || wget -qO- http://localhost:8233/ | grep -qi temporal"]
       interval: 10s
       timeout: 5s
-      retries: 20
+      retries: 30

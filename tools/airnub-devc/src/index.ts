@@ -3,6 +3,7 @@ import { Command } from "commander";
 import path from "path";
 import fs from "fs-extra";
 import chalk from "chalk";
+import { globby } from "globby";
 import { loadManifest, loadSchema } from "./lib/schema.js";
 import { buildImage } from "./lib/build.js";
 import {
@@ -14,6 +15,7 @@ import { resolveCatalog, CatalogContext } from "./lib/catalog.js";
 import { discoverWorkspaceRoot } from "./lib/fsutil.js";
 import { buildAggregateCompose, readAggregateMetadata } from "./lib/compose.js";
 import { materializeServices, listServiceDirs } from "./lib/services.js";
+import { enforceTagPolicy, ManifestKind } from "./lib/tag-policy.js";
 import { LessonEnv } from "./types.js";
 import { execa } from "execa";
 
@@ -64,13 +66,16 @@ function canonicalLessonTag(manifest: LessonEnv, version: string) {
   return `ghcr.io/airnub-labs/templates/lessons/${slug}:${base}-${slug}-${version}`;
 }
 
-function assertTagPolicy(tag: string, manifest: LessonEnv | undefined, version: string) {
+function assertTagPolicy(tag: string, manifest: LessonEnv | undefined, version: string, force = false) {
   const match = tag.match(/^ghcr\.io\/airnub-labs\/templates\/lessons\/[a-z0-9-]+:[a-z0-9.-]+-[a-z0-9-]+-v[0-9a-z.-]+$/i);
   if (!match) {
     throw new Error(
       "Tag must follow ghcr.io/airnub-labs/templates/lessons/<slug>:<base>-<slug>-v<iteration>",
     );
   }
+  const resolvedTag = tag.slice(tag.lastIndexOf(":") + 1);
+  const kind = ManifestKind.parse(manifest?.kind ?? "PresetEnv");
+  enforceTagPolicy(kind, resolvedTag, force);
   if (manifest) {
     const expected = canonicalLessonTag(manifest, version);
     if (expected !== tag) {
@@ -89,18 +94,46 @@ program
 
 program
   .command("validate")
-  .argument("<manifest>", "path to lesson/env manifest (yaml|json)")
-  .action(async function (this: Command, manifestPath: string) {
+  .argument("<manifest>", "path to lesson/env manifest (yaml|json) or directory of manifests")
+  .option("--recursive", "scan directories recursively", false)
+  .action(async function (this: Command, manifestPath: string, opts: Record<string, any>) {
     await withCatalog(this, async (catalog) => {
       const validate = await loadSchema(catalog.root);
-      const manifest = await loadManifest(manifestPath);
-      const ok = validate(manifest);
-      if (!ok) {
-        console.error(chalk.red("Schema validation errors:"));
-        console.error(validate.errors);
+      const targetPath = path.resolve(manifestPath);
+      const stats = await fs.stat(targetPath).catch(() => null);
+      const manifestFiles: string[] = [];
+
+      if (stats?.isDirectory()) {
+        const patterns = opts.recursive
+          ? ["**/*.yaml", "**/*.yml", "**/*.json"]
+          : ["*.yaml", "*.yml", "*.json"];
+        const matches = await globby(patterns, { cwd: targetPath, absolute: true });
+        manifestFiles.push(...matches);
+      } else {
+        manifestFiles.push(targetPath);
+      }
+
+      if (!manifestFiles.length) {
+        console.warn(chalk.yellow(`No manifest files found at ${targetPath}.`));
+        return;
+      }
+
+      let allValid = true;
+      for (const file of manifestFiles) {
+        const manifest = await loadManifest(file);
+        const ok = validate(manifest);
+        if (!ok) {
+          allValid = false;
+          console.error(chalk.red(`Schema validation errors in ${file}:`));
+          console.error(validate.errors);
+        } else {
+          console.log(chalk.green(`Manifest is valid: ${file}`));
+        }
+      }
+
+      if (!allValid) {
         process.exit(1);
       }
-      console.log(chalk.green("Manifest is valid."));
     });
   });
 
@@ -109,6 +142,7 @@ program
   .argument("<manifest>", "path to manifest")
   .option("--out-images <dir>", "dir for generated presets", "images/presets/generated")
   .option("--out-templates <dir>", "dir for generated scaffolds", "templates/generated")
+  .option("--out <targets>", "comma-separated outputs (images,preset,templates,scaffold)")
   .option("--fetch-missing-fragments", "fetch service fragments from catalog if missing")
   .option("--fetch-ref <ref>", "branch/tag/SHA for fragment fetch")
   .option("--force", "overwrite existing generated directories", false)
@@ -132,37 +166,58 @@ program
         ? opts.outTemplates
         : path.resolve(cwd, opts.outTemplates);
 
+      const outputs = typeof opts.out === "string"
+        ? opts.out.split(",").map((entry: string) => entry.trim().toLowerCase()).filter(Boolean)
+        : [];
+      const wantsPreset = outputs.length === 0
+        || outputs.some((entry: string) => ["images", "image", "preset", "presets"].includes(entry));
+      const wantsScaffold = outputs.length === 0
+        || outputs.some((entry: string) => ["templates", "template", "scaffold", "scaffolds"].includes(entry));
+
       const presetOutDir = path.join(imagesBase, id);
       const scaffoldOutDir = path.join(templatesBase, id);
       const fetchMissing = opts.fetchMissingFragments ?? catalog.mode === "remote";
       const fetchRef = defaultFetchRef(opts.fetchRef, globals, catalog);
       const gitSha = opts.gitSha || process.env.GIT_SHA || process.env.GITHUB_SHA || catalog.ref;
 
-      const presetResult = await generatePresetBuildContext({
-        repoRoot: catalog.root,
-        manifest,
-        outDir: presetOutDir,
-        force: !!opts.force,
-        fetchMissingFragments: fetchMissing,
-        fetchRef,
-        catalogRef: catalog.ref,
-        gitSha,
-      });
+      const generated: string[] = [];
 
-      const scaffoldResult = await generateWorkspaceScaffold({
-        repoRoot: catalog.root,
-        manifest,
-        outDir: scaffoldOutDir,
-        force: !!opts.force,
-        fetchMissingFragments: fetchMissing,
-        fetchRef,
-        catalogRef: catalog.ref,
-        gitSha,
-      });
+      if (wantsPreset) {
+        const presetResult = await generatePresetBuildContext({
+          repoRoot: catalog.root,
+          manifest,
+          outDir: presetOutDir,
+          force: !!opts.force,
+          fetchMissingFragments: fetchMissing,
+          fetchRef,
+          catalogRef: catalog.ref,
+          gitSha,
+        });
+        generated.push(`preset build ctx: ${presetResult.outDir}`);
+      }
 
-      console.log(chalk.green("Generated:"));
-      console.log(`  preset build ctx: ${presetResult.outDir}`);
-      console.log(`  scaffold: ${scaffoldResult.outDir}`);
+      if (wantsScaffold) {
+        const scaffoldResult = await generateWorkspaceScaffold({
+          repoRoot: catalog.root,
+          manifest,
+          outDir: scaffoldOutDir,
+          force: !!opts.force,
+          fetchMissingFragments: fetchMissing,
+          fetchRef,
+          catalogRef: catalog.ref,
+          gitSha,
+        });
+        generated.push(`scaffold: ${scaffoldResult.outDir}`);
+      }
+
+      if (generated.length) {
+        console.log(chalk.green("Generated:"));
+        for (const item of generated) {
+          console.log(`  ${item}`);
+        }
+      } else {
+        console.log(chalk.yellow("No outputs requested via --out."));
+      }
     });
   });
 
@@ -179,6 +234,7 @@ program
   .option("--oci-output <dir>", "directory to store OCI archive when not pushing")
   .option("--platforms <list>", "override build platforms", "linux/amd64,linux/arm64")
   .option("--git-sha <sha>", "git revision used for provenance", process.env.GITHUB_SHA || process.env.GIT_SHA)
+  .option("--force", "override tag policy for shared preset tags", false)
   .action(async function (this: Command, opts: Record<string, any>) {
     await withCatalog(this, async (catalog) => {
       const version = opts.version || "v1";
@@ -198,7 +254,7 @@ program
         manifest = loaded;
       }
 
-      assertTagPolicy(opts.tag, manifest, version);
+      assertTagPolicy(opts.tag, manifest, version, !!opts.force);
 
       if (opts.gitSha && !/^[0-9a-f]{7,40}$/i.test(opts.gitSha)) {
         console.warn(chalk.yellow(`git sha '${opts.gitSha}' does not look like a commit hash.`));
@@ -277,7 +333,11 @@ program
 
 program
   .command("doctor")
-  .argument("<manifest>", "path to manifest")
+  .argument(
+    "[manifest]",
+    "path to manifest",
+    "examples/lesson-manifests/intro-ai-week02.yaml",
+  )
   .option("--fetch-missing-fragments", "attempt to fetch missing service fragments")
   .option("--tag <tag>", "lesson image tag to validate")
   .option("--version <v>", "expected lesson iteration", "v1")
@@ -298,7 +358,7 @@ program
 
       if (opts.tag) {
         try {
-          assertTagPolicy(opts.tag, manifest, version);
+          assertTagPolicy(opts.tag, manifest, version, false);
           console.log(chalk.green(`Tag '${opts.tag}' matches manifest metadata.`));
         } catch (error) {
           if (error instanceof Error) {

@@ -67,3 +67,19 @@ Each fragment ships with a README describing expectations and how the aggregate 
 4. Shut down services after class to avoid lingering containers.
 
 Fragments are idempotent: rerunning the generator refreshes files without overwriting instructor changes outside the generated directories.
+
+## Aggregate Compose — one-liner
+
+From a Lesson Manifest:
+
+```bash
+devc generate examples/lesson-manifests/intro-ai-week02.yaml \
+  --out images,preset,templates,scaffold
+
+# Start the full stack declared in the manifest (redis/supabase/kafka/etc.)
+docker compose -f aggregate.compose.yml up -d
+```
+
+This works locally and in Codespaces the same way (no secrets baked; use .env or Codespaces secrets).
+
+---

@@ -1,29 +1,30 @@
 version: "3.9"
+
 services:
   airflow:
-    image: apache/airflow:2.9.3-python3.11
+    image: apache/airflow:2.9.2
     container_name: airflow
     restart: unless-stopped
+    command: bash -lc "airflow db migrate && airflow users create --username ${AIRFLOW_USER:-admin} --password ${AIRFLOW_PASSWORD:-admin} --firstname Dev --lastname User --role Admin --email admin@example.com || true && airflow webserver & airflow scheduler"
     environment:
-      # Minimal dev: SequentialExecutor + SQLite (OK for demos)
-      - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
-      - AIRFLOW__CORE__LOAD_EXAMPLES=True
-      - AIRFLOW__WEBSERVER__EXPOSE_CONFIG=True
-      - _AIRFLOW_WWW_USER_CREATE=true
-      - _AIRFLOW_WWW_USER_USERNAME=admin
-      - _AIRFLOW_WWW_USER_PASSWORD=admin
-    command: >
-      bash -lc "
-        airflow db migrate &&
-        airflow users create --role Admin --username admin --password admin --firstname A --lastname D --email admin@example.com || true &&
-        airflow webserver
-      "
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "True"
+      AIRFLOW__CORE__LOAD_EXAMPLES: "${AIRFLOW_LOAD_EXAMPLES:-True}"
+      _PIP_ADDITIONAL_REQUIREMENTS: "${AIRFLOW_PIP_PACKAGES:-}"
+      AIRFLOW_UID: "50000"
     ports:
-      - "8080:8080"   # Airflow UI
+      - "${AIRFLOW_PORT:-8080}:8080"
     volumes:
-      - ./airflow:/opt/airflow
+      - airflow-dags:/opt/airflow/dags
+      - airflow-logs:/opt/airflow/logs
+      - airflow-plugins:/opt/airflow/plugins
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 10s
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health | grep -q 'healthy'"]
+      interval: 15s
       timeout: 5s
       retries: 20
+
+volumes:
+  airflow-dags:
+  airflow-logs:
+  airflow-plugins:
