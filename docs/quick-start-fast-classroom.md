@@ -8,10 +8,12 @@ Pick a preset under images/presets/ (e.g., full for Node+pnpm+Python).
 
 Build & publish it to GHCR:
 
+```bash
 devcontainer build \
   --workspace-folder images/presets/full \
   --image-name ghcr.io/airnub-labs/templates/full:ubuntu-24.04 \
   --push
+```
 
 In your lesson repo, add a minimal .devcontainer/devcontainer.json that references the image:
 
@@ -53,6 +55,44 @@ External workspaces then reference the image via "image": "ghcr.io/..." → fast
 
 If your repository still uses images/templates/, the steps are identical — just substitute that path. We recommend the images/presets/ name to avoid confusion with templates/.
 
+## Choose your path
+
+```mermaid
+flowchart TB
+  A[Preset Mode — fast boot] --> B[Pick preset under images/presets]
+  B --> C[devcontainer build --workspace-folder images/presets/<preset>]
+  C --> D[Push to ghcr.io/airnub-labs/templates/<preset>:<tag>]
+  D --> E[Lesson repo references the published image]
+```
+
+```mermaid
+flowchart TB
+  A[Template Mode — flexible scaffold] --> B[Copy template from templates/*]
+  B --> C[Edit .devcontainer/devcontainer.json for repo-specific needs]
+  C --> D[First boot installs Features on demand (slower)]
+```
+
+## Lesson manifest one-liners
+
+The Makefile now wraps the generator so you can go from a manifest to artifacts without memorising long commands:
+
+```bash
+# Generate preset context + scaffold
+make gen L=examples/lesson-manifests/intro-ai-week02.yaml
+
+# Build/push the lesson image (multi-arch with provenance)
+make lesson-build L=examples/lesson-manifests/intro-ai-week02.yaml
+make lesson-push  L=examples/lesson-manifests/intro-ai-week02.yaml
+
+# Copy the generated repo scaffold somewhere (e.g., to inspect or commit)
+make lesson-scaffold L=examples/lesson-manifests/intro-ai-week02.yaml DEST=/tmp/lesson
+
+# Bundle docker-compose.classroom.yml plus .env.example-* files for services
+make compose-aggregate L=examples/lesson-manifests/intro-ai-week02.yaml DEST=dist/intro-ai-week02-stack
+```
+
+`DEST` is optional for `compose-aggregate`; if omitted the bundle lands under `dist/<slug>/classroom/`.
+
 Step-by-step: Instructor flow
 1) Choose or create a preset
 
@@ -76,10 +116,12 @@ echo $GITHUB_TOKEN | docker login ghcr.io -u <your-gh-username> --password-stdin
 
 Build & push (example: full preset):
 
+```bash
 devcontainer build \
   --workspace-folder images/presets/full \
   --image-name ghcr.io/airnub-labs/templates/full:ubuntu-24.04 \
   --push
+```
 
 Tagging tips:
 
@@ -91,6 +133,7 @@ Or date/version tags (e.g., :v2025.10.29) for lesson-specific locks.
 
 Add a minimal .devcontainer/devcontainer.json pointing at the prebuilt image:
 
+```json
 {
   "name": "lesson-01",
   "image": "ghcr.io/airnub-labs/templates/full:ubuntu-24.04",
@@ -98,7 +141,8 @@ Add a minimal .devcontainer/devcontainer.json pointing at the prebuilt image:
   "customizations": {
     "vscode": {
       "settings": {
-        "remote.downloadExtensionsLocally": "always"
+        "remote.downloadExtensionsLocally": "always",
+        "telemetry.telemetryLevel": "off"
       },
       "extensions": [
         "dbaeumer.vscode-eslint",
@@ -107,6 +151,7 @@ Add a minimal .devcontainer/devcontainer.json pointing at the prebuilt image:
     }
   }
 }
+```
 
 You can still add repo-specific extensions, settings, tasks, or post-commands here.
 The heavy tooling (Node/Python/pnpm/Jupyter) is already in the image.
@@ -133,6 +178,7 @@ CI: Publish on push (optional)
 
 You can automate pushes to GHCR using GitHub Actions (example for the full preset):
 
+```yaml
 name: publish-template-images
 
 on:
@@ -157,6 +203,7 @@ jobs:
               --workspace-folder images/presets/full \
               --image-name ghcr.io/airnub-labs/templates/full:ubuntu-24.04 \
               --push
+```
 
 You can add additional steps for node-pnpm and python presets or matrix the job.
 

@@ -1,0 +1,157 @@
+name: Smoke Tests
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  preset-smoke:
+    name: Preset smoke — ${{ matrix.preset }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        preset:
+          - node-pnpm
+          - python
+          - full
+          - python-prefect
+          - python-airflow
+          - python-dagster
+          - ts-temporal
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Dev Container CLI
+        run: npm install -g @devcontainers/cli
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build preset image
+        env:
+          PRESET: ${{ matrix.preset }}
+        run: |
+          set -euo pipefail
+          devcontainer build \
+            --workspace-folder images/presets/${PRESET} \
+            --image-name smoke-${PRESET}:ci \
+            --build-arg GIT_SHA=${GITHUB_SHA}
+
+      - name: Run preset command checks
+        env:
+          PRESET: ${{ matrix.preset }}
+        run: |
+          set -euo pipefail
+          case "$PRESET" in
+            node-pnpm)
+              docker run --rm --entrypoint /bin/bash smoke-${PRESET}:ci -lc "node -v && pnpm -v" ;;
+            python)
+              docker run --rm --entrypoint /bin/bash smoke-${PRESET}:ci -lc "python --version" ;;
+            full)
+              docker run --rm --entrypoint /bin/bash smoke-${PRESET}:ci -lc "node -v && pnpm -v && python --version" ;;
+            python-prefect)
+              docker run --rm --entrypoint /bin/bash smoke-${PRESET}:ci -lc "python --version" ;;
+            python-airflow)
+              docker run --rm --entrypoint /bin/bash smoke-${PRESET}:ci -lc "python --version" ;;
+            python-dagster)
+              docker run --rm --entrypoint /bin/bash smoke-${PRESET}:ci -lc "python --version" ;;
+            ts-temporal)
+              docker run --rm --entrypoint /bin/bash smoke-${PRESET}:ci -lc "node -v && pnpm -v" ;;
+            *)
+              echo "Unknown preset: $PRESET" >&2
+              exit 1 ;;
+          esac
+
+  service-smoke:
+    name: Service fragment smoke — ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    needs: preset-smoke
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - redis
+          - prefect
+          - airflow
+          - dagster
+          - temporal
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Launch service fragment
+        env:
+          SERVICE: ${{ matrix.service }}
+        run: |
+          set -euo pipefail
+          case "$SERVICE" in
+            redis)
+              file="services/redis/docker-compose.redis.yml"
+              check_service="redis"
+              check_cmd="redis-cli ping"
+              ;;
+            prefect)
+              file="services/prefect/docker-compose.prefect.yml"
+              check_service="prefect"
+              check_cmd="prefect version"
+              ;;
+            airflow)
+              file="services/airflow/docker-compose.airflow.yml"
+              check_service="airflow-webserver"
+              check_cmd="airflow db check"
+              ;;
+            dagster)
+              file="services/dagster/docker-compose.dagster.yml"
+              check_service="dagster-webserver"
+              check_cmd="dagster --version"
+              ;;
+            temporal)
+              file="services/temporal/docker-compose.temporal.yml"
+              check_service="temporal"
+              check_cmd="tctl cluster health"
+              ;;
+            *)
+              echo "Unknown service: $SERVICE" >&2
+              exit 1
+              ;;
+          esac
+
+          export COMPOSE_FILE="$file"
+          export COMPOSE_PROJECT_NAME="smoke-${SERVICE}"
+          docker compose up -d
+
+          attempt=0
+          until [ $attempt -ge 12 ]; do
+            if docker compose exec -T "$check_service" $check_cmd >/tmp/smoke.log 2>&1; then
+              cat /tmp/smoke.log
+              break
+            fi
+            attempt=$((attempt + 1))
+            sleep 10
+          done
+
+          if [ $attempt -ge 12 ]; then
+            echo "Service $SERVICE did not pass smoke check" >&2
+            docker compose logs
+            exit 1
+          fi
+
+      - name: Tear down fragment
+        if: always()
+        env:
+          SERVICE: ${{ matrix.service }}
+        run: |
+          set -euo pipefail
+          export COMPOSE_PROJECT_NAME="smoke-${SERVICE}"
+          case "$SERVICE" in
+            redis) file="services/redis/docker-compose.redis.yml" ;;
+            prefect) file="services/prefect/docker-compose.prefect.yml" ;;
+            airflow) file="services/airflow/docker-compose.airflow.yml" ;;
+            dagster) file="services/dagster/docker-compose.dagster.yml" ;;
+            temporal) file="services/temporal/docker-compose.temporal.yml" ;;
+            *) exit 0 ;;
+          esac
+          export COMPOSE_FILE="$file"
+          docker compose down -v

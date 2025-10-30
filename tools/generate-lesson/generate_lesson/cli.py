@@ -287,6 +287,7 @@ def merge_services(services, out_dir: Path) -> ServiceArtifacts:
 def _build_vscode_customizations(spec: dict) -> Dict[str, dict]:
     settings = dict(spec.get("settings", {}) or {})
     settings["remote.downloadExtensionsLocally"] = "always"
+    settings.setdefault("telemetry.telemetryLevel", "off")
     extensions = _collect_extensions(spec.get("vscode_extensions", ()))
     return {
         "vscode": {
@@ -392,7 +393,10 @@ def write_generated_preset_ctx(manifest: dict, out_dir: Path) -> None:
     with (out_dir / "Dockerfile").open("w", encoding="utf-8") as handle:
         img_tag = spec["image_tag_strategy"]
         base = spec["base_preset"]
+        handle.write("# syntax=docker/dockerfile:1.7\n")
+        handle.write('ARG GIT_SHA="dev"\n')
         handle.write(f"FROM ghcr.io/airnub-labs/templates/{base}:{img_tag}\n")
+        handle.write("ARG GIT_SHA\n")
 
         metadata = manifest["metadata"]
         labels = {
@@ -400,10 +404,11 @@ def write_generated_preset_ctx(manifest: dict, out_dir: Path) -> None:
             "org.opencontainers.image.description": (
                 f"Lesson image for {metadata['org']}/{metadata['course']}/{metadata['lesson']}"
             ),
-            "edu.airnub.org": metadata["org"],
-            "edu.airnub.course": metadata["course"],
-            "edu.airnub.lesson": metadata["lesson"],
-            "edu.airnub.schema": "airnub.devcontainers/v1",
+            "org.opencontainers.image.revision": "${GIT_SHA}",
+            "org.airnub.lesson.org": metadata["org"],
+            "org.airnub.lesson.course": metadata["course"],
+            "org.airnub.lesson.lesson": metadata["lesson"],
+            "org.airnub.lesson.schema": "airnub.devcontainers/v1",
         }
 
         items = list(labels.items())

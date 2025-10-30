@@ -1,5 +1,21 @@
-ARG BASE_IMAGE=ghcr.io/airnub-labs/devcontainer-images/dev-base:latest
+# syntax=docker/dockerfile:1.7
+
+ARG BASE_TAG="ubuntu-24.04"
+ARG BASE_IMAGE="ghcr.io/airnub-labs/devcontainer-images/dev-base:${BASE_TAG}"
+ARG GIT_SHA="dev"
+
 FROM ${BASE_IMAGE}
+
+ARG BASE_TAG
+ARG BASE_IMAGE
+ARG GIT_SHA
+
+LABEL org.opencontainers.image.source="https://github.com/airnub-labs/devcontainers-catalog" \
+      org.opencontainers.image.description="Thin web base with cached Chrome repo" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.revision="${GIT_SHA}" \
+      io.airnub.base_image="${BASE_IMAGE}" \
+      io.airnub.base_tag="${BASE_TAG}"
 
 # Pre-seed the Google Chrome repository on amd64 so the chrome-cdp feature can reuse it quickly.
 RUN set -eux; \

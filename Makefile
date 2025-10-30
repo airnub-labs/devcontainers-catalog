@@ -6,7 +6,11 @@ TAG      ?= ubuntu-24.04
 
 PYTHON ?= python
 
-LESSON_MANIFEST ?= examples/lesson-manifests/intro-ai-week02.yaml
+DEFAULT_LESSON_MANIFEST := examples/lesson-manifests/intro-ai-week02.yaml
+LESSON_MANIFEST ?= $(DEFAULT_LESSON_MANIFEST)
+L ?=
+
+ACTIVE_MANIFEST := $(strip $(if $(L),$(L),$(LESSON_MANIFEST)))
 
 PRESETS := full node-pnpm python python-prefect python-airflow python-dagster ts-temporal
 
@@ -17,41 +21,84 @@ LESSON_MANIFESTS := $(sort $(MANIFESTS_YML) $(MANIFESTS_YAML))
 # Optional: derive a stable lesson slug from the manifest metadata using `yq` when available.
 # Provide LESSON_SLUG explicitly if `yq` is unavailable or you prefer a custom slug.
 
-ifeq (,$(LESSON_SLUG))
-  LESSON_SLUG := $(shell yq -r '.metadata.org + "-" + .metadata.course + "-" + .metadata.lesson' $(LESSON_MANIFEST) 2>/dev/null | tr '/ ' '--')
-endif
-
-ifeq (,$(LESSON_SLUG))
-  LESSON_SLUG := generated-lesson
+ifeq ($(strip $(ACTIVE_MANIFEST)),)
+  LESSON_SLUG ?= generated-lesson
+else
+  ifeq (,$(LESSON_SLUG))
+    LESSON_SLUG := $(shell $(PYTHON) scripts/manifest_slug.py $(ACTIVE_MANIFEST) 2>/dev/null)
+  endif
+  ifeq (,$(LESSON_SLUG))
+    LESSON_SLUG := generated-lesson
+  endif
 endif
 
 LESSON_IMAGE ?= $(REGISTRY)/lessons/$(LESSON_SLUG):$(TAG)
 
-.PHONY: gen gen-all lesson-build lesson-push check $(addprefix build-,$(PRESETS)) $(addprefix push-,$(PRESETS))
+GIT_SHA ?= $(shell git rev-parse --verify HEAD 2>/dev/null)
+
+COMPOSE_BUNDLE ?= dist/$(LESSON_SLUG)/classroom
+
+.PHONY: gen gen-all lesson-build lesson-push lesson-scaffold compose-aggregate check $(addprefix build-,$(PRESETS)) $(addprefix push-,$(PRESETS))
 
 gen:
-	PYTHONPATH=tools/generate-lesson $(PYTHON) -m generate_lesson.cli --manifest $(LESSON_MANIFEST)
+	@if [ -z "$(ACTIVE_MANIFEST)" ]; then \
+		echo "[error] Set L=<manifest> or LESSON_MANIFEST before running make gen"; \
+		exit 1; \
+	fi
+	PYTHONPATH=tools/generate-lesson $(PYTHON) -m generate_lesson.cli --manifest $(ACTIVE_MANIFEST)
 
 gen-all:
 	if [ -z "$(strip $(LESSON_MANIFESTS))" ]; then \
-	echo "No lesson manifests found under examples/lesson-manifests"; \
-	exit 0; \
-	fi; \
+		echo "No lesson manifests found under examples/lesson-manifests"; \
+		exit 0; \
+	fi
 	for manifest in $(LESSON_MANIFESTS); do \
-	echo "[gen] $$manifest"; \
-	PYTHONPATH=tools/generate-lesson $(PYTHON) -m generate_lesson.cli --manifest $$manifest; \
+		echo "[gen] $$manifest"; \
+		PYTHONPATH=tools/generate-lesson $(PYTHON) -m generate_lesson.cli --manifest $$manifest; \
 	done
 
-lesson-build:
-	devcontainer build \
-	  --workspace-folder images/presets/generated/$(LESSON_SLUG) \
-	  --image-name $(LESSON_IMAGE)
-
-lesson-push:
+lesson-build: gen
+	set -euo pipefail; \
+	export BUILDKIT_COLLECT_BUILD_INFO=1; \
+	export BUILDKIT_SBOM_SCAN_STAGE=export; \
 	devcontainer build \
 	  --workspace-folder images/presets/generated/$(LESSON_SLUG) \
 	  --image-name $(LESSON_IMAGE) \
+	  --build-arg GIT_SHA=$(GIT_SHA)
+
+lesson-push: gen
+	set -euo pipefail; \
+	export BUILDKIT_COLLECT_BUILD_INFO=1; \
+	export BUILDKIT_SBOM_SCAN_STAGE=export; \
+	devcontainer build \
+	  --workspace-folder images/presets/generated/$(LESSON_SLUG) \
+	  --image-name $(LESSON_IMAGE) \
+	  --build-arg GIT_SHA=$(GIT_SHA) \
+	  --platform linux/amd64,linux/arm64 \
 	  --push
+
+lesson-scaffold: gen
+	@if [ -z "$(DEST)" ]; then \
+		echo "[error] Provide DEST=/path/to/output"; \
+		exit 1; \
+	fi
+	rm -rf "$(DEST)"
+	install -d "$(DEST)"
+	cp -a templates/generated/$(LESSON_SLUG)/. "$(DEST)/"
+	@echo "[ok] Scaffold copied to $(DEST)"
+
+compose-aggregate: gen
+	set -euo pipefail; \
+	src="images/presets/generated/$(LESSON_SLUG)"; \
+	bundle="${DEST:-$(COMPOSE_BUNDLE)}"; \
+	if [ ! -f "$$src/docker-compose.classroom.yml" ]; then \
+		echo "[warn] No aggregate compose emitted for $(LESSON_SLUG)"; \
+		exit 0; \
+	fi; \
+	install -d "$$bundle"; \
+	cp "$$src/docker-compose.classroom.yml" "$$bundle/"; \
+	find "$$src" -maxdepth 1 -type f -name '.env.example-*' -exec cp {} "$$bundle/" \;; \
+	@echo "[ok] Aggregate compose bundle ready at $$bundle"
 
 $(addprefix build-,$(PRESETS)):
 	devcontainer build --workspace-folder images/presets/$(@:build-%=%) --image-name $(REGISTRY)/$(@:build-%=%):$(TAG)

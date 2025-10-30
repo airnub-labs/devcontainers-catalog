@@ -12,6 +12,7 @@
     "vscode": {
       "settings": {
         "remote.downloadExtensionsLocally": "always",
+        "telemetry.telemetryLevel": "off",
         "workbench.activityBar.location": "top",
         "workbench.colorTheme": "Default Dark Modern",
         "workbench.startupEditor": "readme"

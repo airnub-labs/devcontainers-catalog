@@ -1,29 +1,33 @@
 {
   "name": "classroom-studio-webtop",
-  "dockerComposeFile": [
-    "./compose.yaml"
-  ],
-  "service": "dev",
-  "runServices": ["dev", "webtop"],
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "."
+  },
   "features": {
-    "ghcr.io/airnub-labs/devcontainer-features/supabase-cli:1": {
-      "manageLocalStack": true
+    "ghcr.io/airnub-labs/devcontainer-features/chrome-cdp:1": {
+      "channel": "stable",
+      "port": 9225
     },
     "ghcr.io/airnub-labs/devcontainer-features/agent-tooling-clis:1": {}
   },
-  "forwardPorts": [
-    {{templateOption.webtopPort}}
-  ],
+  "forwardPorts": [9225],
   "portsAttributes": {
-    "{{templateOption.webtopPort}}": {
-      "label": "Desktop (webtop)",
-      "requireLocalPort": false
+    "9225": { "label": "Chrome DevTools" }
+  },
+  "postCreateCommand": "bash .devcontainer/postCreate.sh",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "remote.downloadExtensionsLocally": "always",
+        "telemetry.telemetryLevel": "off"
+      },
+      "extensions": [
+        "ms-python.python",
+        "ms-toolsai.jupyter",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode"
+      ]
     }
-  },
-  "remoteEnv": {
-    "WEBTOP_PORT": "{{templateOption.webtopPort}}",
-    "CHROME_POLICY_SOURCE": "{{templateOption.chromePolicies}}",
-    "CHROME_POLICY_MODE": "{{templateOption.policyMode}}"
-  },
-  "postCreateCommand": "bash .devcontainer/postCreate.sh"
+  }
 }
