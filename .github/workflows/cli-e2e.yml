@@ -1,0 +1,70 @@
+name: cli-e2e
+on:
+  pull_request:
+    paths:
+      - "tools/airnub-devc/**"
+      - "schemas/**"
+      - "services/**"
+      - "examples/lesson-manifests/**"
+      - ".github/workflows/cli-e2e.yml"
+  workflow_dispatch: {}
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install CLI deps
+        working-directory: tools/airnub-devc
+        run: |
+          npm install
+          npm run build
+          echo "$(pwd)/dist" >> $GITHUB_PATH
+
+      - name: Validate example manifest
+        run: |
+          node tools/airnub-devc/dist/index.js validate examples/lesson-manifests/intro-ai-week02.yaml
+
+      - name: Generate preset and scaffold
+        run: |
+          node tools/airnub-devc/dist/index.js generate examples/lesson-manifests/intro-ai-week02.yaml --fetch-missing-fragments
+
+      - name: Buildx setup
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push lesson image (throwaway namespace)
+        run: |
+          ID="my-school-intro-ai-week02"
+          CTX="images/presets/generated/${ID}"
+          TAG="ghcr.io/airnub-labs/ci-e2e-sandboxes/${ID}:ubuntu-24.04"
+          node tools/airnub-devc/dist/index.js build --ctx "$CTX" --tag "$TAG"
+
+      - name: Smoke up aggregate compose (if present)
+        run: |
+          set -Eeuo pipefail
+          ID="my-school-intro-ai-week02"
+          FILE="images/presets/generated/${ID}/aggregate.compose.yml"
+          if [ -f "$FILE" ]; then
+            docker compose -f "$FILE" up -d
+            sleep 10
+            docker compose -f "$FILE" ps
+            docker compose -f "$FILE" down -v
+          else
+            echo "No aggregate.compose.yml emitted; skipping."
+          fi

@@ -3,7 +3,7 @@ kind: LessonEnv
 metadata:
   org: "my-school"
   course: "intro-ai"
-  lesson: "week02-prompts"
+  lesson: "week02"
 spec:
   base_preset: "python-prefect"
   image_tag_strategy: "ubuntu-24.04"
@@ -17,6 +17,7 @@ spec:
     - name: "airflow"
     - name: "dagster"
     - name: "temporal"
+  emit_aggregate_compose: true
   env:
     NODE_OPTIONS: "--max-old-space-size=2048"
   secrets_placeholders:

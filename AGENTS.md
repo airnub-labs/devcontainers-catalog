@@ -46,6 +46,18 @@ Students on low-power devices (Chromebook, iPad) must have **equal startup exper
 - Always materialize workspaces and lesson scaffolds with `@airnub/devc`.
 - Do **not** manually vendor compose fragments or preset assets; rely on the generator + manifests.
 
+## CLI Scope (Education-Agnostic, Lesson-Capable)
+
+- The `tools/airnub-devc` CLI **must remain education-agnostic**: it should be useful to any developer to materialize Dev Container presets, compose service stacks, and generate workspace scaffolds — with or without “lesson” semantics.
+- The CLI **must** also fully support the Education SaaS flows:
+  - Accept a manifest describing presets, services, extensions, and materials.
+  - Generate both a **prebuilt image context** and a **workspace scaffold** that references the prebuilt image (not Features) for fast, identical starts on Codespaces and locally.
+  - Assemble an **aggregate.compose.yml** that includes all requested services (e.g., Redis, Supabase, Kafka/KRaft, Temporal, Airflow, Prefect, Dagster) with consistent networks, volumes, healthchecks, and labels.
+- Never regress on the core principles:
+  1) **Local = Remote parity** (Dev Containers must behave the same locally and on Codespaces and other spec-compliant hosts).
+  2) **Support the SaaS education vision** without locking the CLI to education-only language or assumptions.
+  3) **Equal experience on low-power devices** (prebuilt images, no required local Docker; iPad/Chromebook via hosted environments + optional noVNC/webtop where applicable).
+
 ### 4) MCP + LLM Agent Orchestration (via SaaS)
 The SaaS mediates **MCP agents** and **LLM agents** that:
 - Accept **instructor chat requests** → derive a **validated manifest**.
