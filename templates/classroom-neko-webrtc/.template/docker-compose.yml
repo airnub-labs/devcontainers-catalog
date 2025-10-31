@@ -14,8 +14,8 @@ services:
       - "59000:59000/tcp"    # WebRTC TCP mux (Codespaces compatible)
     environment:
       # Demo credentials - override in your env or devcontainer.json "containerEnv"
-      NEKO_MEMBER_MULTIUSER_USER_PASSWORD: "student"
-      NEKO_MEMBER_MULTIUSER_ADMIN_PASSWORD: "admin"
+      NEKO_MEMBER_MULTIUSER_USER_PASSWORD: "${NEKO_USER_PASSWORD:-student}"
+      NEKO_MEMBER_MULTIUSER_ADMIN_PASSWORD: "${NEKO_ADMIN_PASSWORD:-admin}"
 
       # Force single-port TCP mux (good for Codespaces / proxies)
       NEKO_WEBRTC_TCPMUX: "59000"
@@ -29,3 +29,8 @@ services:
     #   - "56000-56100:56000-56100/udp"
     # environment:
     #   NEKO_WEBRTC_EPR: "56000-56100"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/ || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 10

@@ -4,6 +4,9 @@
   "service": "devcontainer",
   "workspaceFolder": "/workspaces",
   "runServices": ["devcontainer", "kasm-chrome"],
+  "containerEnv": {
+    "KASM_VNC_PW": "student"
+  },
   "customizations": {
     "vscode": {
       "settings": {

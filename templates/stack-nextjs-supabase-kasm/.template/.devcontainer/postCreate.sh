@@ -32,6 +32,12 @@ if [ "${SCAFFOLD}" = "true" ] && [ ! -f package.json ]; then
   fi
 fi
 
+if [ "${USE_APP_ROUTER}" = "true" ]; then
+  rm -f pages/classroom-browser.tsx 2>/dev/null || true
+else
+  rm -rf app/classroom-browser 2>/dev/null || true
+fi
+
 if command -v pnpm >/dev/null 2>&1; then
   pnpm install --frozen-lockfile || pnpm install
 fi

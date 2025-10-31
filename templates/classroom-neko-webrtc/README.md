@@ -24,5 +24,7 @@ This template runs a **full graphical Chrome** in a sidecar using **Neko** and s
 
 ## Notes
 - For STUN/TURN, set `NEKO_WEBRTC_ICESERVERS_FRONTEND` to a JSON array.
+- Example: `[{"urls":["stun:stun.l.google.com:19302"],"username":"turnuser","credential":"turnpass"}]` set via `.devcontainer/devcontainer.json` `containerEnv` or Codespaces secrets.
 - In Codespaces, UDP is not available; TCP mux provides reliable fallback.
+- Multi-user mode lets an instructor (admin password) and student (member password) share the same Chrome session collaboratively.
 - Smoke test script: `scripts/smoke-neko.sh` probes the Web UI once the stack is up.

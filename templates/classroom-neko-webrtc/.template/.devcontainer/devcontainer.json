@@ -4,6 +4,10 @@
   "service": "devcontainer",
   "workspaceFolder": "/workspaces",
   "runServices": ["devcontainer", "neko"],
+  "containerEnv": {
+    "NEKO_USER_PASSWORD": "student",
+    "NEKO_ADMIN_PASSWORD": "admin"
+  },
   "customizations": {
     "vscode": {
       "settings": {
