@@ -1,0 +1,30 @@
+{
+  "name": "@airnub/devcontainers-catalog-manifest",
+  "version": "0.1.0",
+  "description": "Schema and TypeScript utilities for the AirNub devcontainers catalog manifest",
+  "license": "Apache-2.0",
+  "main": "dist/index.js",
+  "types": "dist/types.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./manifest.schema.json": "./manifest.schema.json"
+  },
+  "files": [
+    "dist",
+    "manifest.schema.json",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "ajv": "^8.12.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.2"
+  }
+}
