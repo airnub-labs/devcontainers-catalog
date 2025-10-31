@@ -9,7 +9,7 @@ npm install --global @airnub/devcontainers-catalog-generator
 catalog-generate config.json
 ```
 
-The configuration file must match the `GeneratorInput` type exported from `@airnub/devcontainers-catalog-manifest` and looks like:
+The configuration file must match the `GeneratorInput` type exported by this package and looks like:
 
 ```json
 {

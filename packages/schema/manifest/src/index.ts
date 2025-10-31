@@ -2,7 +2,7 @@ import Ajv, { ErrorObject, type ValidateFunction } from 'ajv';
 import schemaJson from '../schema/manifest.schema.json' assert { type: 'json' };
 import type { Manifest } from './types.js';
 
-const ajv = new Ajv({ allErrors: true, strict: false });
+const ajv = new Ajv({ allErrors: true, strict: true });
 const validate: ValidateFunction<Manifest> = ajv.compile<Manifest>(schemaJson as any);
 
 export type { Manifest } from './types.js';

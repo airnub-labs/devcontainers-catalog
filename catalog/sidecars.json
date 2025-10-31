@@ -6,6 +6,8 @@
       "image": "ghcr.io/m1k1o/neko:chrome",
       "defaultPort": 8080,
       "label": "Neko Chrome UI",
+      "purpose": "neko-ui",
+      "recommendedPrivacy": "PRIVATE",
       "notes": "Browser-based desktop streaming for Chrome",
       "env": [
         {
@@ -20,6 +22,8 @@
       "image": "ghcr.io/m1k1o/neko:firefox",
       "defaultPort": 8081,
       "label": "Neko Firefox UI",
+      "purpose": "neko-ui-firefox",
+      "recommendedPrivacy": "PRIVATE",
       "notes": "Browser-based desktop streaming for Firefox",
       "env": [
         {
@@ -31,9 +35,11 @@
     },
     {
       "id": "kasm-chrome",
-      "image": "ghcr.io/linuxserver/kasm:chrome",
+      "image": "kasmweb/chrome:1.14.0",
       "defaultPort": 8443,
       "label": "Kasm Chrome HTTPS",
+      "purpose": "kasm-ui",
+      "recommendedPrivacy": "PRIVATE",
       "notes": "Webtop experience with Chrome via HTTPS",
       "env": [
         {

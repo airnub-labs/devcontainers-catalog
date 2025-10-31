@@ -10,11 +10,11 @@
     "catalog-generate": "dist/cli.js"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && node ./scripts/copy-sidecars.mjs",
     "lint": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@airnub/devcontainers-catalog-manifest": "^0.1.0"
+    "@airnub/devcontainers-catalog-manifest": "^1.0.0"
   },
   "devDependencies": {
     "typescript": "^5.4.2"
