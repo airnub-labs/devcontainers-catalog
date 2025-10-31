@@ -1,0 +1,14 @@
+services:
+  devcontainer:
+{{#templateOption.usePrebuiltImage}}
+    image: ghcr.io/airnub-labs/devcontainer-images/dev-web:latest
+{{/templateOption.usePrebuiltImage}}
+{{^templateOption.usePrebuiltImage}}
+    build:
+      context: ./.devcontainer
+      dockerfile: Dockerfile
+{{/templateOption.usePrebuiltImage}}
+    user: "vscode"
+    volumes:
+      - ..:/workspaces:cached
+    command: sleep infinity

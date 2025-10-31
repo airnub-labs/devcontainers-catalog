@@ -56,8 +56,27 @@ Service-aware commands respect `--fetch-missing-fragments` and `--fetch-ref <ref
 
 Examples:
 
-- `airnub-devc generate stack --template stack-nextjs-supabase-neko`
-- `airnub-devc generate stack --template stack-nextjs-supabase-kasm`
+- `airnub-devc generate stack --template stack-nextjs-supabase-browsers --with-browser neko-chrome`
+- `airnub-devc generate stack --template stack-nextjs-supabase-browsers --with-browsers neko-firefox,kasm-chrome`
+
+### Browser sidecars (multi-select)
+
+You can select one or many browsers when generating a stack.
+
+Flags:
+- `--with-browsers <csv>`   e.g. `neko-chrome,kasm-chrome`
+- `--with-browser <id>`     repeatable; e.g. `--with-browser neko-firefox`
+
+Supported IDs:
+- `neko-chrome`, `neko-firefox`, `kasm-chrome`
+
+Examples:
+- Chrome only:
+  `airnub-devc generate stack --template stack-nextjs-supabase-browsers --with-browser neko-chrome`
+- Firefox + Kasm:
+  `airnub-devc generate stack --template stack-nextjs-supabase-browsers --with-browsers neko-firefox,kasm-chrome`
+- All three:
+  `airnub-devc generate stack --template stack-nextjs-supabase-browsers --with-browser neko-chrome --with-browser neko-firefox --with-browser kasm-chrome`
 
 ### Canonical lesson tag format
 

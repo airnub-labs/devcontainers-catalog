@@ -15,6 +15,7 @@ import { resolveCatalog, CatalogContext } from "./lib/catalog.js";
 import { discoverWorkspaceRoot } from "./lib/fsutil.js";
 import { buildAggregateCompose, readAggregateMetadata } from "./lib/compose.js";
 import { materializeServices, listServiceDirs } from "./lib/services.js";
+import { generateStackTemplate, parseBrowserSelection, listBrowserOptions } from "./lib/stacks.js";
 import { enforceTagPolicy, ManifestKind } from "./lib/tag-policy.js";
 import { LessonEnv } from "./types.js";
 import { execa } from "execa";
@@ -137,8 +138,9 @@ program
     });
   });
 
-program
-  .command("generate")
+const generateCmd = program.command("generate").description("Generate catalog artifacts");
+
+generateCmd
   .argument("<manifest>", "path to manifest")
   .option("--out-images <dir>", "dir for generated presets", "images/presets/generated")
   .option("--out-templates <dir>", "dir for generated scaffolds", "templates/generated")
@@ -218,6 +220,54 @@ program
       } else {
         console.log(chalk.yellow("No outputs requested via --out."));
       }
+    });
+  });
+
+generateCmd
+  .command("stack")
+  .description("Materialize a stack template with optional browser sidecars")
+  .requiredOption("--template <id>", "stack template id")
+  .option("--out <dir>", "target directory", "./stack")
+  .option("--force", "overwrite target directory", false)
+  .option("--with-browsers <csv>", "comma-separated browser sidecars")
+  .option(
+    "--with-browser <id>",
+    "repeatable browser sidecar",
+    (value: string, previous: string[] | undefined) => {
+      return [...(previous ?? []), value];
+    },
+    [],
+  )
+  .option("--list-browsers", "list available browser sidecars", false)
+  .action(async function (this: Command, opts: Record<string, any>) {
+    await withCatalog(this, async (catalog) => {
+      if (opts.listBrowsers) {
+        console.log(chalk.blue("Available browsers:"));
+        for (const browser of listBrowserOptions()) {
+          console.log(`  ${browser.id} — ${browser.label}`);
+        }
+        return;
+      }
+
+      const browsers = parseBrowserSelection({
+        withBrowsersCsv: opts.withBrowsers,
+        withBrowser: Array.isArray(opts.withBrowser) ? opts.withBrowser : opts.withBrowser ? [opts.withBrowser] : [],
+      });
+
+      const outDir = path.isAbsolute(opts.out) ? opts.out : path.resolve(process.cwd(), opts.out);
+
+      await generateStackTemplate({
+        repoRoot: catalog.root,
+        templateId: opts.template,
+        outDir,
+        force: !!opts.force,
+        browsers,
+      });
+
+      const summary = browsers.length
+        ? browsers.map((browser) => browser.id).join(", ")
+        : "no browser sidecars";
+      console.log(chalk.green(`Stack generated at ${outDir} (${summary}).`));
     });
   });
 
