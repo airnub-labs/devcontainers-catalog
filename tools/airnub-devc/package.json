@@ -11,6 +11,10 @@
   "license": "Apache-2.0",
   "repository": "https://github.com/airnub-labs/devcontainers-catalog",
   "type": "module",
+  "exports": {
+    ".": "./dist/sdk.js",
+    "./cli": "./dist/index.js"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsx src/index.ts",
@@ -18,6 +22,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@airnub/sdk-codespaces-adapter": "file:../../packages/sdk-codespaces-adapter",
     "@types/node": "^20.12.12",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",

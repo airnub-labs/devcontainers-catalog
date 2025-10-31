@@ -13,22 +13,25 @@ services:
       - "8081:8081"          # Web UI
       - "59010:59010/tcp"    # WebRTC TCP mux (Codespaces compatible)
     environment:
-      # Demo credentials - override in your env or devcontainer.json "containerEnv"
-      NEKO_MEMBER_MULTIUSER_USER_PASSWORD: "${NEKO_FF_USER_PASSWORD:-student}"
-      NEKO_MEMBER_MULTIUSER_ADMIN_PASSWORD: "${NEKO_FF_ADMIN_PASSWORD:-admin}"
+      # Required credentials - inject via devcontainer.json "containerEnv" or Codespaces secrets
+      NEKO_MEMBER_MULTIUSER_USER_PASSWORD: "${NEKO_FF_USER_PASSWORD?set}"
+      NEKO_MEMBER_MULTIUSER_ADMIN_PASSWORD: "${NEKO_FF_ADMIN_PASSWORD?set}"
 
       # Force single-port TCP mux (good for Codespaces / proxies)
       NEKO_WEBRTC_TCPMUX: "59010"
+
+      # Classroom-friendly resolution defaults (override NEKO_SCREEN to increase fidelity)
+      NEKO_SCREEN: "${NEKO_SCREEN:-1280x800@30}"
 
       # Supply STUN/TURN servers if you have them (JSON array). Example:
       # NEKO_WEBRTC_ICESERVERS_FRONTEND: >-
       #   [{"urls":["stun:stun.l.google.com:19302"]}]
 
-    # Uncomment for local-only UDP acceleration:
+    # Uncomment for local-only UDP acceleration (not supported in Codespaces):
     # ports:
-    #   - "56010-56110:56010-56110/udp"
+    #   - "59010:59010/udp"
     # environment:
-    #   NEKO_WEBRTC_EPR: "56010-56110"
+    #   NEKO_WEBRTC_UDPMUX: "59010"
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8081/ || exit 1"]
       interval: 10s

@@ -66,17 +66,27 @@ You can select one or many browsers when generating a stack.
 Flags:
 - `--with-browsers <csv>`   e.g. `neko-chrome,kasm-chrome`
 - `--with-browser <id>`     repeatable; e.g. `--with-browser neko-firefox`
+- `--include-experimental`  opt into experimental sidecars (e.g. Firefox CDP)
 
-Supported IDs:
-- `neko-chrome`, `neko-firefox`, `kasm-chrome`
+Supported IDs (without `--include-experimental`):
+- `neko-chrome`, `kasm-chrome`
+
+Passing `--include-experimental` adds:
+- `neko-firefox` *(experimental remote debugging)*
 
 Examples:
 - Chrome only:
   `airnub-devc generate stack --template stack-nextjs-supabase-browsers --with-browser neko-chrome`
 - Firefox + Kasm:
-  `airnub-devc generate stack --template stack-nextjs-supabase-browsers --with-browsers neko-firefox,kasm-chrome`
+  `airnub-devc generate stack --template stack-nextjs-supabase-browsers --include-experimental --with-browsers neko-firefox,kasm-chrome`
 - All three:
-  `airnub-devc generate stack --template stack-nextjs-supabase-browsers --with-browser neko-chrome --with-browser neko-firefox --with-browser kasm-chrome`
+  `airnub-devc generate stack --template stack-nextjs-supabase-browsers --include-experimental --with-browser neko-chrome --with-browser neko-firefox --with-browser kasm-chrome`
+
+All browser sidecars now require explicit secrets before sharing:
+- `NEKO_USER_PASSWORD` / `NEKO_ADMIN_PASSWORD` (Chrome)
+- `NEKO_FF_USER_PASSWORD` / `NEKO_FF_ADMIN_PASSWORD` (Firefox, experimental)
+- `KASM_VNC_PW` (Kasm)
+Set them via `.devcontainer/devcontainer.json` `containerEnv`, Codespaces secrets, or your host environment before launching.
 
 ### Canonical lesson tag format
 

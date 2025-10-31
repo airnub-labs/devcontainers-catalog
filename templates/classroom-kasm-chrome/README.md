@@ -6,7 +6,7 @@ WebRTC fast-path is optionally available in Kasm, but falls back automatically w
 
 ## Quick start
 - Open the forwarded **6901** URL in your browser and log in.
-- Default password is set via `VNC_PW` (change it!).
+- Provide a password via `KASM_VNC_PW` (required; no default shipped).
 - The endpoint is HTTPS-only, and Codespaces will happily proxy it even though the port number looks "http".
 
 ### Ports
@@ -15,4 +15,5 @@ WebRTC fast-path is optionally available in Kasm, but falls back automatically w
 ## Notes
 - Increase `shm_size` for stability during heavy browsing.
 - Manage extensions/policies in a full Kasm deployment; this template is the minimal sidecar variant.
+- Kasm Workspaces Community Edition is distributed under its own [licence](https://www.kasmweb.com/kasm-workspaces-license); review before distribution.
 - Smoke test script: `scripts/smoke-kasm.sh` checks the HTTPS entrypoint (uses `curl --insecure`).
