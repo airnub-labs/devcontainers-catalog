@@ -15,7 +15,13 @@ import {
 import { resolveCatalog, CatalogContext } from "./lib/catalog.js";
 import { discoverWorkspaceRoot } from "./lib/fsutil.js";
 import { buildAggregateCompose, readAggregateMetadata } from "./lib/compose.js";
-import { materializeServices, listServiceDirs } from "./lib/services.js";
+import {
+  materializeServices,
+  listServiceDirs,
+  loadServiceRegistry,
+  filterServicesByStability,
+  assertServicesAllowed,
+} from "./lib/services.js";
 import { generateStackTemplate, parseBrowserSelection, listBrowserOptions } from "./lib/stacks.js";
 import { enforceTagPolicy, ManifestKind } from "./lib/tag-policy.js";
 import { LessonEnv } from "./types.js";
@@ -66,6 +72,21 @@ function canonicalLessonTag(manifest: LessonEnv, version: string) {
   const slug = idFromManifest(manifest);
   const base = (manifest.spec.image_tag_strategy || "ubuntu-24.04").replace(/[^a-z0-9.-]+/gi, "-");
   return `ghcr.io/airnub-labs/templates/lessons/${slug}:${base}-${slug}-${version}`;
+}
+
+type StabilityCliOptions = {
+  includeExperimental?: boolean;
+  includeDeprecated?: boolean;
+};
+
+function stabilityFlagsFromOptions(opts: StabilityCliOptions): { includeExperimental: boolean; includeDeprecated: boolean } {
+  const envExperimental = process.env.DEVC_INCLUDE_EXPERIMENTAL === "1";
+  const envDeprecated = process.env.DEVC_INCLUDE_DEPRECATED === "1";
+
+  const includeExperimental = opts.includeExperimental === true || (opts.includeExperimental === undefined && envExperimental);
+  const includeDeprecated = opts.includeDeprecated === true || (opts.includeDeprecated === undefined && envDeprecated);
+
+  return { includeExperimental, includeDeprecated };
 }
 
 function assertTagPolicy(tag: string, manifest: LessonEnv | undefined, version: string, force = false) {
@@ -144,6 +165,42 @@ program
     });
   });
 
+const servicesCmd = program.command("services").description("Inspect service fragments");
+
+servicesCmd
+  .command("ls")
+  .option("--include-experimental", "include experimental services", undefined)
+  .option("--include-deprecated", "include deprecated services", undefined)
+  .action(async function (this: Command, opts: Record<string, any>) {
+    await withCatalog(this, async (catalog) => {
+      const stability = stabilityFlagsFromOptions(opts);
+      const registry = await loadServiceRegistry(catalog.root);
+      const services = filterServicesByStability(registry, stability).sort((a, b) =>
+        a.id.localeCompare(b.id),
+      );
+
+      if (!services.length) {
+        console.log(chalk.yellow("No services match the requested filters."));
+        return;
+      }
+
+      console.log(chalk.blue("Available services:"));
+      for (const svc of services) {
+        const stabilityBadge =
+          svc.stability === "stable"
+            ? chalk.green("stable")
+            : svc.stability === "experimental"
+            ? chalk.yellow("experimental")
+            : chalk.red("deprecated");
+        const ports = svc.ports?.length ? ` [ports: ${svc.ports.join(", ")}]` : "";
+        console.log(`  ${chalk.bold(svc.id)} — ${svc.label} (${stabilityBadge})${ports}`);
+        if (svc.docs) {
+          console.log(`    docs: ${svc.docs}`);
+        }
+      }
+    });
+  });
+
 const generateCmd = program.command("generate").description("Generate catalog artifacts");
 
 generateCmd
@@ -155,6 +212,8 @@ generateCmd
   .option("--fetch-ref <ref>", "branch/tag/SHA for fragment fetch")
   .option("--force", "overwrite existing generated directories", false)
   .option("--git-sha <sha>", "git revision stamped into labels", process.env.GITHUB_SHA || process.env.GIT_SHA)
+  .option("--include-experimental", "include experimental services", undefined)
+  .option("--include-deprecated", "include deprecated services", undefined)
   .action(async function (this: Command, manifestPath: string, opts: Record<string, any>) {
     await withCatalog(this, async (catalog, globals) => {
       const validate = await loadSchema(catalog.root);
@@ -189,6 +248,7 @@ generateCmd
       const fetchMissing = opts.fetchMissingFragments ?? catalog.mode === "remote";
       const fetchRef = defaultFetchRef(opts.fetchRef, globals, catalog);
       const gitSha = opts.gitSha || process.env.GIT_SHA || process.env.GITHUB_SHA || catalog.ref;
+      const stability = stabilityFlagsFromOptions(opts);
 
       const generated: string[] = [];
 
@@ -202,6 +262,8 @@ generateCmd
           fetchRef,
           catalogRef: catalog.ref,
           gitSha,
+          includeExperimental: stability.includeExperimental,
+          includeDeprecated: stability.includeDeprecated,
         });
         generated.push(`preset build ctx: ${presetResult.outDir}`);
       }
@@ -216,6 +278,8 @@ generateCmd
           fetchRef,
           catalogRef: catalog.ref,
           gitSha,
+          includeExperimental: stability.includeExperimental,
+          includeDeprecated: stability.includeDeprecated,
         });
         generated.push(`scaffold: ${scaffoldResult.outDir}`);
       }
@@ -347,6 +411,8 @@ program
   .option("--fetch-ref <ref>", "branch/tag/SHA for fragment fetch")
   .option("--force", "overwrite target directory", false)
   .option("--git-sha <sha>", "git revision stamped into labels", process.env.GITHUB_SHA || process.env.GIT_SHA)
+  .option("--include-experimental", "include experimental services", undefined)
+  .option("--include-deprecated", "include deprecated services", undefined)
   .action(async function (this: Command, manifestPath: string, opts: Record<string, any>) {
     await withCatalog(this, async (catalog, globals) => {
       const validate = await loadSchema(catalog.root);
@@ -366,6 +432,7 @@ program
       const fetchMissing = opts.fetchMissingFragments ?? catalog.mode === "remote";
       const fetchRef = defaultFetchRef(opts.fetchRef, globals, catalog);
       const gitSha = opts.gitSha || process.env.GIT_SHA || process.env.GITHUB_SHA || catalog.ref;
+      const stability = stabilityFlagsFromOptions(opts);
 
       try {
         const result = await generateWorkspaceScaffold({
@@ -377,6 +444,8 @@ program
           fetchRef,
           catalogRef: catalog.ref,
           gitSha,
+          includeExperimental: stability.includeExperimental,
+          includeDeprecated: stability.includeDeprecated,
         });
 
         await fs.copy(result.outDir, resolvedOut, {
@@ -500,6 +569,8 @@ addCmd
   .argument("<name...>", "service fragment(s) to add")
   .option("--fetch-missing-fragments", "download missing fragments from catalog", true)
   .option("--fetch-ref <ref>", "catalog ref to use when fetching")
+  .option("--include-experimental", "include experimental services", undefined)
+  .option("--include-deprecated", "include deprecated services", undefined)
   .action(async function (this: Command, names: string[], opts: Record<string, any>) {
     await withCatalog(this, async (catalog, globals) => {
       const workspaceRoot = resolveWorkspace(globals);
@@ -507,6 +578,9 @@ addCmd
       const servicesDir = path.join(devDir, "services");
       const fetchMissing = opts.fetchMissingFragments ?? true;
       const fetchRef = defaultFetchRef(opts.fetchRef, globals, catalog);
+      const stability = stabilityFlagsFromOptions(opts);
+      const registry = await loadServiceRegistry(catalog.root);
+      await assertServicesAllowed(names, registry, stability);
 
       await materializeServices({
         services: names,
@@ -564,6 +638,8 @@ program
   .option("--manifest <path>", "manifest to derive services from")
   .option("--fetch-missing-fragments", "download missing fragments from catalog")
   .option("--fetch-ref <ref>", "catalog ref to use when fetching")
+  .option("--include-experimental", "include experimental services", undefined)
+  .option("--include-deprecated", "include deprecated services", undefined)
   .action(async function (this: Command, opts: Record<string, any>) {
     await withCatalog(this, async (catalog, globals) => {
       const workspaceRoot = resolveWorkspace(globals);
@@ -572,6 +648,8 @@ program
       const servicesDir = path.join(devDir, "services");
       const fetchMissing = opts.fetchMissingFragments ?? true;
       const fetchRef = defaultFetchRef(opts.fetchRef, globals, catalog);
+      const stability = stabilityFlagsFromOptions(opts);
+      const registry = await loadServiceRegistry(catalog.root);
 
       let services: string[] = [];
       if (opts.manifest) {
@@ -591,6 +669,8 @@ program
         console.log(chalk.yellow("No services to sync."));
         return;
       }
+
+      await assertServicesAllowed(services, registry, stability);
 
       await materializeServices({
         services,

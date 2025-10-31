@@ -2,6 +2,112 @@ import path from "path";
 import os from "os";
 import fs from "fs-extra";
 
+export type Stability = "experimental" | "stable" | "deprecated";
+
+export type ServiceDescriptor = {
+  id: string;
+  label: string;
+  templatePath: string;
+  stability: Stability;
+  since?: string;
+  owners?: string[];
+  docs?: string;
+  ports?: number[];
+  notes?: string[];
+};
+
+export type ServiceRegistry = {
+  services: ServiceDescriptor[];
+};
+
+type RegistryCacheKey = string;
+
+const registryCache = new Map<RegistryCacheKey, Promise<ServiceRegistry>>();
+
+async function loadRegistryFromDisk(repoRoot: string): Promise<ServiceRegistry> {
+  const registryPath = path.join(repoRoot, "catalog", "services.json");
+  const payload = await fs.readJson(registryPath).catch((error: NodeJS.ErrnoException) => {
+    if (error.code === "ENOENT") {
+      throw new Error(
+        `Service registry not found at ${registryPath}. Ensure catalog/services.json exists or pass --catalog-root to point to a full checkout.`,
+      );
+    }
+    throw error;
+  });
+
+  const rawServices: unknown[] = Array.isArray(payload?.services) ? payload.services : [];
+  const services: ServiceDescriptor[] = rawServices.map((entry: any) => ({
+    id: String(entry.id),
+    label: String(entry.label ?? entry.id ?? ""),
+    templatePath: String(entry.templatePath ?? ""),
+    stability: (entry.stability ?? "stable") as Stability,
+    since: entry.since ? String(entry.since) : undefined,
+    owners: Array.isArray(entry.owners) ? entry.owners.map((owner: any) => String(owner)) : undefined,
+    docs: entry.docs ? String(entry.docs) : undefined,
+    ports: Array.isArray(entry.ports) ? entry.ports.map((port: any) => Number(port)).filter(Number.isFinite) : undefined,
+    notes: Array.isArray(entry.notes) ? entry.notes.map((note: any) => String(note)) : undefined,
+  }));
+
+  return { services };
+}
+
+export function loadServiceRegistry(repoRoot: string): Promise<ServiceRegistry> {
+  const key: RegistryCacheKey = path.resolve(repoRoot);
+  if (!registryCache.has(key)) {
+    registryCache.set(key, loadRegistryFromDisk(key));
+  }
+  return registryCache.get(key)!;
+}
+
+export interface StabilityFilterOptions {
+  includeExperimental: boolean;
+  includeDeprecated: boolean;
+}
+
+export function filterServicesByStability(
+  registry: ServiceRegistry,
+  { includeExperimental, includeDeprecated }: StabilityFilterOptions,
+): ServiceDescriptor[] {
+  return registry.services.filter((svc) => {
+    if (svc.stability === "experimental" && !includeExperimental) {
+      return false;
+    }
+    if (svc.stability === "deprecated" && !includeDeprecated) {
+      return false;
+    }
+    return true;
+  });
+}
+
+export function assertServicesAllowed(
+  serviceIds: string[],
+  registry: ServiceRegistry,
+  { includeExperimental, includeDeprecated }: StabilityFilterOptions,
+): ServiceDescriptor[] {
+  const lookup = new Map(registry.services.map((svc) => [svc.id, svc] as const));
+  const descriptors: ServiceDescriptor[] = [];
+
+  for (const id of serviceIds) {
+    const svc = lookup.get(id);
+    if (!svc) {
+      throw new Error(`Unknown service: ${id}`);
+    }
+    if (svc.stability === "experimental" && !includeExperimental) {
+      throw new Error(
+        `Service "${id}" is experimental and disabled by default. Re-run with --include-experimental (or set DEVC_INCLUDE_EXPERIMENTAL=1).`,
+      );
+    }
+    if (svc.stability === "deprecated" && !includeDeprecated) {
+      throw new Error(
+        `Service "${id}" is deprecated and disabled by default. Re-run with --include-deprecated (or set DEVC_INCLUDE_DEPRECATED=1).`,
+      );
+    }
+    descriptors.push(svc);
+  }
+
+  return descriptors;
+}
+
 export type BrowserSidecar = {
   id: "neko-chrome" | "neko-firefox" | "kasm-chrome";
   label: string;

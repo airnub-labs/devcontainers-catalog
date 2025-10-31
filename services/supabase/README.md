@@ -2,6 +2,12 @@
 
 Supabase-backed lessons can either rely on the official Supabase CLI or use a vendored docker compose stack. This folder documents both approaches so the generator and downstream templates can remain idempotent.
 
+## Quickstart
+
+```bash
+docker compose -f docker-compose.supabase.yml up
+```
+
 ## Preferred: Supabase CLI
 
 1. Install the Supabase CLI in your image or template (for example via `npm install -g supabase`).
