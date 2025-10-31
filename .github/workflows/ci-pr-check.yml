@@ -39,5 +39,8 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install ./tools/generate-lesson jsonschema[yaml]
 
+      - name: Validate catalog/services.json schema
+        run: npx ajv-cli@5 validate -s schemas/catalog-services.schema.json -d catalog/services.json
+
       - name: Run make check
         run: make check

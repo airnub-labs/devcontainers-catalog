@@ -3,7 +3,7 @@ import fs from "fs-extra";
 import { LessonEnv } from "../types.js";
 import { buildAggregateCompose } from "./compose.js";
 import { safeWriteDir, writeJson } from "./fsutil.js";
-import { materializeServices } from "./services.js";
+import { assertServicesAllowed, loadServiceRegistry, materializeServices } from "./services.js";
 
 export interface GenerateBaseOptions {
   repoRoot: string;
@@ -12,6 +12,8 @@ export interface GenerateBaseOptions {
   fetchRef?: string;
   catalogRef?: string;
   gitSha?: string;
+  includeExperimental?: boolean;
+  includeDeprecated?: boolean;
 }
 
 export interface GeneratePresetOptions extends GenerateBaseOptions {
@@ -49,6 +51,11 @@ export async function generatePresetBuildContext(opts: GeneratePresetOptions) {
   const servicesRequested = ensureArray(manifest.spec.services).map((svc) => svc.name);
   let servicesDir: string | null = null;
   if (servicesRequested.length) {
+    const registry = await loadServiceRegistry(opts.repoRoot);
+    await assertServicesAllowed(servicesRequested, registry, {
+      includeExperimental: !!opts.includeExperimental,
+      includeDeprecated: !!opts.includeDeprecated,
+    });
     const localServicesDir = path.join(opts.outDir, "services");
     servicesDir = localServicesDir;
     await materializeServices({
@@ -179,6 +186,11 @@ export async function generateWorkspaceScaffold(opts: GenerateScaffoldOptions) {
   const servicesRequested = ensureArray(manifest.spec.services).map((svc) => svc.name);
 
   if (servicesRequested.length) {
+    const registry = await loadServiceRegistry(opts.repoRoot);
+    await assertServicesAllowed(servicesRequested, registry, {
+      includeExperimental: !!opts.includeExperimental,
+      includeDeprecated: !!opts.includeDeprecated,
+    });
     const servicesDir = path.join(devDir, "services");
     await materializeServices({
       services: servicesRequested,
