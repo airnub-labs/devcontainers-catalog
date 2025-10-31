@@ -4,11 +4,15 @@ Full Firefox browser delivered via [Neko](https://github.com/m1k1o/neko) with TC
 
 - **Web UI** on port **8081** (auto-opened when forwarded)
 - **TCP mux** on port **59010** (silent forward; required for Codespaces)
-- Optional UDP range for local acceleration (commented)
+- Optional UDP mux for local acceleration (commented)
+- Remote debugging via Firefox CDP is **experimental**; pass `--include-experimental` to expose this sidecar in the CLI/SDK.
 
 ## Credentials
-Override via environment variables:
+Provide credentials explicitly via environment variables (no defaults shipped):
 - `NEKO_FF_USER_PASSWORD`
 - `NEKO_FF_ADMIN_PASSWORD`
+- Container receives `NEKO_MEMBER_MULTIUSER_USER_PASSWORD` / `NEKO_MEMBER_MULTIUSER_ADMIN_PASSWORD`.
+
+The template defaults to `NEKO_SCREEN=1280x800@30` for reduced bandwidth; override to bump resolution when needed.
 
 Keep forwarded ports **Private** in Codespaces by default.

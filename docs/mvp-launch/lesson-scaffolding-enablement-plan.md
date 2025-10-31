@@ -8,7 +8,7 @@ Enable Comhrá to **auto‑scaffold ready‑to‑teach lesson repos** that open 
 
 ## High‑level Outcomes
 
-* A stable **programmatic generator (SDK)** for `devcontainers‑catalog` that Comhrá can call.
+* A stable **programmatic generator (SDK)** for `devcontainers-catalog` that Comhrá can call.
 * Declarative inputs (JSON/flags) yielding deterministic, version‑locked environments.
 * Well‑known **lesson onboarding slots** in each generated repo (walkthroughs, tours, docs, assessments).
 * Scalable **sidecar selection** via a single registry and safe merge logic (services/ports/env).
@@ -114,7 +114,13 @@ export type BrowserSidecar = {
   ports: number[];          // forwarded ports to add
   portLabels: Record<number, { label: string; onAutoForward: "openBrowser" | "silent" }>;
   containerEnv?: Record<string, string>; // defaults, non-overwriting
-  requires?: string[];      // optional deps (e.g., shm tweaks)
+  requiredEnv?: string[];   // secrets that must be supplied before sharing
+  experimental?: boolean;   // hidden behind --include-experimental
+  notes?: string[];
+  compatibility?: {
+    codespaces?: { notes?: string[] };
+    local?: { notes?: string[] };
+  };
 };
 ```
 
@@ -234,24 +240,24 @@ airnub-devc generate stack \
 
 ## 12) Merge Algorithm Details
 
-* **Compose (docker‑compose.yml)**: parse → AST merge services → re‑serialize with preserved comments where possible; avoid plain string splices.
-* **devcontainer.json**: deep merge with rules (de‑dupe arrays, non‑overwriting env). Validate schema after merge.
-* **Conflict notes**: emit human‑readable warnings in the plan; never silently drop keys.
+* **Compose (docker-compose.yml)**: parse → AST merge services → re-serialize with preserved comments where possible; avoid plain string splices.
+* **devcontainer.json**: deep merge with rules (de-dupe arrays, non-overwriting env). Validate schema after merge.
+* **Conflict notes**: emit human-readable warnings in the plan; never silently drop keys.
 
 ---
 
 ## 13) Testing & CI
 
 * Unit tests for merges (Compose/devcontainer), port allocator, and sidecar registry integrity.
-* Golden‑file tests: generate a fixture repo and snapshot the output.
+* Golden-file tests: generate a fixture repo and snapshot the output.
 * CI job to build example stacks and run `devcontainer validate`.
 
 ---
 
 ## 14) Roadmap & Milestones
 
-1. **M1 — SDK Mode (P0)**: export `generateStack()` with dry‑run plans; registry typed export; no placeholder leakage.
-2. **M2 — Lesson Slots & Merge Helpers (P0)**: JSON/YAML merge utils; well‑known paths; unit tests.
+1. **M1 — SDK Mode (P0)**: export `generateStack()` with dry-run plans; registry typed export; no placeholder leakage.
+2. **M2 — Lesson Slots & Merge Helpers (P0)**: JSON/YAML merge utils; well-known paths; unit tests.
 3. **M3 — Port Allocator (P1)**: preferred → fallback ranges; update labels/notes.
 4. **M4 — Autograding Preset (P1)**: workflow + tests template.
 5. **M5 — Metadata (P1)**: `lesson.json` schema; lockfile emission.
@@ -261,4 +267,4 @@ airnub-devc generate stack \
 
 ## 15) Net
 
-You’re not changing your runtime architecture. By formalizing **SDK mode**, **well‑known lesson paths**, and small **port/merge plumbing**, Comhrá can generate lesson repos that **open and work immediately**—with sidecar browsers, onboarding, and assessments—across Codespaces and local Dev Containers.
+You’re not changing your runtime architecture. By formalizing **SDK mode**, **well-known lesson paths**, and small **port/merge plumbing**, Comhrá can generate lesson repos that **open and work immediately**—with sidecar browsers, onboarding, and assessments—across Codespaces and local Dev Containers.
