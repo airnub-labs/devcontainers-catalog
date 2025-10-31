@@ -1,7 +1,6 @@
 export * from "./types.js";
 export * from "./errors.js";
-export { CodespacesAdapter, makeCodespacesAdapter } from "./adapter.js";
-export { GitHubAuthManager } from "./github-auth.js";
-export { GitHubClient } from "./github-client.js";
-export { normalizePortRequests } from "./ports.js";
-export { buildCreatePlan } from "./plan.js";
+export { makeOctokit } from "./github-auth.js";
+export { GithubClient } from "./github-client.js";
+export * as Gh from "./gh.js";
+export { sealForGitHub } from "./seal.js";
