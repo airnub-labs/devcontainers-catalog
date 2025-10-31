@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.0.0",
+  "stackId": "nextjs-supabase@1.0.0",
+  "catalogCommit": "0123456",
+  "browsers": ["neko-chrome"],
+  "ports": [
+    {
+      "port": 80,
+      "label": "Public",
+      "purpose": "app",
+      "recommendedPrivacy": "TEAM"
+    }
+  ],
+  "env": [
+    {
+      "description": "Missing name"
+    }
+  ],
+  "paths": {
+    "readme": "README.md"
+  }
+}

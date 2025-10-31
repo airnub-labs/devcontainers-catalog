@@ -9,6 +9,13 @@
 
 ## What’s in this repo
 
+## Generator + Manifest Contract
+
+- `tools/catalog-generator/` exposes `generateCatalogWorkspace` and a `catalog-generate` CLI that materialises provider-agnostic workspaces.
+- `packages/schema/` publishes the `@airnub/devcontainers-catalog-manifest` schema and TypeScript helpers.
+- Every generated workspace includes a `manifest.json` describing ports, sidecars, and safety notes, plus a `/classroom-browser` directory and README guidance on passwords + Private ports.
+- `catalog/sidecars.json` tracks browser sidecars and the environment variables they require.
+
 - `features/` — Install-only, idempotent add-ons. No services baked in.
 - `templates/` — **Dev Container Templates (scaffolds)** you copy into a repo (follow the Dev Container Template spec with `devcontainer-template.json`).
 - `images/presets/` — **Prebuildable image presets**. Each folder contains a `devcontainer.json` used by `devcontainer build` to bake/publish a fast-start image to GHCR.

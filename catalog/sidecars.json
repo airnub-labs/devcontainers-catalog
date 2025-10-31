@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "sidecars": [
+    {
+      "id": "neko-chrome",
+      "image": "ghcr.io/m1k1o/neko:chrome",
+      "defaultPort": 8080,
+      "label": "Neko Chrome UI",
+      "purpose": "neko-ui",
+      "recommendedPrivacy": "PRIVATE",
+      "notes": "Browser-based desktop streaming for Chrome",
+      "env": [
+        {
+          "name": "NEKO_PASSWORD",
+          "description": "Password required to access the Neko session",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "neko-firefox",
+      "image": "ghcr.io/m1k1o/neko:firefox",
+      "defaultPort": 8081,
+      "label": "Neko Firefox UI",
+      "purpose": "neko-ui-firefox",
+      "recommendedPrivacy": "PRIVATE",
+      "notes": "Browser-based desktop streaming for Firefox",
+      "env": [
+        {
+          "name": "NEKO_PASSWORD",
+          "description": "Password required to access the Neko session",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "kasm-chrome",
+      "image": "kasmweb/chrome:1.14.0",
+      "defaultPort": 8443,
+      "label": "Kasm Chrome HTTPS",
+      "purpose": "kasm-ui",
+      "recommendedPrivacy": "PRIVATE",
+      "notes": "Webtop experience with Chrome via HTTPS",
+      "env": [
+        {
+          "name": "KASM_PASSWORD",
+          "description": "Password for the default kasm user",
+          "required": true
+        }
+      ]
+    }
+  ]
+}

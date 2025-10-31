@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "1.0.0",
+  "stackId": "nextjs-supabase@1.0.0",
+  "catalogCommit": "0123456789abcdef0123456789abcdef01234567",
+  "browsers": ["neko-chrome", "kasm-chrome"],
+  "ports": [
+    {
+      "port": 6080,
+      "label": "Neko Chrome UI",
+      "purpose": "neko-ui",
+      "recommendedPrivacy": "PRIVATE"
+    },
+    {
+      "port": 8080,
+      "label": "App",
+      "purpose": "app",
+      "recommendedPrivacy": "COURSE"
+    }
+  ],
+  "env": [
+    {
+      "name": "NEKO_PASSWORD",
+      "description": "Password for the Neko Chrome session",
+      "required": true
+    },
+    {
+      "name": "NEXT_PUBLIC_SUPABASE_URL"
+    }
+  ],
+  "paths": {
+    "devcontainer": ".devcontainer/devcontainer.json",
+    "compose": ".devcontainer/docker-compose.yml",
+    "readme": "README.md",
+    "classroomBrowser": "classroom-browser/README.md"
+  },
+  "notes": {
+    "prefersUDP": false,
+    "codespacesFallback": "tcp-mux",
+    "other": "Ensure private ports remain private unless testing"
+  }
+}
