@@ -62,8 +62,7 @@ With this flow, every student receives the same workspace with predictable start
   - Pure HTTPS + WebSocket transport, very proxy-friendly.
   - Increase `shm_size` for heavy devtools and media testing.
 
-#### One-click stacks (Next.js + Supabase + full Chrome)
-- `stack-nextjs-supabase-neko` (WebRTC / TCP mux)
-- `stack-nextjs-supabase-kasm` (HTTPS + WebSocket)
+#### Generic stack with selectable browsers
+Use `stack-nextjs-supabase-browsers` and pick any combination of Neko Chrome, Neko Firefox, and Kasm Chrome at generate time.
 
-Both include a demo page at `/classroom-browser` and auto-labeled forwarded ports.
+All sidecars can reach your app via `http://devcontainer:3000`. Bind your dev server to `0.0.0.0`.

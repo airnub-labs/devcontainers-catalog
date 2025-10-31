@@ -90,3 +90,5 @@ This works locally and in Codespaces the same way (no secrets baked; use .env or
 |--------------------|------------------------------|---------------------|-------|
 | Neko (Chrome)      | WebRTC (TCP mux by default)  | ✅ (TCP mux)        | Optional UDP range locally for low latency; supports STUN/TURN. |
 | Kasm (Chrome)      | HTTPS + WebSocket (KasmVNC)  | ✅                  | WebRTC fast-path when available, falls back to WS/HTTPS cleanly. |
+
+Selection is done at generation time using `--with-browsers` / `--with-browser`.

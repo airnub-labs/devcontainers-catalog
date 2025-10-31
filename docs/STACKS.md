@@ -2,6 +2,7 @@
 
 - `stack-nextjs-supabase-webtop`
 - `stack-nextjs-supabase-novnc`
+- `stack-nextjs-supabase-browsers`
 - `stack-web-node-supabase-webtop`
 
 ## Options to standardize
@@ -23,8 +24,5 @@ Ensure each stack template folder has:
 
 ### Browser-enabled classroom stacks
 
-- **stack-nextjs-supabase-neko** — Next.js + Supabase + Neko (WebRTC Chrome)
-  - Codespaces: TCP mux by default; optional UDP locally for low latency.
-
-- **stack-nextjs-supabase-kasm** — Next.js + Supabase + Kasm Chrome (KasmVNC)
-  - Proxy-friendly HTTPS + WebSocket transport by default.
+- **stack-nextjs-supabase-browsers** — Next.js + Supabase with selectable browser sidecars (Neko Chrome, Neko Firefox, Kasm Chrome)
+  - Compose merges happen at generation time via `--with-browsers` / `--with-browser` so Codespaces and local runs stay identical.

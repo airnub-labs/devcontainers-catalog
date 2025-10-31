@@ -1,0 +1,25 @@
+{
+  "name": "classroom-neko-firefox",
+  "dockerComposeFile": ["./docker-compose.yml"],
+  "service": "devcontainer",
+  "workspaceFolder": "/workspaces",
+  "runServices": ["devcontainer", "neko-firefox"],
+  "containerEnv": {
+    "NEKO_FF_USER_PASSWORD": "student",
+    "NEKO_FF_ADMIN_PASSWORD": "admin"
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      },
+      "extensions": []
+    }
+  },
+  "forwardPorts": [8081, 59010],
+  "portsAttributes": {
+    "8081": { "label": "Neko Firefox (Web UI)", "onAutoForward": "openBrowser" },
+    "59010": { "label": "Neko Firefox (WebRTC TCP mux)", "onAutoForward": "silent" }
+  },
+  "remoteUser": "vscode"
+}

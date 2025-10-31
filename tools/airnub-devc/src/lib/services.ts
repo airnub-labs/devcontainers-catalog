@@ -2,31 +2,65 @@ import path from "path";
 import os from "os";
 import fs from "fs-extra";
 
-export const browserServices = [
+export type BrowserSidecar = {
+  id: "neko-chrome" | "neko-firefox" | "kasm-chrome";
+  label: string;
+  templatePath: string;
+  serviceName: string;
+  ports: number[];
+  portLabels: Record<number, { label: string; onAutoForward: "openBrowser" | "silent" }>;
+  containerEnv?: Record<string, string>;
+};
+
+export const BROWSER_SIDECARS: BrowserSidecar[] = [
   {
-    id: "neko-webrtc",
+    id: "neko-chrome",
     label: "Neko (WebRTC) Chrome",
     templatePath: "templates/classroom-neko-webrtc/.template",
+    serviceName: "neko",
+    ports: [8080, 59000],
+    portLabels: {
+      8080: { label: "Neko Chrome (Web UI)", onAutoForward: "openBrowser" },
+      59000: { label: "Neko Chrome (TCP mux)", onAutoForward: "silent" },
+    },
+    containerEnv: {
+      NEKO_USER_PASSWORD: "student",
+      NEKO_ADMIN_PASSWORD: "admin",
+    },
+  },
+  {
+    id: "neko-firefox",
+    label: "Neko (WebRTC) Firefox",
+    templatePath: "templates/classroom-neko-firefox/.template",
+    serviceName: "neko-firefox",
+    ports: [8081, 59010],
+    portLabels: {
+      8081: { label: "Neko Firefox (Web UI)", onAutoForward: "openBrowser" },
+      59010: { label: "Neko Firefox (TCP mux)", onAutoForward: "silent" },
+    },
+    containerEnv: {
+      NEKO_FF_USER_PASSWORD: "student",
+      NEKO_FF_ADMIN_PASSWORD: "admin",
+    },
   },
   {
     id: "kasm-chrome",
     label: "Kasm Chrome (KasmVNC)",
     templatePath: "templates/classroom-kasm-chrome/.template",
+    serviceName: "kasm-chrome",
+    ports: [6901],
+    portLabels: {
+      6901: { label: "Kasm Chrome (HTTPS)", onAutoForward: "openBrowser" },
+    },
+    containerEnv: {
+      KASM_VNC_PW: "student",
+    },
   },
 ];
 
-export const stackTemplates = [
-  {
-    id: "stack-nextjs-supabase-neko",
-    label: "Stack: Next.js + Supabase + Neko",
-    templatePath: "templates/stack-nextjs-supabase-neko/.template",
-  },
-  {
-    id: "stack-nextjs-supabase-kasm",
-    label: "Stack: Next.js + Supabase + Kasm",
-    templatePath: "templates/stack-nextjs-supabase-kasm/.template",
-  },
-];
+export function getBrowserSidecar(id: string): BrowserSidecar | undefined {
+  return BROWSER_SIDECARS.find((browser) => browser.id === id);
+}
 
 export interface MaterializeServicesOptions {
   services: string[];
