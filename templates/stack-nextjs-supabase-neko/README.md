@@ -9,10 +9,10 @@ This stack composes the existing `nextjs-supabase` template and adds a **full gr
 ## Ports
 - **8080** – Neko Web UI (opens on forward)
 - **59000/tcp** – Neko WebRTC TCP mux (silent forward; required for Codespaces)
-- (Optional local) **56000–56100/udp** – WebRTC UDP range (enable for better perf)
+- (Optional local) **59000/udp** – WebRTC UDP mux (enable locally; skip in Codespaces)
 
 ## Security
-Change defaults via env:
+Provide secrets via env (no defaults shipped):
 - `NEKO_USER_PASSWORD` (user)
 - `NEKO_ADMIN_PASSWORD` (admin)
 

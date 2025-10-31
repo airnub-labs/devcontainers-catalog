@@ -3,47 +3,57 @@
   "sidecars": [
     {
       "id": "neko-chrome",
-      "image": "ghcr.io/m1k1o/neko:chrome",
+      "image": "ghcr.io/m1k1o/neko/chrome:latest",
       "defaultPort": 8080,
       "label": "Neko Chrome UI",
       "purpose": "neko-ui",
       "recommendedPrivacy": "PRIVATE",
-      "notes": "Browser-based desktop streaming for Chrome",
+      "notes": "Browser-based desktop streaming for Chrome (WebRTC TCP mux; UDP disabled on Codespaces).",
       "env": [
         {
-          "name": "NEKO_PASSWORD",
-          "description": "Password required to access the Neko session",
+          "name": "NEKO_USER_PASSWORD",
+          "description": "Required password for student access",
+          "required": true
+        },
+        {
+          "name": "NEKO_ADMIN_PASSWORD",
+          "description": "Required password for host/admin actions",
           "required": true
         }
       ]
     },
     {
       "id": "neko-firefox",
-      "image": "ghcr.io/m1k1o/neko:firefox",
+      "image": "ghcr.io/m1k1o/neko/firefox:latest",
       "defaultPort": 8081,
       "label": "Neko Firefox UI",
       "purpose": "neko-ui-firefox",
       "recommendedPrivacy": "PRIVATE",
-      "notes": "Browser-based desktop streaming for Firefox",
+      "notes": "Browser-based desktop streaming for Firefox (experimental remote debugging support).",
       "env": [
         {
-          "name": "NEKO_PASSWORD",
-          "description": "Password required to access the Neko session",
+          "name": "NEKO_FF_USER_PASSWORD",
+          "description": "Required password for student access",
+          "required": true
+        },
+        {
+          "name": "NEKO_FF_ADMIN_PASSWORD",
+          "description": "Required password for host/admin actions",
           "required": true
         }
       ]
     },
     {
       "id": "kasm-chrome",
-      "image": "kasmweb/chrome:1.14.0",
+      "image": "kasmweb/chrome:1.17.0",
       "defaultPort": 8443,
       "label": "Kasm Chrome HTTPS",
       "purpose": "kasm-ui",
       "recommendedPrivacy": "PRIVATE",
-      "notes": "Webtop experience with Chrome via HTTPS",
+      "notes": "Webtop experience with Chrome via HTTPS (Kasm Workspaces CE licence applies).",
       "env": [
         {
-          "name": "KASM_PASSWORD",
+          "name": "KASM_VNC_PW",
           "description": "Password for the default kasm user",
           "required": true
         }
