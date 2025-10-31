@@ -2,6 +2,7 @@
 import { Command } from "commander";
 import path from "path";
 import fs from "fs-extra";
+import type { Stats } from "fs";
 import chalk from "chalk";
 import { globby } from "globby";
 import { loadManifest, loadSchema } from "./lib/schema.js";
@@ -101,7 +102,12 @@ program
     await withCatalog(this, async (catalog) => {
       const validate = await loadSchema(catalog.root);
       const targetPath = path.resolve(manifestPath);
-      const stats = await fs.stat(targetPath).catch(() => null);
+      let stats: Stats | null;
+      try {
+        stats = await fs.stat(targetPath);
+      } catch {
+        stats = null;
+      }
       const manifestFiles: string[] = [];
 
       if (stats?.isDirectory()) {
@@ -152,12 +158,14 @@ generateCmd
   .action(async function (this: Command, manifestPath: string, opts: Record<string, any>) {
     await withCatalog(this, async (catalog, globals) => {
       const validate = await loadSchema(catalog.root);
-      const manifest = await loadManifest(manifestPath);
-      if (!validate(manifest)) {
+      const manifestData = await loadManifest(manifestPath);
+      if (!validate(manifestData)) {
         console.error(chalk.red("Schema validation errors:"));
         console.error(validate.errors);
         process.exit(1);
       }
+
+      const manifest: LessonEnv = manifestData as LessonEnv;
 
       const id = idFromManifest(manifest);
       const cwd = process.cwd();
@@ -295,13 +303,13 @@ program
       let manifest: LessonEnv | undefined;
       if (opts.manifest) {
         const validate = await loadSchema(catalog.root);
-        const loaded = (await loadManifest(opts.manifest)) as LessonEnv;
-        if (!validate(loaded)) {
+        const manifestData = await loadManifest(opts.manifest);
+        if (!validate(manifestData)) {
           console.error(chalk.red("Schema validation errors:"));
           console.error(validate.errors);
           process.exit(1);
         }
-        manifest = loaded;
+        manifest = manifestData as LessonEnv;
       }
 
       assertTagPolicy(opts.tag, manifest, version, !!opts.force);
@@ -342,12 +350,14 @@ program
   .action(async function (this: Command, manifestPath: string, opts: Record<string, any>) {
     await withCatalog(this, async (catalog, globals) => {
       const validate = await loadSchema(catalog.root);
-      const manifest = await loadManifest(manifestPath);
-      if (!validate(manifest)) {
+      const manifestData = await loadManifest(manifestPath);
+      if (!validate(manifestData)) {
         console.error(chalk.red("Schema validation errors:"));
         console.error(validate.errors);
         process.exit(1);
       }
+
+      const manifest: LessonEnv = manifestData as LessonEnv;
 
       const resolvedOut = path.isAbsolute(opts.out) ? opts.out : path.resolve(process.cwd(), opts.out);
       const tmpRoot = path.join(process.cwd(), ".tmp-devc-scaffold");
@@ -394,12 +404,14 @@ program
   .action(async function (this: Command, manifestPath: string, opts: Record<string, any>) {
     await withCatalog(this, async (catalog) => {
       const validate = await loadSchema(catalog.root);
-      const manifest = (await loadManifest(manifestPath)) as LessonEnv;
-      if (!validate(manifest)) {
+      const manifestData = await loadManifest(manifestPath);
+      if (!validate(manifestData)) {
         console.error(chalk.red("Schema validation errors:"));
         console.error(validate.errors);
         process.exit(1);
       }
+
+      const manifest: LessonEnv = manifestData as LessonEnv;
 
       const version = opts.version || "v1";
       if (!/^v[0-9][0-9a-z.-]*$/i.test(version)) {
@@ -532,7 +544,9 @@ addCmd
     const globals = getGlobals(this);
     const workspaceRoot = resolveWorkspace(globals);
     const devcontainerPath = path.join(workspaceRoot, ".devcontainer", "devcontainer.json");
-    const devcontainer = await fs.readJson(devcontainerPath).catch(() => ({ name: path.basename(workspaceRoot) }));
+    const devcontainer: any = await fs
+      .readJson(devcontainerPath)
+      .catch(() => ({ name: path.basename(workspaceRoot) }));
     devcontainer.customizations = devcontainer.customizations ?? {};
     devcontainer.customizations.vscode = devcontainer.customizations.vscode ?? {};
     const existing = new Set<string>(devcontainer.customizations.vscode.extensions ?? []);

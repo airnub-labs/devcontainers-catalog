@@ -1,7 +1,7 @@
 import os from "os";
 import path from "path";
 import fs from "fs-extra";
-import tar from "tar";
+import * as tar from "tar";
 import { Readable } from "stream";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
@@ -14,11 +14,6 @@ vi.mock("../fsutil.js", async (importOriginal) => {
     discoverCatalogRoot: () => null,
   };
 });
-
-declare global {
-  // eslint-disable-next-line no-var
-  var fetch: any;
-}
 
 async function createTarball(baseDir: string, label: string) {
   const workingDir = await fs.mkdtemp(path.join(baseDir, `catalog-src-${label}-`));

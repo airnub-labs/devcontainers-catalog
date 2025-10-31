@@ -62,7 +62,7 @@ export async function generatePresetBuildContext(opts: GeneratePresetOptions) {
   }
 
   const devcontainerPath = path.join(opts.outDir, "devcontainer.json");
-  const devcontainer = await fs.readJson(devcontainerPath).catch(() => ({ name: id }));
+  const devcontainer: any = await fs.readJson(devcontainerPath).catch(() => ({ name: id }));
 
   const existingExtensions = ensureArray(devcontainer.customizations?.vscode?.extensions);
   const extraExtensions = ensureArray(manifest.spec.vscode_extensions);

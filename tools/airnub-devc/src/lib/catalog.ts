@@ -1,11 +1,11 @@
 import path from "path";
 import os from "os";
 import fs from "fs-extra";
-import crypto from "crypto";
+import { createHash, BinaryLike } from "crypto";
 import { createReadStream, createWriteStream } from "fs";
 import { pipeline } from "stream/promises";
 import { Readable, Transform } from "stream";
-import tar from "tar";
+import * as tar from "tar";
 import { discoverCatalogRoot } from "./fsutil.js";
 
 const OWNER = "airnub-labs";
@@ -36,10 +36,10 @@ async function downloadCatalog(ref: string, cacheDir: string) {
     }
 
     const nodeStream = Readable.fromWeb(res.body as any);
-    const hash = crypto.createHash("sha256");
+    const hash = createHash("sha256");
     const hashingTransform = new Transform({
-      transform(chunk, _encoding, callback) {
-        hash.update(chunk as Buffer);
+      transform(chunk: Buffer, _encoding, callback) {
+        hash.update(chunk as BinaryLike);
         callback(null, chunk);
       },
     });
@@ -85,11 +85,11 @@ async function downloadCatalog(ref: string, cacheDir: string) {
 }
 
 export async function computeFileSha256(filePath: string): Promise<string> {
-  const hash = crypto.createHash("sha256");
+  const hash = createHash("sha256");
   return new Promise((resolve, reject) => {
     const stream = createReadStream(filePath);
-    stream.on("data", (chunk) => {
-      hash.update(chunk as Buffer);
+    stream.on("data", (chunk: Buffer) => {
+      hash.update(chunk as BinaryLike);
     });
     stream.on("end", () => resolve(hash.digest("hex")));
     stream.on("error", (error) => reject(error));
