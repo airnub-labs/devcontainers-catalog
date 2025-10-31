@@ -1,0 +1,49 @@
+name: CI - Manifest & Generator
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'packages/schema/manifest/**'
+      - 'tools/catalog-generator/**'
+      - 'catalog/sidecars.json'
+      - 'scripts/check-manifest-version.mjs'
+      - '.github/workflows/ci-manifest-generator.yml'
+  pull_request:
+    paths:
+      - 'packages/schema/manifest/**'
+      - 'tools/catalog-generator/**'
+      - 'catalog/sidecars.json'
+      - 'scripts/check-manifest-version.mjs'
+      - '.github/workflows/ci-manifest-generator.yml'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install manifest package dependencies
+        working-directory: packages/schema/manifest
+        run: npm install
+
+      - name: Test manifest package
+        working-directory: packages/schema/manifest
+        run: npm test
+
+      - name: Check schemaVersion parity
+        run: node scripts/check-manifest-version.mjs
+
+      - name: Install generator dependencies
+        working-directory: tools/catalog-generator
+        run: npm install
+
+      - name: Test catalog generator
+        working-directory: tools/catalog-generator
+        run: npm test
