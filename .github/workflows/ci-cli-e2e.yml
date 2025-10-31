@@ -1,4 +1,4 @@
-name: cli-e2e
+name: CI - Airnub CLI (E2E)
 on:
   pull_request:
     paths:
@@ -6,7 +6,7 @@ on:
       - "schemas/**"
       - "services/**"
       - "examples/lesson-manifests/**"
-      - ".github/workflows/cli-e2e.yml"
+      - ".github/workflows/ci-cli-e2e.yml"
   workflow_dispatch: {}
 
 concurrency:

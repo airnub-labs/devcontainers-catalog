@@ -1,4 +1,4 @@
-name: Build Devcontainer Images
+name: CD - Build & Publish Base Images
 on:
   push:
     branches: [ main ]

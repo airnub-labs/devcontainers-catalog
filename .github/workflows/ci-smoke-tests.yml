@@ -1,4 +1,4 @@
-name: Smoke Tests
+name: CI - Smoke Tests (Presets & Services)
 
 on:
   pull_request:
@@ -6,7 +6,7 @@ on:
       - 'images/presets/**'
       - 'services/**'
       - 'tools/airnub-devc/**'
-      - '.github/workflows/smoke-tests.yml'
+      - '.github/workflows/ci-smoke-tests.yml'
   workflow_dispatch:
 
 concurrency:

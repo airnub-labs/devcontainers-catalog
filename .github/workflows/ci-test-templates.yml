@@ -1,10 +1,10 @@
-name: Smoke Test Templates
+name: CI - Test DevContainer Templates
 
 on:
   pull_request:
     paths:
       - 'templates/**'
-      - '.github/workflows/test-templates.yml'
+      - '.github/workflows/ci-test-templates.yml'
   workflow_dispatch: {}
 
 concurrency:

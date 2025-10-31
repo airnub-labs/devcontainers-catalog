@@ -1,4 +1,4 @@
-name: Build Preset Images
+name: CD - Build & Publish Preset Images
 
 on:
   push:

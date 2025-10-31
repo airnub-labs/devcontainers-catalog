@@ -1,10 +1,10 @@
-name: Test Devcontainer Features
+name: CI - Test DevContainer Features
 
 on:
   pull_request:
     paths:
       - 'features/**'
-      - '.github/workflows/test-features.yml'
+      - '.github/workflows/ci-test-features.yml'
   workflow_dispatch: {}
 
 concurrency:

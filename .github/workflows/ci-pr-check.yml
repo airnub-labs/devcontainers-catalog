@@ -1,4 +1,4 @@
-name: PR Checks
+name: CI - PR Checks (Lint & Validate)
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ on:
       - "services/**"
       - "images/presets/**"
       - "Makefile"
-      - ".github/workflows/pr-check.yml"
+      - ".github/workflows/ci-pr-check.yml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

@@ -1,4 +1,4 @@
-name: airnub-devc
+name: CI - Airnub CLI (Test & Smoke)
 
 on:
   push:

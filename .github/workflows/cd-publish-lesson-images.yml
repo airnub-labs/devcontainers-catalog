@@ -1,4 +1,4 @@
-name: Publish Lesson Images
+name: CD - Build & Publish Lesson Images
 
 on:
   push:
