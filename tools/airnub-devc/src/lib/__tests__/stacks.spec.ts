@@ -115,9 +115,8 @@ describe("generateStackTemplate", () => {
         3000: { label: "Browser UI", onAutoForward: "openBrowser" },
         59000: { label: "Browser TCP", onAutoForward: "silent" },
       },
-      containerEnv: {
-        TEST_BROWSER_PASSWORD: "student",
-      },
+      requiredEnv: ["TEST_BROWSER_PASSWORD"],
+      notes: ["Browser sidecar requires TEST_BROWSER_PASSWORD."],
     };
 
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -150,7 +149,7 @@ describe("generateStackTemplate", () => {
     expect(devcontainer.runServices).toEqual(expect.arrayContaining(["browser"]));
 
     expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Test Browser uses default credential TEST_BROWSER_PASSWORD"),
+      expect.stringContaining("Test Browser requires environment variables TEST_BROWSER_PASSWORD"),
     );
   });
 
@@ -165,9 +164,7 @@ describe("generateStackTemplate", () => {
         3000: { label: "Browser UI", onAutoForward: "openBrowser" },
         59000: { label: "Browser TCP", onAutoForward: "silent" },
       },
-      containerEnv: {
-        TEST_BROWSER_PASSWORD: "student",
-      },
+      requiredEnv: ["TEST_BROWSER_PASSWORD"],
     };
 
     process.env.AIRNUB_CATALOG_ROOT = repoRoot;
@@ -183,7 +180,9 @@ describe("generateStackTemplate", () => {
       expect(dryRun.plan.files.some((file) => file.path === "lesson.json")).toBe(true);
       expect(dryRun.plan.files.some((file) => file.path === ".comhra/lesson.gen.json")).toBe(true);
       expect(dryRun.plan.ports.find((entry) => entry.port === 45000)).toBeDefined();
-      expect(dryRun.plan.notes.some((note) => note.includes("default credential"))).toBe(true);
+      expect(
+        dryRun.plan.notes.some((note) => note.includes("requires environment variables TEST_BROWSER_PASSWORD")),
+      ).toBe(true);
 
       const full = await generateStack({
         template: BASE_TEMPLATE_ID,

@@ -10,7 +10,13 @@ export type BrowserSidecar = {
   ports: number[];
   portLabels: Record<number, { label: string; onAutoForward: "openBrowser" | "silent" }>;
   containerEnv?: Record<string, string>;
-  requires?: string[];
+  requiredEnv?: string[];
+  experimental?: boolean;
+  notes?: string[];
+  compatibility?: {
+    codespaces?: { notes?: string[] };
+    local?: { notes?: string[] };
+  };
 };
 
 export const BROWSER_SIDECARS: BrowserSidecar[] = [
@@ -24,9 +30,17 @@ export const BROWSER_SIDECARS: BrowserSidecar[] = [
       8080: { label: "Neko Chrome (Web UI)", onAutoForward: "openBrowser" },
       59000: { label: "Neko Chrome (TCP mux)", onAutoForward: "silent" },
     },
-    containerEnv: {
-      NEKO_USER_PASSWORD: "student",
-      NEKO_ADMIN_PASSWORD: "admin",
+    requiredEnv: ["NEKO_USER_PASSWORD", "NEKO_ADMIN_PASSWORD"],
+    notes: [
+      "Set NEKO_USER_PASSWORD and NEKO_ADMIN_PASSWORD via containerEnv or secrets before sharing a workspace.",
+    ],
+    compatibility: {
+      codespaces: {
+        notes: ["Codespaces proxies do not forward UDP; this sidecar stays on TCP mux by default."],
+      },
+      local: {
+        notes: ["Expose UDP 59000 and set NEKO_WEBRTC_UDPMUX=59000 locally for lower latency."],
+      },
     },
   },
   {
@@ -39,9 +53,19 @@ export const BROWSER_SIDECARS: BrowserSidecar[] = [
       8081: { label: "Neko Firefox (Web UI)", onAutoForward: "openBrowser" },
       59010: { label: "Neko Firefox (TCP mux)", onAutoForward: "silent" },
     },
-    containerEnv: {
-      NEKO_FF_USER_PASSWORD: "student",
-      NEKO_FF_ADMIN_PASSWORD: "admin",
+    requiredEnv: ["NEKO_FF_USER_PASSWORD", "NEKO_FF_ADMIN_PASSWORD"],
+    experimental: true,
+    notes: [
+      "Firefox remote debugging support is experimental; use --include-experimental to enable.",
+      "Set NEKO_FF_USER_PASSWORD and NEKO_FF_ADMIN_PASSWORD via containerEnv or secrets before sharing a workspace.",
+    ],
+    compatibility: {
+      codespaces: {
+        notes: ["Codespaces omits UDP; Firefox runs in TCP mux only when generated here."],
+      },
+      local: {
+        notes: ["Enable UDP mux (59010) locally alongside NEKO_WEBRTC_UDPMUX for best responsiveness."],
+      },
     },
   },
   {
@@ -53,9 +77,8 @@ export const BROWSER_SIDECARS: BrowserSidecar[] = [
     portLabels: {
       6901: { label: "Kasm Chrome (HTTPS)", onAutoForward: "openBrowser" },
     },
-    containerEnv: {
-      KASM_VNC_PW: "student",
-    },
+    requiredEnv: ["KASM_VNC_PW"],
+    notes: ["Accept the Kasm Workspaces CE licence and set KASM_VNC_PW before distribution."],
   },
 ];
 

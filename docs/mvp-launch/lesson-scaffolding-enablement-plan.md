@@ -114,7 +114,13 @@ export type BrowserSidecar = {
   ports: number[];          // forwarded ports to add
   portLabels: Record<number, { label: string; onAutoForward: "openBrowser" | "silent" }>;
   containerEnv?: Record<string, string>; // defaults, non-overwriting
-  requires?: string[];      // optional deps (e.g., shm tweaks)
+  requiredEnv?: string[];   // secrets that must be supplied before sharing
+  experimental?: boolean;   // hidden behind --include-experimental
+  notes?: string[];
+  compatibility?: {
+    codespaces?: { notes?: string[] };
+    local?: { notes?: string[] };
+  };
 };
 ```
 

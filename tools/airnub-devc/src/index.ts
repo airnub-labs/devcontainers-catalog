@@ -246,13 +246,15 @@ generateCmd
     },
     [],
   )
+  .option("--include-experimental", "allow experimental browser sidecars", false)
   .option("--list-browsers", "list available browser sidecars", false)
   .action(async function (this: Command, opts: Record<string, any>) {
     await withCatalog(this, async (catalog) => {
       if (opts.listBrowsers) {
         console.log(chalk.blue("Available browsers:"));
-        for (const browser of listBrowserOptions()) {
-          console.log(`  ${browser.id} — ${browser.label}`);
+        for (const browser of listBrowserOptions(!!opts.includeExperimental)) {
+          const suffix = browser.experimental ? " (experimental)" : "";
+          console.log(`  ${browser.id} — ${browser.label}${suffix}`);
         }
         return;
       }
@@ -260,6 +262,7 @@ generateCmd
       const browsers = parseBrowserSelection({
         withBrowsersCsv: opts.withBrowsers,
         withBrowser: Array.isArray(opts.withBrowser) ? opts.withBrowser : opts.withBrowser ? [opts.withBrowser] : [],
+        includeExperimental: !!opts.includeExperimental,
       });
 
       const outDir = path.isAbsolute(opts.out) ? opts.out : path.resolve(process.cwd(), opts.out);
@@ -269,6 +272,7 @@ generateCmd
       const { plan, files } = await generateStack({
         template: opts.template,
         browsers: browsers.map((browser) => browser.id),
+        allowExperimental: !!opts.includeExperimental,
       });
 
       if (!files) {

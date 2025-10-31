@@ -18,6 +18,19 @@ function uniq<T>(values: T[]): T[] {
   return Array.from(new Set(values));
 }
 
+function resolveBrowserNotes(browser: BrowserSidecar): string[] {
+  const base = [...(browser.notes ?? [])];
+  const inCodespaces = process.env.CODESPACES === "true";
+  if (inCodespaces) {
+    if (browser.compatibility?.codespaces?.notes?.length) {
+      base.push(...browser.compatibility.codespaces.notes);
+    }
+  } else if (browser.compatibility?.local?.notes?.length) {
+    base.push(...browser.compatibility.local.notes);
+  }
+  return base;
+}
+
 type Placeholder = {
   token: string;
   original: string;
@@ -61,6 +74,7 @@ export type GenerateStackInput = {
   variables?: Record<string, string>;
   semverLock?: boolean;
   dryRun?: boolean;
+  allowExperimental?: boolean;
 };
 
 function replaceMoustachePlaceholders(content: string): { replaced: string; placeholders: Placeholder[] } {
@@ -685,6 +699,21 @@ async function mergeDevcontainerData({
         warnings.push(`${allocation.browser.label} uses default credential ${key}; override it before sharing a workspace.`);
       }
     }
+
+    const requiredEnv = allocation.browser.requiredEnv || [];
+    if (requiredEnv.length) {
+      const missing = requiredEnv.filter((envName) => {
+        const finalValue = mergedData.containerEnv?.[envName];
+        return typeof finalValue !== "string" || finalValue.trim().length === 0;
+      });
+      if (missing.length) {
+        const formatted = missing.join(", ");
+        warnings.push(
+          `${allocation.browser.label} requires environment variables ${formatted}. `
+            + "Provide them via devcontainer containerEnv overrides or Codespaces secrets before sharing.",
+        );
+      }
+    }
   }
 
   return { data: mergedData, warnings };
@@ -702,6 +731,7 @@ export type GenerateStackOptions = {
 export function parseBrowserSelection(options: {
   withBrowsersCsv?: string;
   withBrowser?: string[];
+  includeExperimental?: boolean;
 }): BrowserSidecar[] {
   const ids = new Set<string>();
   if (options.withBrowsersCsv) {
@@ -723,6 +753,11 @@ export function parseBrowserSelection(options: {
     const browser = getBrowserSidecar(id);
     if (!browser) {
       throw new Error(`Unknown browser sidecar: ${id}`);
+    }
+    if (browser.experimental && !options.includeExperimental) {
+      throw new Error(
+        `${browser.label} (${browser.id}) is experimental. Pass --include-experimental to opt into experimental sidecars.`,
+      );
     }
     selected.push(browser);
   }
@@ -753,6 +788,12 @@ export async function generateStackTemplate(options: GenerateStackOptions) {
   const template = await loadDevcontainerTemplate(devcontainerPath);
 
   const { allocations, notes } = allocateBrowserPorts(options.browsers, collectUsedPorts(template.data, composeDoc));
+  for (const allocation of allocations) {
+    const resolvedNotes = resolveBrowserNotes(allocation.browser);
+    if (resolvedNotes.length) {
+      notes.push(...resolvedNotes);
+    }
+  }
 
   const composeResult = await mergeComposeDocument({
     composeDoc,
@@ -818,6 +859,11 @@ export async function generateStack(input: GenerateStackInput): Promise<{ plan: 
     if (!browser) {
       throw new Error(`Unknown browser sidecar: ${id}`);
     }
+    if (browser.experimental && !input.allowExperimental) {
+      throw new Error(
+        `${browser.label} (${browser.id}) is experimental. Pass allowExperimental: true to generateStack or use --include-experimental in the CLI.`,
+      );
+    }
     return browser;
   });
 
@@ -825,6 +871,13 @@ export async function generateStack(input: GenerateStackInput): Promise<{ plan: 
     selectedBrowsers,
     collectUsedPorts(devTemplate.data, composeDoc),
   );
+
+  for (const allocation of allocations) {
+    const resolvedNotes = resolveBrowserNotes(allocation.browser);
+    if (resolvedNotes.length) {
+      allocationNotes.push(...resolvedNotes);
+    }
+  }
 
   const composeMerge = await mergeComposeDocument({ composeDoc, allocations, repoRoot });
   const notes: string[] = [...allocationNotes];
@@ -1077,6 +1130,6 @@ export async function generateStack(input: GenerateStackInput): Promise<{ plan: 
   return { plan, files: toOutputFiles(fileRecords) };
 }
 
-export function listBrowserOptions(): BrowserSidecar[] {
-  return BROWSER_SIDECARS;
+export function listBrowserOptions(includeExperimental = false): BrowserSidecar[] {
+  return includeExperimental ? BROWSER_SIDECARS : BROWSER_SIDECARS.filter((browser) => !browser.experimental);
 }
