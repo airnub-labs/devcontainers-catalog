@@ -26,6 +26,8 @@ import { generateStackTemplate, parseBrowserSelection, listBrowserOptions, gener
 import { enforceTagPolicy, ManifestKind } from "./lib/tag-policy.js";
 import { LessonEnv } from "./types.js";
 import { execa } from "execa";
+import { registerCodespacesCommands } from "./commands/codespaces/index.js";
+import { registerSidecarCommands } from "./commands/sidecars/index.js";
 
 interface GlobalOptions {
   catalogRoot?: string;
@@ -722,4 +724,7 @@ program
     });
   });
 
-program.parse();
+  registerCodespacesCommands(program);
+  registerSidecarCommands(program, getGlobals, resolveWorkspace);
+
+  program.parse();

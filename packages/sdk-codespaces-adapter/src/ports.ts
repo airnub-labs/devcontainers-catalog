@@ -1,4 +1,4 @@
-import { PlanNote, PortVisibility, UpdatePortsRequest } from "./types.js";
+import { PlanNote, PortRequest, PortVisibility } from "./types.js";
 import { ValidationError } from "./errors.js";
 
 const MIN_PORT = 1;
@@ -6,11 +6,13 @@ const MAX_PORT = 65535;
 const DEFAULT_VISIBILITY: PortVisibility = "private";
 
 export type NormalizedPortsResult = {
-  ports: UpdatePortsRequest;
+  ports: PortRequest[];
   notes: PlanNote[];
 };
 
-export function normalizePortRequests(input?: UpdatePortsRequest): NormalizedPortsResult {
+type RawPortRequest = Array<{ port: number; visibility?: PortVisibility; label?: string }>;
+
+export function normalizePortRequests(input?: RawPortRequest): NormalizedPortsResult {
   if (!input || input.length === 0) {
     return { ports: [], notes: [] };
   }
@@ -43,7 +45,7 @@ export function normalizePortRequests(input?: UpdatePortsRequest): NormalizedPor
     });
   }
 
-  const ports: UpdatePortsRequest = Array.from(portMap.entries()).map(([port, data]) => ({
+  const ports: PortRequest[] = Array.from(portMap.entries()).map(([port, data]) => ({
     port,
     visibility: data.visibility,
     label: data.label

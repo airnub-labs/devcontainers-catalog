@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CodespacesAdapter } from "../src/adapter.js";
 import type { CodespaceInfo } from "../src/types.js";
 
@@ -20,7 +20,6 @@ describe("CodespacesAdapter", () => {
     setSecrets: vi.fn(),
     createCodespace: vi.fn(),
     getCodespaceByName: vi.fn(),
-    updatePorts: vi.fn(),
     listCodespaces: vi.fn(),
     getCodespace: vi.fn(),
     listMachines: vi.fn(),
@@ -28,6 +27,7 @@ describe("CodespacesAdapter", () => {
     startCodespace: vi.fn(),
     deleteCodespace: vi.fn()
   };
+  const runGh = vi.spyOn(adapter as any, "runGh").mockResolvedValue({ stdout: "", stderr: "" });
 
   beforeEach(() => {
     Object.values(client).forEach((value) => {
@@ -36,6 +36,11 @@ describe("CodespacesAdapter", () => {
       }
     });
     (adapter as any).client = client;
+    runGh.mockClear();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("creates codespace, waits for availability, updates ports", async () => {
@@ -63,9 +68,25 @@ describe("CodespacesAdapter", () => {
 
     expect(client.ensureRepoAccess).toHaveBeenCalled();
     expect(client.setSecrets).toHaveBeenCalledWith("repo", { TOKEN: "value" }, { repo: { owner: "airnub", repo: "lesson" } });
-    expect(client.updatePorts).toHaveBeenCalledWith({ name: "lesson" }, [{ port: 8080, visibility: "private", label: "App" }]);
+    expect(runGh).toHaveBeenCalledWith([
+      "codespace",
+      "ports",
+      "visibility",
+      "8080:private",
+      "--codespace",
+      "lesson"
+    ]);
+    expect(runGh).toHaveBeenCalledWith([
+      "codespace",
+      "ports",
+      "update",
+      "--codespace",
+      "lesson",
+      "--port",
+      "8080",
+      "--label",
+      "App"
+    ]);
     expect(result.state).toBe("available");
-
-    vi.useRealTimers();
   });
 });

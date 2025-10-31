@@ -4,6 +4,8 @@ import { Plan, PlanNote, CreateCodespaceRequest } from "./types.js";
 import { ValidationError } from "./errors.js";
 
 const DEFAULT_PASSWORD_VALUES = new Set(["password", "admin", "changeme", "student"]);
+const DEFAULT_DEVCONTAINER_PATH = ".devcontainer/devcontainer.json";
+const LARGE_MACHINE_PATTERN = /(large|xlarge|2xlarge|4xlarge|premium|pro)/i;
 
 function detectPasswordNotes(env?: Record<string, string>): PlanNote[] {
   if (!env) return [];
@@ -19,6 +21,10 @@ function detectPasswordNotes(env?: Record<string, string>): PlanNote[] {
   return notes;
 }
 
+function hasErrors(notes: PlanNote[]): boolean {
+  return notes.some((note) => note.level === "error");
+}
+
 export async function buildCreatePlan(client: GitHubClient, req: CreateCodespaceRequest): Promise<Plan> {
   if (!req.repo?.owner || !req.repo?.repo) {
     throw new ValidationError("Repository owner and name are required");
@@ -28,19 +34,29 @@ export async function buildCreatePlan(client: GitHubClient, req: CreateCodespace
 
   const notes: PlanNote[] = [];
   const actions: Plan["actions"] = [];
+  const schoolMode = req.schoolMode ?? true;
 
   const portsResult = normalizePortRequests(req.ports);
   notes.push(...portsResult.notes);
 
-  if (req.devcontainerPath) {
-    const exists = await client.pathExists(req.repo, req.devcontainerPath);
-    if (!exists) {
-      notes.push({
-        level: "error",
-        message: `Devcontainer path ${req.devcontainerPath} not found in repository`
-      });
-      throw new ValidationError(`Devcontainer path ${req.devcontainerPath} not found`);
+  if (schoolMode) {
+    for (const port of portsResult.ports) {
+      if (port.visibility !== "private") {
+        notes.push({
+          level: "error",
+          message: `School mode forbids ${port.visibility} visibility for port ${port.port}. Use private or disable school mode.`
+        });
+      }
     }
+  }
+
+  const devcontainerPath = req.devcontainerPath ?? DEFAULT_DEVCONTAINER_PATH;
+  const exists = await client.pathExists(req.repo, devcontainerPath);
+  if (!exists) {
+    notes.push({
+      level: "warn",
+      message: `Devcontainer manifest not found at ${devcontainerPath}. Codespaces will fall back to repo defaults.`
+    });
   }
 
   if (req.machine) {
@@ -50,7 +66,11 @@ export async function buildCreatePlan(client: GitHubClient, req: CreateCodespace
         level: "error",
         message: `Machine type ${req.machine} is unavailable for ${req.repo.owner}/${req.repo.repo}`
       });
-      throw new ValidationError(`Machine ${req.machine} unavailable`);
+    } else if (schoolMode && LARGE_MACHINE_PATTERN.test(req.machine)) {
+      notes.push({
+        level: "warn",
+        message: `Machine ${req.machine} may exceed school quotas. Consider a smaller type when school mode is enabled.`
+      });
     }
   }
 
@@ -58,22 +78,26 @@ export async function buildCreatePlan(client: GitHubClient, req: CreateCodespace
 
   const sanitizedRequest: CreateCodespaceRequest = {
     ...req,
-    ports: portsResult.ports
+    devcontainerPath,
+    ports: portsResult.ports,
+    schoolMode
   };
 
-  actions.push({ op: "create-codespace", req: sanitizedRequest });
+  if (!hasErrors(notes)) {
+    actions.push({ op: "create-codespace", req: sanitizedRequest });
 
-  if (portsResult.ports.length) {
-    actions.push({ op: "update-ports", req: portsResult.ports, target: { name: req.displayName } });
-  }
+    if (portsResult.ports.length) {
+      actions.push({ op: "update-ports", req: portsResult.ports, target: { name: req.displayName } });
+    }
 
-  if (req.secrets && Object.keys(req.secrets).length) {
-    actions.push({
-      op: "set-secrets",
-      scope: "repo",
-      entries: Object.keys(req.secrets),
-      repo: req.repo
-    });
+    if (req.secrets && Object.keys(req.secrets).length) {
+      actions.push({
+        op: "set-secrets",
+        scope: "repo",
+        entries: Object.keys(req.secrets),
+        repo: req.repo
+      });
+    }
   }
 
   return { actions, notes };

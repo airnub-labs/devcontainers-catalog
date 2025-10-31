@@ -84,13 +84,13 @@ export type CodespaceInfo = {
   repo: RepoRef;
 };
 
-export type UpdatePortsRequest = Array<{ port: number; visibility: PortVisibility; label?: string }>;
+export type PortRequest = { port: number; visibility: PortVisibility; label?: string };
 
 export type PlanNote = { level: "info" | "warn" | "error"; message: string };
 export type Plan = {
   actions: Array<
     | { op: "create-codespace"; req: CreateCodespaceRequest }
-    | { op: "update-ports"; req: UpdatePortsRequest; target: { id?: string; name?: string } }
+    | { op: "update-ports"; req: PortRequest[]; target: { id?: string; name?: string } }
     | { op: "stop-codespace"; target: { id?: string; name?: string } }
     | { op: "start-codespace"; target: { id?: string; name?: string } }
     | { op: "delete-codespace"; target: { id?: string; name?: string } }
@@ -100,7 +100,7 @@ export type Plan = {
 };
 
 export interface ICodespacesAdapter {
-  ensureAuth(auth: AuthMode): Promise<void>;
+  ensureAuth(auth: AuthMode, opts?: { baseUrl?: string }): Promise<void>;
 
   // Discovery
   listCodespaces(params?: { owner?: string; repo?: string; state?: string }): Promise<CodespaceInfo[]>;
@@ -116,7 +116,7 @@ export interface ICodespacesAdapter {
   delete(target: { id?: string; name?: string }): Promise<void>;
 
   // Configuration
-  setPorts(target: { id?: string; name?: string }, ports: UpdatePortsRequest): Promise<void>;
+  setPorts(target: { id?: string; name?: string }, ports: PortRequest[]): Promise<void>;
   setSecrets(scope: "repo" | "org" | "user", entries: Record<string,string>, ctx?: { repo?: RepoRef; org?: string }): Promise<void>;
 
   // Utilities
@@ -245,7 +245,10 @@ const { plan, files } = await generateStack({
 
 // 2) Create Codespace for a student
 const codespaces = makeCodespacesAdapter({ baseUrl: process.env.GITHUB_API_URL });
-await codespaces.ensureAuth({ kind: "github-app", appId, installationId, privateKeyPem });
+await codespaces.ensureAuth(
+  { kind: "github-app", appId, installationId, privateKeyPem },
+  { baseUrl: process.env.GITHUB_API_URL }
+);
 
 const cs = await codespaces.create({
   repo: { owner: "school", repo: "lesson-123-student-456" },

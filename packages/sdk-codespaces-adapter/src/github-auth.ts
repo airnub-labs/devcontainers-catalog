@@ -10,13 +10,18 @@ type AuthOptions = { baseUrl?: string };
 export class GitHubAuthManager {
   private activeAuth?: AuthMode;
   private cache = new Map<string, TokenCacheEntry>();
-  private readonly request = this.options.baseUrl
-    ? octokitRequest.defaults({ baseUrl: this.options.baseUrl })
-    : octokitRequest;
+  private baseUrl?: string;
 
-  constructor(private readonly options: AuthOptions = {}) {}
+  constructor(private readonly options: AuthOptions = {}) {
+    this.baseUrl = options.baseUrl;
+  }
 
-  async ensure(auth: AuthMode): Promise<string> {
+  async ensure(auth: AuthMode, opts?: AuthOptions): Promise<string> {
+    if (opts && Object.prototype.hasOwnProperty.call(opts, "baseUrl")) {
+      this.baseUrl = opts.baseUrl;
+    } else if (this.baseUrl === undefined) {
+      this.baseUrl = this.options.baseUrl;
+    }
     this.activeAuth = auth;
     return this.getTokenFor(auth);
   }
@@ -29,15 +34,20 @@ export class GitHubAuthManager {
   }
 
   private cacheKey(auth: AuthMode): string {
+    const base = this.baseUrl ? `@${this.baseUrl}` : "";
     return auth.kind === "pat"
-      ? `pat:${auth.token}`
-      : `app:${auth.appId}:${auth.installationId}`;
+      ? `pat:${auth.token}${base}`
+      : `app:${auth.appId}:${auth.installationId}${base}`;
   }
 
   private isExpired(entry: TokenCacheEntry | undefined): boolean {
     if (!entry) return true;
     if (!entry.expiresAt) return false;
     return Date.now() + 60_000 >= entry.expiresAt; // refresh 1 minute early
+  }
+
+  private requestFactory() {
+    return this.baseUrl ? octokitRequest.defaults({ baseUrl: this.baseUrl }) : octokitRequest;
   }
 
   private async getTokenFor(auth: AuthMode): Promise<string> {
@@ -60,7 +70,7 @@ export class GitHubAuthManager {
       appId: auth.appId,
       privateKey: auth.privateKeyPem,
       installationId: auth.installationId,
-      request: this.request
+      request: this.requestFactory()
     });
 
     try {

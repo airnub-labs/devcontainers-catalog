@@ -28,3 +28,17 @@ export class RateLimitError extends Error {
     this.retryAfter = retryAfter;
   }
 }
+
+export class CliError extends Error {
+  constructor(message: string, public readonly exitCode?: number, public readonly stderr?: string) {
+    super(message);
+    this.name = "CliError";
+  }
+}
+
+export class CliNotFoundError extends CliError {
+  constructor(message: string) {
+    super(message);
+    this.name = "CliNotFoundError";
+  }
+}

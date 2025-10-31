@@ -36,7 +36,7 @@ describe("buildCreatePlan", () => {
     expect(plan.notes.some((note) => note.level === "warn")).toBe(true);
   });
 
-  it("throws when devcontainer missing", async () => {
+  it("warns when devcontainer missing", async () => {
     const client = new FakeClient();
     client.pathExists.mockResolvedValue(false);
     const req: CreateCodespaceRequest = {
@@ -44,6 +44,48 @@ describe("buildCreatePlan", () => {
       devcontainerPath: "missing.json"
     };
 
-    await expect(buildCreatePlan(client as any, req)).rejects.toThrow();
+    const plan = await buildCreatePlan(client as any, req);
+    expect(plan.notes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          level: "warn",
+          message: expect.stringContaining("Devcontainer manifest not found")
+        })
+      ])
+    );
+  });
+
+  it("flags non-private ports in school mode", async () => {
+    const client = new FakeClient();
+    const req: CreateCodespaceRequest = {
+      repo: { owner: "airnub", repo: "lesson" },
+      ports: [
+        { port: 8080, visibility: "public" },
+        { port: 8081, visibility: "org" }
+      ],
+      schoolMode: true
+    };
+
+    const plan = await buildCreatePlan(client as any, req);
+    const errorNotes = plan.notes.filter((note) => note.level === "error");
+    expect(errorNotes).toHaveLength(2);
+    expect(plan.actions).toHaveLength(0);
+  });
+
+  it("notes unavailable machines and omits actions", async () => {
+    const client = new FakeClient();
+    client.listMachines.mockResolvedValue(["standardLinux32"]);
+    const req: CreateCodespaceRequest = {
+      repo: { owner: "airnub", repo: "lesson" },
+      machine: "premiumLinux16"
+    };
+
+    const plan = await buildCreatePlan(client as any, req);
+    expect(plan.notes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ level: "error", message: expect.stringContaining("unavailable") })
+      ])
+    );
+    expect(plan.actions).toHaveLength(0);
   });
 });

@@ -2,7 +2,7 @@ import { Octokit } from "@octokit/rest";
 import { debug } from "debug";
 import { GitHubAuthManager } from "./github-auth.js";
 import { mapCodespace } from "./mappers.js";
-import { CodespaceInfo, CreateCodespaceRequest, RepoRef, UpdatePortsRequest } from "./types.js";
+import { CodespaceInfo, CreateCodespaceRequest, PortRequest, RepoRef } from "./types.js";
 import { NotFoundError, RateLimitError } from "./errors.js";
 import { sealSecret } from "./secrets.js";
 
@@ -19,58 +19,105 @@ type SecretScope = "repo" | "org" | "user";
 type PublicKeyResponse = { key: string; key_id: string };
 
 export class GitHubClient {
-  constructor(private readonly auth: GitHubAuthManager, private readonly options: ClientOptions = {}) {}
+  private baseUrl?: string;
+
+  constructor(private readonly auth: GitHubAuthManager, options: ClientOptions = {}) {
+    this.baseUrl = options.baseUrl;
+  }
+
+  setBaseUrl(baseUrl?: string) {
+    this.baseUrl = baseUrl;
+  }
 
   private async octokit(): Promise<Octokit> {
     const token = await this.auth.token();
     return new Octokit({
       auth: token,
-      baseUrl: this.options.baseUrl
+      baseUrl: this.baseUrl
     });
   }
 
   async ensureRepoAccess(repo: RepoRef): Promise<void> {
-    const client = await this.octokit();
-    try {
+    await this.exec(async (client) => {
       await client.repos.get({ owner: repo.owner, repo: repo.repo });
-    } catch (error) {
-      log("ensureRepoAccess failed", error);
-      this.handleError(error);
-    }
+    });
   }
 
   async pathExists(repo: RepoRef, path: string): Promise<boolean> {
-    const client = await this.octokit();
     try {
-      await client.request("GET /repos/{owner}/{repo}/contents/{path}", {
-        owner: repo.owner,
-        repo: repo.repo,
-        path,
-        ref: repo.ref,
-        headers: { "If-None-Match": "" }
+      await this.exec(async (client) => {
+        await client.request("HEAD /repos/{owner}/{repo}/contents/{path}", {
+          owner: repo.owner,
+          repo: repo.repo,
+          path,
+          ref: repo.ref,
+          headers: { "If-None-Match": "" }
+        });
       });
       return true;
     } catch (error) {
-      if (error?.status === 404) {
+      if ((error as any)?.status === 404) {
         return false;
       }
-      log("pathExists failed", error);
-      this.handleError(error);
+      throw error;
     }
   }
 
-  private handleError(error: any): never {
+  private toKnownError(error: any): Error {
     if (error?.status === 404) {
-      throw new NotFoundError("Requested resource could not be found");
+      return new NotFoundError("Requested resource could not be found");
     }
 
     const retryAfter = parseInt(error?.response?.headers?.["retry-after"], 10);
     const isRateLimit = error?.status === 429 || error?.response?.headers?.["x-ratelimit-remaining"] === "0";
     if (isRateLimit) {
-      throw new RateLimitError("GitHub rate limit exceeded", Number.isFinite(retryAfter) ? retryAfter : undefined);
+      return new RateLimitError("GitHub rate limit exceeded", Number.isFinite(retryAfter) ? retryAfter : undefined);
     }
 
-    throw error;
+    if (error instanceof Error) {
+      return error;
+    }
+
+    return new Error(typeof error === "string" ? error : JSON.stringify(error));
+  }
+
+  private isRetryable(error: any): boolean {
+    if (!error) return false;
+    const status = error.status ?? error?.response?.status;
+    if (status === 429) return true;
+    if (status === 502 || status === 503 || status === 504) return true;
+    const remaining = error?.response?.headers?.["x-ratelimit-remaining"];
+    return remaining === "0";
+  }
+
+  private retryDelayMs(error: any, attempt: number): number {
+    const retryAfter = parseInt(error?.response?.headers?.["retry-after"], 10);
+    if (Number.isFinite(retryAfter)) {
+      return retryAfter * 1000;
+    }
+    return Math.min(30_000, 1000 * 2 ** attempt);
+  }
+
+  private async exec<T>(fn: (client: Octokit) => Promise<T>): Promise<T> {
+    const client = await this.octokit();
+    const maxAttempts = 3;
+    let attempt = 0;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      try {
+        return await fn(client);
+      } catch (error) {
+        if (attempt < maxAttempts - 1 && this.isRetryable(error)) {
+          const waitMs = this.retryDelayMs(error, attempt);
+          log("retrying request after %dms due to %o", waitMs, error?.status ?? error);
+          await delay(waitMs);
+          attempt += 1;
+          continue;
+        }
+        log("GitHub request failed", error);
+        throw this.toKnownError(error);
+      }
+    }
   }
 
   private filterCodespaces(list: CodespaceInfo[], params?: ListParams): CodespaceInfo[] {
@@ -84,28 +131,24 @@ export class GitHubClient {
   }
 
   async listCodespaces(params?: ListParams): Promise<CodespaceInfo[]> {
-    const client = await this.octokit();
-    try {
-      const list = await client.paginate(client.codespaces.listForAuthenticatedUser, { per_page: 100 });
-      const mapped = list.map(mapCodespace);
-      return this.filterCodespaces(mapped, params);
-    } catch (error) {
-      log("listCodespaces failed", error);
-      this.handleError(error);
-    }
+    const list = await this.exec(async (client) =>
+      client.paginate(client.codespaces.listForAuthenticatedUser, { per_page: 100 }),
+    );
+    const mapped = list.map(mapCodespace);
+    return this.filterCodespaces(mapped, params);
   }
 
   async getCodespaceByName(name: string): Promise<CodespaceInfo | null> {
-    const client = await this.octokit();
     try {
-      const response = await client.codespaces.getForAuthenticatedUser({ codespace_name: name });
+      const response = await this.exec((client) =>
+        client.codespaces.getForAuthenticatedUser({ codespace_name: name }),
+      );
       return mapCodespace(response.data);
     } catch (error) {
-      if (error?.status === 404) {
+      if ((error as any)?.name === "NotFoundError" || (error as any)?.status === 404) {
         return null;
       }
-      log("getCodespaceByName failed", error);
-      this.handleError(error);
+      throw error;
     }
   }
 
@@ -115,24 +158,19 @@ export class GitHubClient {
   }
 
   async listMachines(repo: RepoRef): Promise<string[]> {
-    const client = await this.octokit();
-    try {
-      const response = await client.request("GET /repos/{owner}/{repo}/codespaces/machines", {
+    const response = await this.exec((client) =>
+      client.request("GET /repos/{owner}/{repo}/codespaces/machines", {
         owner: repo.owner,
         repo: repo.repo,
         ref: repo.ref
-      });
-      return (response.data.machines ?? []).map((m: any) => m.name).filter(Boolean);
-    } catch (error) {
-      log("listMachines failed", error);
-      this.handleError(error);
-    }
+      }),
+    );
+    return (response.data.machines ?? []).map((m: any) => m.name).filter(Boolean);
   }
 
   async createCodespace(req: CreateCodespaceRequest): Promise<CodespaceInfo> {
-    const client = await this.octokit();
-    try {
-      const response = await client.request("POST /repos/{owner}/{repo}/codespaces", {
+    const response = await this.exec((client) =>
+      client.request("POST /repos/{owner}/{repo}/codespaces", {
         owner: req.repo.owner,
         repo: req.repo.repo,
         ref: req.repo.ref,
@@ -150,59 +188,43 @@ export class GitHubClient {
           display_name: p.label
         })),
         start_codespace: req.startImmediately ?? true
-      });
-      return mapCodespace(response.data);
-    } catch (error) {
-      log("createCodespace failed", error);
-      this.handleError(error);
-    }
+      }),
+    );
+    return mapCodespace(response.data);
   }
 
   async startCodespace(target: CodespaceTarget): Promise<CodespaceInfo> {
     const name = await this.resolveName(target);
-    const client = await this.octokit();
-    try {
-      const response = await client.request("POST /user/codespaces/{codespace_name}/start", {
+    const response = await this.exec((client) =>
+      client.request("POST /user/codespaces/{codespace_name}/start", {
         codespace_name: name
-      });
-      return mapCodespace(response.data);
-    } catch (error) {
-      log("startCodespace failed", error);
-      this.handleError(error);
-    }
+      }),
+    );
+    return mapCodespace(response.data);
   }
 
   async stopCodespace(target: CodespaceTarget): Promise<void> {
     const name = await this.resolveName(target);
-    const client = await this.octokit();
-    try {
-      await client.request("POST /user/codespaces/{codespace_name}/stop", {
+    await this.exec((client) =>
+      client.request("POST /user/codespaces/{codespace_name}/stop", {
         codespace_name: name
-      });
-    } catch (error) {
-      log("stopCodespace failed", error);
-      this.handleError(error);
-    }
+      }),
+    );
   }
 
   async deleteCodespace(target: CodespaceTarget): Promise<void> {
     const name = await this.resolveName(target);
-    const client = await this.octokit();
-    try {
-      await client.request("DELETE /user/codespaces/{codespace_name}", {
+    await this.exec((client) =>
+      client.request("DELETE /user/codespaces/{codespace_name}", {
         codespace_name: name
-      });
-    } catch (error) {
-      log("deleteCodespace failed", error);
-      this.handleError(error);
-    }
+      }),
+    );
   }
 
-  async updatePorts(target: CodespaceTarget, ports: UpdatePortsRequest): Promise<void> {
+  async updatePorts(target: CodespaceTarget, ports: PortRequest[]): Promise<void> {
     if (!ports.length) return;
     const name = await this.resolveName(target);
-    const client = await this.octokit();
-    try {
+    await this.exec(async (client) => {
       for (const port of ports) {
         await client.request("PATCH /user/codespaces/{codespace_name}/ports/{port}", {
           codespace_name: name,
@@ -211,26 +233,18 @@ export class GitHubClient {
           display_name: port.label
         });
       }
-    } catch (error) {
-      log("updatePorts failed", error);
-      this.handleError(error);
-    }
+    });
   }
 
   async setSecrets(scope: SecretScope, entries: Record<string, string>, ctx?: { repo?: RepoRef; org?: string }): Promise<void> {
     if (!entries || Object.keys(entries).length === 0) return;
-    const client = await this.octokit();
-
-    try {
+    await this.exec(async (client) => {
       const key = await this.fetchPublicKey(client, scope, ctx);
       for (const [name, value] of Object.entries(entries)) {
         const encrypted = sealSecret(key.key, value);
         await this.putSecret(client, scope, name, encrypted, key.key_id, ctx);
       }
-    } catch (error) {
-      log("setSecrets failed", error);
-      this.handleError(error);
-    }
+    });
   }
 
   async openUrl(target: CodespaceTarget): Promise<string> {
@@ -313,4 +327,8 @@ export class GitHubClient {
 
     await client.request("PUT /user/codespaces/secrets/{secret_name}", payload);
   }
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
