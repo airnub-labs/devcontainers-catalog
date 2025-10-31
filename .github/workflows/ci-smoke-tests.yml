@@ -14,9 +14,28 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      presets: ${{ steps.filter.outputs.presets }}
+      services: ${{ steps.filter.outputs.services }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            presets:
+              - 'images/presets/**'
+              - 'tools/airnub-devc/**'
+            services:
+              - 'services/**'
+
   preset-smoke:
     name: Preset smoke — ${{ matrix.preset }}
     runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.presets == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -75,7 +94,8 @@ jobs:
   service-smoke:
     name: Service fragment smoke — ${{ matrix.service }}
     runs-on: ubuntu-latest
-    needs: preset-smoke
+    needs: detect-changes
+    if: needs.detect-changes.outputs.services == 'true'
     strategy:
       fail-fast: false
       matrix:

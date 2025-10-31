@@ -14,8 +14,48 @@ env:
   TAG: ubuntu-24.04
 
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      presets: ${{ steps.changes.outputs.presets }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Detect changed presets
+        id: changes
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # Manual trigger: build all presets
+            echo 'presets=["full","node-pnpm","python","python-prefect","python-airflow","python-dagster","ts-temporal"]' >> "$GITHUB_OUTPUT"
+          else
+            # Detect changes since last commit on main
+            changed_files=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '^images/presets/' || true)
+
+            presets=()
+            if echo "$changed_files" | grep -q 'images/presets/full/'; then presets+=("full"); fi
+            if echo "$changed_files" | grep -q 'images/presets/node-pnpm/'; then presets+=("node-pnpm"); fi
+            if echo "$changed_files" | grep -q 'images/presets/python/'; then presets+=("python"); fi
+            if echo "$changed_files" | grep -q 'images/presets/python-prefect/'; then presets+=("python-prefect"); fi
+            if echo "$changed_files" | grep -q 'images/presets/python-airflow/'; then presets+=("python-airflow"); fi
+            if echo "$changed_files" | grep -q 'images/presets/python-dagster/'; then presets+=("python-dagster"); fi
+            if echo "$changed_files" | grep -q 'images/presets/ts-temporal/'; then presets+=("ts-temporal"); fi
+
+            # If Makefile changed, build all
+            if echo "$changed_files" | grep -q 'Makefile'; then
+              presets=("full" "node-pnpm" "python" "python-prefect" "python-airflow" "python-dagster" "ts-temporal")
+            fi
+
+            # Convert to JSON array
+            json_array=$(printf '%s\n' "${presets[@]}" | jq -R . | jq -s -c .)
+            echo "presets=$json_array" >> "$GITHUB_OUTPUT"
+            echo "Changed presets: $json_array"
+          fi
+
   build:
     runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.presets != '[]'
     permissions:
       contents: read
       packages: write
@@ -23,14 +63,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        preset:
-          - full
-          - node-pnpm
-          - python
-          - python-prefect
-          - python-airflow
-          - python-dagster
-          - ts-temporal
+        preset: ${{ fromJSON(needs.detect-changes.outputs.presets) }}
     steps:
       - uses: actions/checkout@v4
 
