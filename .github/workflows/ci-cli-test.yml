@@ -6,6 +6,11 @@ on:
       - main
     tags:
       - 'v*'
+    paths:
+      - 'tools/airnub-devc/**'
+      - 'schemas/**'
+      - 'examples/**'
+      - '.github/workflows/ci-cli-test.yml'
   pull_request:
     paths:
       - 'tools/airnub-devc/**'
