@@ -1,0 +1,141 @@
+{
+  "$schema": "../schemas/catalog-services.schema.json",
+  "services": [
+    {
+      "id": "airflow",
+      "label": "Apache Airflow",
+      "templatePath": "services/airflow",
+      "stability": "experimental",
+      "since": "0.7.0",
+      "owners": ["@airnub-labs/platform"],
+      "docs": "services/airflow/README.md",
+      "ports": [8080],
+      "notes": [
+        "Runs webserver and scheduler in a single container for lightweight demos.",
+        "Requires at least 2 CPUs and 2GB RAM in Codespaces to stay responsive."
+      ]
+    },
+    {
+      "id": "chrome-cdp",
+      "label": "Chrome DevTools Protocol",
+      "templatePath": "services/chrome-cdp",
+      "stability": "stable",
+      "since": "0.5.0",
+      "owners": ["@airnub-labs/platform"],
+      "docs": "services/chrome-cdp/README.md",
+      "ports": [3010],
+      "notes": ["Headless Chrome for automated testing and scraping demos."]
+    },
+    {
+      "id": "dagster",
+      "label": "Dagster",
+      "templatePath": "services/dagster",
+      "stability": "experimental",
+      "since": "0.7.0",
+      "owners": ["@airnub-labs/platform"],
+      "docs": "services/dagster/README.md",
+      "ports": [3000],
+      "notes": [
+        "Single-container Dagster web UI and daemon for orchestration lessons.",
+        "Memory heavy; prefer 4GB RAM workspaces."
+      ]
+    },
+    {
+      "id": "inbucket",
+      "label": "Inbucket",
+      "templatePath": "services/inbucket",
+      "stability": "stable",
+      "since": "0.4.0",
+      "owners": ["@airnub-labs/platform"],
+      "docs": "services/inbucket/README.md",
+      "ports": [2500, 9000],
+      "notes": ["Disposable SMTP/IMAP/Web UI mail sandbox."]
+    },
+    {
+      "id": "kafka",
+      "label": "Apache Kafka (single-node)",
+      "templatePath": "services/kafka",
+      "stability": "experimental",
+      "since": "0.7.0",
+      "owners": ["@airnub-labs/platform"],
+      "docs": "services/kafka/README.md",
+      "ports": [9092],
+      "notes": [
+        "Single-node KRaft broker tuned for local development.",
+        "Needs >2GB RAM and fast disk for best experience."
+      ]
+    },
+    {
+      "id": "linux-chrome",
+      "label": "Linux Chrome Desktop",
+      "templatePath": "services/linux-chrome",
+      "stability": "stable",
+      "since": "0.5.0",
+      "owners": ["@airnub-labs/platform"],
+      "docs": "services/linux-chrome/README.md",
+      "ports": [3011],
+      "notes": ["VNC-accessible Linux desktop running Chrome."]
+    },
+    {
+      "id": "prefect",
+      "label": "Prefect",
+      "templatePath": "services/prefect",
+      "stability": "stable",
+      "since": "0.6.0",
+      "owners": ["@airnub-labs/platform"],
+      "docs": "services/prefect/README.md",
+      "ports": [4200],
+      "notes": ["Prefect server with bundled agent for flow development."]
+    },
+    {
+      "id": "redis",
+      "label": "Redis",
+      "templatePath": "services/redis",
+      "stability": "stable",
+      "since": "0.3.0",
+      "owners": ["@airnub-labs/platform"],
+      "docs": "services/redis/README.md",
+      "ports": [6379],
+      "notes": ["Standalone Redis suitable for caching and queue demos."]
+    },
+    {
+      "id": "supabase",
+      "label": "Supabase",
+      "templatePath": "services/supabase",
+      "stability": "stable",
+      "since": "0.4.0",
+      "owners": ["@airnub-labs/platform"],
+      "docs": "services/supabase/README.md",
+      "ports": [54322, 54323, 54324, 54326],
+      "notes": [
+        "Full Supabase stack for local development with Postgres, REST, realtime, and Studio UI.",
+        "Ports default to the Supabase CLI compatibility range."
+      ]
+    },
+    {
+      "id": "temporal",
+      "label": "Temporal",
+      "templatePath": "services/temporal",
+      "stability": "experimental",
+      "since": "0.7.0",
+      "owners": ["@airnub-labs/platform"],
+      "docs": "services/temporal/README.md",
+      "ports": [7233, 8233],
+      "notes": [
+        "Temporal server with optional UI sidecar.",
+        "Long startup time; ensure workspace has at least 2 CPUs."
+      ]
+    },
+    {
+      "id": "webtop",
+      "label": "Webtop",
+      "templatePath": "services/webtop",
+      "stability": "stable",
+      "since": "0.5.0",
+      "owners": ["@airnub-labs/platform"],
+      "docs": "services/webtop/README.md",
+      "ports": [3000],
+      "notes": ["Browser-accessible Linux desktop with GUI tooling."]
+    }
+  ]
+}

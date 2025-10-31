@@ -2,6 +2,12 @@
 
 Runs Prefect Server 2.x in a single container so flows can be registered and viewed without needing an external database or API key setup.
 
+## Quickstart
+
+```bash
+docker compose -f docker-compose.prefect.yml up
+```
+
 ## Ports
 
 - 4200 → Prefect UI (`http://localhost:4200`)

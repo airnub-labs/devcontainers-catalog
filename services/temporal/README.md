@@ -1,7 +1,16 @@
 # Temporal Minimal Fragment
 
-Temporalite provides a single-container Temporal deployment with a lightweight UI for workflow exploration. A matching admin
-tools fragment is available to surface `tctl` inside the same network when CI flows need to smoke-test namespaces.
+![stability: experimental](https://img.shields.io/badge/stability-experimental-orange)
+
+> **Experimental**: Hidden by default in SDK/CLI. APIs, ports, and behavior may change. Enable with `--include-experimental` or `DEVC_INCLUDE_EXPERIMENTAL=1`.
+
+Temporalite provides a single-container Temporal deployment with a lightweight UI for workflow exploration. A matching admin tools fragment is available to surface `tctl` inside the same network when CI flows need to smoke-test namespaces.
+
+## Quickstart
+
+```bash
+docker compose -f docker-compose.temporal.yml up
+```
 
 ## Ports
 
@@ -15,6 +24,7 @@ tools fragment is available to surface `tctl` inside the same network when CI fl
 - Temporal UI is configured to allow CORS from common localhost ports so local front-ends can interact with the API gateway.
 - Add the optional `temporal-admin` profile (see `docker-compose.temporal-admin.yml`) to run `tctl` commands from within the
   aggregate compose bundle. The CLI will respect the profile when generating aggregates.
+- Run quick namespace checks with `docker compose -f docker-compose.temporal-admin.yml run --rm temporal-admin tctl namespace list` after startup.
 
 ## Aggregate Compose
 
