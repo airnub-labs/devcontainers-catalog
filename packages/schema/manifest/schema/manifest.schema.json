@@ -1,0 +1,179 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.airnub.dev/devcontainers-catalog/manifest.schema.json",
+  "title": "Devcontainers Catalog Workspace Manifest",
+  "description": "Schema for manifests emitted by the devcontainers catalog generator.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "stackId",
+    "catalogCommit",
+    "browsers",
+    "ports",
+    "env",
+    "paths"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "description": "Semantic version for the manifest schema.",
+      "const": "1.0.0"
+    },
+    "stackId": {
+      "type": "string",
+      "description": "Identifier of the stack template that produced the manifest (name@version).",
+      "minLength": 1
+    },
+    "catalogCommit": {
+      "type": "string",
+      "description": "Git commit SHA for the catalog revision used to generate the manifest.",
+      "pattern": "^[a-f0-9]{7,40}$"
+    },
+    "browsers": {
+      "type": "array",
+      "description": "Browser sidecars included in the workspace.",
+      "items": {
+        "$ref": "#/$defs/browserId"
+      },
+      "minItems": 0,
+      "uniqueItems": true
+    },
+    "ports": {
+      "type": "array",
+      "description": "Ports exposed by the workspace and sidecars.",
+      "items": {
+        "$ref": "#/$defs/portMapping"
+      },
+      "minItems": 0,
+      "uniqueItems": true
+    },
+    "env": {
+      "type": "array",
+      "description": "Environment variables referenced by the workspace (names only).",
+      "items": {
+        "$ref": "#/$defs/environmentVariable"
+      },
+      "minItems": 0,
+      "uniqueItems": true
+    },
+    "paths": {
+      "$ref": "#/$defs/pathInfo"
+    },
+    "notes": {
+      "$ref": "#/$defs/notes"
+    }
+  },
+  "$defs": {
+    "browserId": {
+      "type": "string",
+      "enum": [
+        "neko-chrome",
+        "neko-firefox",
+        "kasm-chrome"
+      ]
+    },
+    "portMapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "port",
+        "label",
+        "purpose",
+        "recommendedPrivacy"
+      ],
+      "properties": {
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1
+        },
+        "recommendedPrivacy": {
+          "type": "string",
+          "enum": [
+            "PRIVATE",
+            "COURSE",
+            "PUBLIC"
+          ]
+        }
+      }
+    },
+    "environmentVariable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "pathInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "devcontainer",
+        "readme"
+      ],
+      "properties": {
+        "devcontainer": {
+          "type": "string",
+          "description": "Relative path to the devcontainer.json file.",
+          "minLength": 1
+        },
+        "compose": {
+          "type": "string",
+          "description": "Relative path to the docker compose file, if emitted.",
+          "minLength": 1
+        },
+        "readme": {
+          "type": "string",
+          "description": "Relative path to the generated README file.",
+          "minLength": 1
+        },
+        "classroomBrowser": {
+          "type": "string",
+          "description": "Relative path to the optional classroom browser launcher.",
+          "minLength": 1
+        }
+      }
+    },
+    "notes": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "prefersUDP": {
+          "type": "boolean"
+        },
+        "codespacesFallback": {
+          "type": "string",
+          "enum": [
+            "tcp-mux",
+            "https-ws"
+          ]
+        },
+        "other": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

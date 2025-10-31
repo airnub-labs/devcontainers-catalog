@@ -1,0 +1,57 @@
+{
+  "name": "@airnub/devcontainers-catalog-manifest",
+  "version": "1.0.0",
+  "description": "JSON Schema, generated types, and validation helpers for devcontainers catalog manifests",
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/types.d.ts",
+  "files": [
+    "dist",
+    "schema",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/types.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./schema/manifest.schema.json": "./schema/manifest.schema.json"
+  },
+  "scripts": {
+    "clean": "rimraf dist",
+    "typegen": "json2ts -i schema/manifest.schema.json -o src/types.ts --bannerComment \"/* This file is auto-generated via npm run typegen. Do not edit manually. */\"",
+    "copy:schema": "mkdir -p dist/schema && cp schema/manifest.schema.json dist/schema/manifest.schema.json",
+    "build": "npm run clean && npm run typegen && tsc -p tsconfig.json && npm run copy:schema",
+    "lint": "tsc --noEmit -p tsconfig.json",
+    "test": "npm run build && node --test tests/**/*.test.mjs",
+    "pack:check": "npm run build && npm pack --dry-run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/airnub-labs/devcontainers-catalog.git"
+  },
+  "bugs": {
+    "url": "https://github.com/airnub-labs/devcontainers-catalog/issues"
+  },
+  "homepage": "https://github.com/airnub-labs/devcontainers-catalog",
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "devcontainers",
+    "schema",
+    "typescript",
+    "manifest"
+  ],
+  "dependencies": {
+    "ajv": "^8.12.0"
+  },
+  "devDependencies": {
+    "json-schema-to-typescript": "^13.1.1",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.4.2"
+  }
+}
