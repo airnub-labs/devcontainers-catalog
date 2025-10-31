@@ -13,10 +13,10 @@ import {
   idFromManifest,
 } from "./lib/generate.js";
 import { resolveCatalog, CatalogContext } from "./lib/catalog.js";
-import { discoverWorkspaceRoot } from "./lib/fsutil.js";
+import { discoverWorkspaceRoot, safeWriteDir } from "./lib/fsutil.js";
 import { buildAggregateCompose, readAggregateMetadata } from "./lib/compose.js";
 import { materializeServices, listServiceDirs } from "./lib/services.js";
-import { generateStackTemplate, parseBrowserSelection, listBrowserOptions } from "./lib/stacks.js";
+import { generateStackTemplate, parseBrowserSelection, listBrowserOptions, generateStack } from "./lib/stacks.js";
 import { enforceTagPolicy, ManifestKind } from "./lib/tag-policy.js";
 import { LessonEnv } from "./types.js";
 import { execa } from "execa";
@@ -264,13 +264,35 @@ generateCmd
 
       const outDir = path.isAbsolute(opts.out) ? opts.out : path.resolve(process.cwd(), opts.out);
 
-      await generateStackTemplate({
-        repoRoot: catalog.root,
-        templateId: opts.template,
-        outDir,
-        force: !!opts.force,
-        browsers,
+      await safeWriteDir(outDir, !!opts.force);
+
+      const { plan, files } = await generateStack({
+        template: opts.template,
+        browsers: browsers.map((browser) => browser.id),
       });
+
+      if (!files) {
+        console.log(chalk.yellow("Dry run requested; no files written."));
+        return;
+      }
+
+      for (const [relativePath, buffer] of files) {
+        const segments = relativePath.split("/");
+        const targetPath = path.join(outDir, ...segments);
+        await fs.ensureDir(path.dirname(targetPath));
+        const fileBuffer = Buffer.from(buffer as unknown as Uint8Array);
+        await fs.writeFile(targetPath, fileBuffer as unknown as NodeJS.ArrayBufferView);
+        const mode = (buffer as Buffer & { _mode?: number })._mode;
+        if (typeof mode === "number") {
+          await fs.promises.chmod(targetPath, mode);
+        }
+      }
+
+      if (plan.notes.length) {
+        for (const note of plan.notes) {
+          console.warn(chalk.yellow(note));
+        }
+      }
 
       const summary = browsers.length
         ? browsers.map((browser) => browser.id).join(", ")

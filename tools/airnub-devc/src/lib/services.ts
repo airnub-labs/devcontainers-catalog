@@ -3,13 +3,14 @@ import os from "os";
 import fs from "fs-extra";
 
 export type BrowserSidecar = {
-  id: "neko-chrome" | "neko-firefox" | "kasm-chrome";
+  id: string;
   label: string;
   templatePath: string;
   serviceName: string;
   ports: number[];
   portLabels: Record<number, { label: string; onAutoForward: "openBrowser" | "silent" }>;
   containerEnv?: Record<string, string>;
+  requires?: string[];
 };
 
 export const BROWSER_SIDECARS: BrowserSidecar[] = [

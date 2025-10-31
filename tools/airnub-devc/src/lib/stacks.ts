@@ -1,6 +1,7 @@
 import path from "path";
 import fs from "fs-extra";
 import chalk from "chalk";
+import { fileURLToPath } from "url";
 import {
   Document,
   isMap,
@@ -10,7 +11,7 @@ import {
   YAMLMap,
   YAMLSeq,
 } from "yaml";
-import { safeWriteDir } from "./fsutil.js";
+import { discoverCatalogRoot, safeWriteDir } from "./fsutil.js";
 import { BROWSER_SIDECARS, BrowserSidecar, getBrowserSidecar } from "./services.js";
 
 function uniq<T>(values: T[]): T[] {
@@ -21,6 +22,45 @@ type Placeholder = {
   token: string;
   original: string;
   quoted: boolean;
+};
+
+const RESERVED_PORT_START = 45000;
+const RESERVED_PORT_END = 49999;
+const DEFAULT_PORT_VISIBILITY = "private" as const;
+
+type FileOperation = {
+  op: "create" | "update";
+  reason?: string;
+};
+
+type FileRecord = {
+  content: Buffer;
+  mode?: number;
+};
+
+export type RepoInsert = {
+  path: string;
+  content: string | Buffer;
+  mode?: number;
+};
+
+export type MergePlan = {
+  files: Array<{ path: string; op: "create" | "update" | "skip"; reason?: string }>;
+  ports: Array<{ port: number; label?: string; visibility?: "private" | "org" | "public" }>;
+  runServices: string[];
+  env: Record<string, string>;
+  notes: string[];
+};
+
+export type GenerateStackInput = {
+  template: string;
+  browsers?: string[];
+  features?: string[];
+  inserts?: RepoInsert[];
+  preset?: string | null;
+  variables?: Record<string, string>;
+  semverLock?: boolean;
+  dryRun?: boolean;
 };
 
 function replaceMoustachePlaceholders(content: string): { replaced: string; placeholders: Placeholder[] } {
@@ -95,6 +135,127 @@ function serializeDevcontainerTemplate(
   return json;
 }
 
+function resolveRepoRoot(): string {
+  const envRoot = process.env.AIRNUB_CATALOG_ROOT ? path.resolve(process.env.AIRNUB_CATALOG_ROOT) : null;
+  if (envRoot && fs.existsSync(path.join(envRoot, "templates"))) {
+    return envRoot;
+  }
+  const packageRoot = path.resolve(fileURLToPath(new URL("..", import.meta.url)));
+  const repoCandidate = path.resolve(packageRoot, "..", "..");
+  if (fs.existsSync(path.join(repoCandidate, "templates"))) {
+    return repoCandidate;
+  }
+  const discovered = discoverCatalogRoot();
+  if (discovered) {
+    return discovered;
+  }
+  throw new Error("Unable to locate devcontainers catalog root. Provide --catalog-root or run within the catalog checkout.");
+}
+
+let cachedPackageVersion: string | null | undefined;
+
+async function getPackageVersion(): Promise<string | null> {
+  if (cachedPackageVersion !== undefined) {
+    return cachedPackageVersion ?? null;
+  }
+  const packageRoot = path.resolve(fileURLToPath(new URL("..", import.meta.url)));
+  const packageJsonPath = path.join(packageRoot, "package.json");
+  try {
+    const pkg: any = await fs.readJson(packageJsonPath);
+    cachedPackageVersion = typeof pkg?.version === "string" ? pkg.version : null;
+  } catch {
+    cachedPackageVersion = null;
+  }
+  return cachedPackageVersion ?? null;
+}
+
+async function collectTemplateFiles(templateDir: string): Promise<Map<string, FileRecord>> {
+  const files = new Map<string, FileRecord>();
+
+  async function walk(current: string) {
+    const entries = await fs.readdir(current);
+    for (const entry of entries) {
+      const abs = path.join(current, entry);
+      const stat = await fs.stat(abs);
+      if (stat.isDirectory()) {
+        await walk(abs);
+        continue;
+      }
+      if (!stat.isFile()) {
+        continue;
+      }
+      const rel = path.relative(templateDir, abs);
+      const repoPath = rel.split(path.sep).join("/");
+      const content = (await fs.readFile(abs)) as unknown as Buffer;
+      files.set(repoPath, { content, mode: stat.mode });
+    }
+  }
+
+  await walk(templateDir);
+  return files;
+}
+
+function markFileOperation(map: Map<string, FileOperation>, filePath: string, op: FileOperation["op"], reason?: string) {
+  const existing = map.get(filePath);
+  if (!existing) {
+    map.set(filePath, { op, reason });
+    return;
+  }
+
+  if (existing.op === op) {
+    if (reason) {
+      existing.reason = existing.reason ? `${existing.reason}; ${reason}` : reason;
+    }
+    return;
+  }
+
+  if (existing.op === "create" && op === "update") {
+    map.set(filePath, { op, reason: reason ?? existing.reason });
+    return;
+  }
+
+  if (existing.op === "update" && op === "create") {
+    return;
+  }
+
+  if (reason) {
+    existing.reason = existing.reason ? `${existing.reason}; ${reason}` : reason;
+  }
+}
+
+function setFileRecord(files: Map<string, FileRecord>, filePath: string, content: Buffer, mode?: number) {
+  const existing = files.get(filePath);
+  files.set(filePath, { content, mode: mode ?? existing?.mode });
+}
+
+function ensureFile(
+  files: Map<string, FileRecord>,
+  ops: Map<string, FileOperation>,
+  filePath: string,
+  content: string | Buffer,
+  { mode, reason, overwrite = false }: { mode?: number; reason?: string; overwrite?: boolean } = {},
+) {
+  const exists = files.has(filePath);
+  if (exists && !overwrite) {
+    return;
+  }
+  const buffer = Buffer.isBuffer(content) ? content : Buffer.from(content, "utf8");
+  setFileRecord(files, filePath, buffer, mode);
+  markFileOperation(ops, filePath, exists ? "update" : "create", reason);
+}
+
+function toOutputFiles(files: Map<string, FileRecord>): Map<string, Buffer> {
+  const result = new Map<string, Buffer>();
+  for (const [filePath, record] of files.entries()) {
+    const buffer = record.content;
+    if (record.mode !== undefined) {
+      (buffer as Buffer & { _mode?: number })._mode = record.mode;
+    }
+    result.set(filePath, buffer);
+  }
+  return result;
+}
+
 function mergeDevcontainerJson(base: any, addition: any): { merged: any; warnings: string[] } {
   const warnings: string[] = [];
   const merged: any = JSON.parse(JSON.stringify(base));
@@ -146,10 +307,14 @@ async function readJsonFile(filePath: string): Promise<any> {
   return fs.readJson(filePath);
 }
 
+function loadDevcontainerTemplateFromContent(content: string, filePath: string): DevcontainerTemplate {
+  const { data, placeholders } = parseDevcontainerTemplate(content);
+  return { path: filePath, data, placeholders };
+}
+
 async function loadDevcontainerTemplate(devcontainerPath: string): Promise<DevcontainerTemplate> {
   const rawContent = await fs.readFile(devcontainerPath, "utf8");
-  const { data, placeholders } = parseDevcontainerTemplate(rawContent);
-  return { path: devcontainerPath, data, placeholders };
+  return loadDevcontainerTemplateFromContent(rawContent, devcontainerPath);
 }
 
 function parsePort(value: unknown): number | null {
@@ -233,22 +398,38 @@ function collectUsedPorts(devcontainerData: any, composeDoc: Document.Parsed): S
   return used;
 }
 
-function allocateBrowserPorts(browsers: BrowserSidecar[], used: Set<number>): BrowserAllocation[] {
+function allocateBrowserPorts(
+  browsers: BrowserSidecar[],
+  used: Set<number>,
+): { allocations: BrowserAllocation[]; notes: string[] } {
   const allocations: BrowserAllocation[] = [];
   const reserved = new Set<number>(used);
+  const notes: string[] = [];
+
   for (const browser of browsers) {
     const portMap = new Map<number, number>();
     for (const desired of browser.ports) {
-      let candidate = desired;
-      while (reserved.has(candidate)) {
-        candidate += 1;
+      let assigned = desired;
+      if (reserved.has(desired)) {
+        assigned = 0;
+        for (let candidate = RESERVED_PORT_START; candidate <= RESERVED_PORT_END; candidate++) {
+          if (!reserved.has(candidate)) {
+            assigned = candidate;
+            break;
+          }
+        }
+        if (!assigned) {
+          throw new Error(`Unable to allocate a free port for ${browser.label} (${browser.id}).`);
+        }
+        notes.push(`Port ${desired} for ${browser.label} reassigned to ${assigned}.`);
       }
-      reserved.add(candidate);
-      portMap.set(desired, candidate);
+      reserved.add(assigned);
+      portMap.set(desired, assigned);
     }
     allocations.push({ browser, portMap });
   }
-  return allocations;
+
+  return { allocations, notes };
 }
 
 function portMatches(entry: unknown, port: number): boolean {
@@ -309,17 +490,26 @@ function rewriteServicePorts(node: unknown, portMap: Map<number, number>) {
   }
 }
 
-function mergeTopLevelMap(baseDoc: Document.Parsed, additionDoc: Document.Parsed, key: string) {
+function mergeTopLevelMap(baseDoc: Document.Parsed, additionDoc: Document.Parsed, key: string): boolean {
   const additionNode = additionDoc.get(key);
   if (!additionNode || !isMap(additionNode)) {
-    return;
+    return false;
   }
   let baseNode = baseDoc.get(key);
   if (!isMap(baseNode)) {
     baseNode = new YAMLMap();
     baseDoc.set(key, baseNode);
+    const newMap = baseNode as YAMLMap;
+    for (const pair of additionNode.items) {
+      if (!pair?.key) {
+        continue;
+      }
+      newMap.add(pair.clone(additionDoc.schema));
+    }
+    return true;
   }
   const baseMap = baseNode as YAMLMap;
+  let changed = false;
   for (const pair of additionNode.items) {
     if (!pair?.key) {
       continue;
@@ -329,28 +519,30 @@ function mergeTopLevelMap(baseDoc: Document.Parsed, additionDoc: Document.Parsed
       continue;
     }
     baseMap.add(pair.clone(additionDoc.schema));
+    changed = true;
   }
+  return changed;
 }
 
-async function mergeComposeFile({
+async function mergeComposeDocument({
   composeDoc,
-  composePath,
   allocations,
   repoRoot,
 }: {
   composeDoc: Document.Parsed;
-  composePath: string;
   allocations: BrowserAllocation[];
   repoRoot: string;
-}) {
+}): Promise<{ touched: boolean }> {
   if (!allocations.length) {
-    return;
+    return { touched: false };
   }
 
+  let touched = false;
   let servicesNode = composeDoc.get("services");
   if (!isMap(servicesNode)) {
     servicesNode = new YAMLMap();
     composeDoc.set("services", servicesNode);
+    touched = true;
   }
   const servicesMap = servicesNode as YAMLMap;
 
@@ -377,31 +569,31 @@ async function mergeComposeFile({
         const cloned = pair.clone(additionDoc.schema);
         rewriteServicePorts(cloned.value, allocation.portMap);
         servicesMap.add(cloned);
+        touched = true;
       }
     }
 
     for (const key of ["volumes", "networks", "configs", "secrets"]) {
-      mergeTopLevelMap(composeDoc, additionDoc, key);
+      if (mergeTopLevelMap(composeDoc, additionDoc, key)) {
+        touched = true;
+      }
     }
   }
 
-  const serialized = ensureTrailingNewline(String(composeDoc));
-  await fs.writeFile(composePath, serialized, "utf8");
+  return { touched };
 }
 
-async function mergeDevcontainerFile({
+async function mergeDevcontainerData({
   template,
   allocations,
   repoRoot,
-  preserveTemplateSections,
 }: {
   template: DevcontainerTemplate;
   allocations: BrowserAllocation[];
   repoRoot: string;
-  preserveTemplateSections: boolean;
-}) {
+}): Promise<{ data: any; warnings: string[] }> {
   if (!allocations.length) {
-    return;
+    return { data: template.data, warnings: [] };
   }
 
   const baseForwardValues = Array.isArray(template.data.forwardPorts) ? template.data.forwardPorts : [];
@@ -495,16 +687,7 @@ async function mergeDevcontainerFile({
     }
   }
 
-  const serialized = serializeDevcontainerTemplate(mergedData, template.placeholders, {
-    preserveTemplateSections,
-  });
-  await fs.writeFile(template.path, serialized, "utf8");
-
-  if (warnings.length) {
-    for (const warning of uniq(warnings)) {
-      console.warn(chalk.yellow(warning));
-    }
-  }
+  return { data: mergedData, warnings };
 }
 
 export type GenerateStackOptions = {
@@ -569,21 +752,329 @@ export async function generateStackTemplate(options: GenerateStackOptions) {
   const devcontainerPath = path.join(options.outDir, ".devcontainer", "devcontainer.json");
   const template = await loadDevcontainerTemplate(devcontainerPath);
 
-  const allocations = allocateBrowserPorts(options.browsers, collectUsedPorts(template.data, composeDoc));
+  const { allocations, notes } = allocateBrowserPorts(options.browsers, collectUsedPorts(template.data, composeDoc));
 
-  await mergeComposeFile({
+  const composeResult = await mergeComposeDocument({
     composeDoc,
-    composePath,
     allocations,
     repoRoot: options.repoRoot,
   });
+  if (composeResult.touched) {
+    const serialized = ensureTrailingNewline(String(composeDoc));
+    await fs.writeFile(composePath, serialized, "utf8");
+  }
 
-  await mergeDevcontainerFile({
+  const devResult = await mergeDevcontainerData({
     template,
     allocations,
     repoRoot: options.repoRoot,
+  });
+  const serializedDevcontainer = serializeDevcontainerTemplate(devResult.data, template.placeholders, {
     preserveTemplateSections: !!options.preserveTemplateSections,
   });
+  await fs.writeFile(devcontainerPath, serializedDevcontainer, "utf8");
+
+  const warnings = uniq([...notes, ...devResult.warnings]);
+  for (const warning of warnings) {
+    console.warn(chalk.yellow(warning));
+  }
+}
+
+export async function generateStack(input: GenerateStackInput): Promise<{ plan: MergePlan; files?: Map<string, Buffer> }> {
+  const repoRoot = resolveRepoRoot();
+  const templateDir = path.join(repoRoot, "templates", input.template, ".template");
+  if (!await fs.pathExists(templateDir)) {
+    throw new Error(`Template '${input.template}' not found under templates/`);
+  }
+
+  const fileRecords = await collectTemplateFiles(templateDir);
+  const fileOps = new Map<string, FileOperation>();
+  for (const filePath of fileRecords.keys()) {
+    markFileOperation(fileOps, filePath, "create");
+  }
+
+  const composeRecord = fileRecords.get("docker-compose.yml");
+  if (!composeRecord) {
+    throw new Error("Template is missing docker-compose.yml");
+  }
+  const composeContent = composeRecord.content.toString("utf8");
+  const composeDoc = parseDocument(composeContent);
+  if (composeDoc.errors.length) {
+    throw new Error(`Failed to parse base docker-compose.yml: ${composeDoc.errors[0].message}`);
+  }
+
+  const devcontainerRecord = fileRecords.get(".devcontainer/devcontainer.json");
+  if (!devcontainerRecord) {
+    throw new Error("Template is missing .devcontainer/devcontainer.json");
+  }
+  const devTemplate = loadDevcontainerTemplateFromContent(
+    devcontainerRecord.content.toString("utf8"),
+    ".devcontainer/devcontainer.json",
+  );
+
+  const browserIds = input.browsers ?? [];
+  const selectedBrowsers = browserIds.map((id) => {
+    const browser = getBrowserSidecar(id);
+    if (!browser) {
+      throw new Error(`Unknown browser sidecar: ${id}`);
+    }
+    return browser;
+  });
+
+  const { allocations, notes: allocationNotes } = allocateBrowserPorts(
+    selectedBrowsers,
+    collectUsedPorts(devTemplate.data, composeDoc),
+  );
+
+  const composeMerge = await mergeComposeDocument({ composeDoc, allocations, repoRoot });
+  const notes: string[] = [...allocationNotes];
+  if (composeMerge.touched) {
+    const serialized = ensureTrailingNewline(String(composeDoc));
+    if (serialized !== composeContent) {
+      setFileRecord(fileRecords, "docker-compose.yml", Buffer.from(serialized, "utf8"), composeRecord.mode);
+      markFileOperation(fileOps, "docker-compose.yml", "update", "merged browser services");
+    }
+  }
+
+  const devMerge = await mergeDevcontainerData({ template: devTemplate, allocations, repoRoot });
+  notes.push(...devMerge.warnings);
+  let mergedDevcontainer = devMerge.data;
+
+  if (Array.isArray(mergedDevcontainer.runServices)) {
+    mergedDevcontainer.runServices = Array.from(new Set(mergedDevcontainer.runServices)).sort();
+  }
+
+  if (input.features?.length) {
+    const baseFeatures =
+      mergedDevcontainer.features && typeof mergedDevcontainer.features === "object" && !Array.isArray(mergedDevcontainer.features)
+        ? { ...mergedDevcontainer.features }
+        : {};
+    for (const feature of input.features) {
+      if (!Object.prototype.hasOwnProperty.call(baseFeatures, feature)) {
+        baseFeatures[feature] = {};
+      }
+    }
+    const sortedFeatures = Object.fromEntries(
+      Object.entries(baseFeatures).sort(([a], [b]) => a.localeCompare(b)),
+    );
+    mergedDevcontainer.features = sortedFeatures;
+  }
+
+  if (input.preset !== undefined) {
+    if (input.preset && input.preset.trim().length) {
+      mergedDevcontainer.image = input.preset;
+      if (mergedDevcontainer.build) {
+        notes.push("Using preset image; removing local build instructions.");
+      }
+      delete mergedDevcontainer.build;
+    } else {
+      delete mergedDevcontainer.image;
+    }
+  }
+
+  const serializedDevcontainer = serializeDevcontainerTemplate(mergedDevcontainer, devTemplate.placeholders);
+  if (serializedDevcontainer !== devcontainerRecord.content.toString("utf8")) {
+    setFileRecord(
+      fileRecords,
+      ".devcontainer/devcontainer.json",
+      Buffer.from(serializedDevcontainer, "utf8"),
+      devcontainerRecord.mode,
+    );
+    markFileOperation(fileOps, ".devcontainer/devcontainer.json", "update", "updated devcontainer configuration");
+  }
+
+  const projectName = input.variables?.PROJECT_NAME?.trim() || "Lesson Project";
+
+  const walkthrough = {
+    walkthroughs: [
+      {
+        id: "lesson-start",
+        title: `${projectName} onboarding`,
+        description: "Get started with your lesson workspace.",
+        steps: [
+          {
+            id: "review-docs",
+            title: "Review lesson docs",
+            description: "Open docs/index.md to review the lesson goals.",
+          },
+          {
+            id: "install-deps",
+            title: "Install dependencies",
+            description: "Run npm install (or the equivalent) inside the Dev Container.",
+          },
+          {
+            id: "launch-sidecar",
+            title: "Open the browser sidecar",
+            description: "Use the Ports view to launch the selected browser sidecars.",
+          },
+          {
+            id: "run-tests",
+            title: "Run lesson assessments",
+            description: "Execute the configured test commands to validate progress.",
+          },
+        ],
+      },
+    ],
+  };
+  ensureFile(
+    fileRecords,
+    fileOps,
+    ".vscode/walkthroughs.json",
+    `${JSON.stringify(walkthrough, null, 2)}\n`,
+    { reason: "lesson walkthrough scaffold" },
+  );
+  ensureFile(fileRecords, fileOps, ".tours/.gitkeep", "", { reason: "CodeTour slot" });
+
+  const docsContent = [`# ${projectName}`, "", "Welcome to your lesson workspace. Customize this page with lesson context.", ""].join("\n");
+  ensureFile(fileRecords, fileOps, "docs/index.md", `${docsContent}\n`, { reason: "lesson docs scaffold" });
+
+  ensureFile(fileRecords, fileOps, "assessments/qti/.gitkeep", "", { reason: "QTI scaffold" });
+  const analyticsContent = [
+    "# Analytics",
+    "",
+    "Drop Caliper or xAPI configuration files here to enable lesson analytics.",
+    "",
+  ].join("\n");
+  ensureFile(fileRecords, fileOps, "analytics/README.md", `${analyticsContent}\n`, { reason: "analytics scaffold" });
+
+  const finalFeatureIds =
+    mergedDevcontainer.features && typeof mergedDevcontainer.features === "object" && !Array.isArray(mergedDevcontainer.features)
+      ? Object.keys(mergedDevcontainer.features).sort()
+      : [];
+
+  const lessonMetadata = {
+    title: projectName,
+    duration: 45,
+    prerequisites: [] as string[],
+    outcomes: [] as Array<{ text: string; caseGuid?: string; align?: string }>,
+    assessments: [] as Array<{ id: string; format: string; path: string }>,
+    stack: {
+      template: input.template,
+      browsers: selectedBrowsers.map((browser) => browser.id),
+      features: finalFeatureIds,
+    },
+    lrmi: {
+      educationalAlignment: [] as Array<Record<string, unknown>>,
+    },
+  };
+  ensureFile(fileRecords, fileOps, "lesson.json", `${JSON.stringify(lessonMetadata, null, 2)}\n`, {
+    reason: "lesson metadata scaffold",
+    overwrite: true,
+  });
+
+  const generationSpec = {
+    template: input.template,
+    browsers: selectedBrowsers.map((browser) => browser.id),
+    features: input.features ?? [],
+    preset: input.preset ?? null,
+    variables: input.variables ?? {},
+    semverLock: !!input.semverLock,
+  };
+  ensureFile(fileRecords, fileOps, ".comhra/lesson.gen.json", `${JSON.stringify(generationSpec, null, 2)}\n`, {
+    reason: "generation spec",
+    overwrite: true,
+  });
+
+  if (input.semverLock) {
+    let templateVersion: string | null = null;
+    const manifestPath = path.join(repoRoot, "templates", input.template, "devcontainer-template.json");
+    try {
+      const manifest: any = await fs.readJson(manifestPath);
+      if (manifest && typeof manifest.version === "string") {
+        templateVersion = manifest.version;
+      }
+    } catch {
+      templateVersion = null;
+    }
+
+    const pkgVersion = await getPackageVersion();
+    const lockData = {
+      template: {
+        id: input.template,
+        version: templateVersion,
+      },
+      features: finalFeatureIds,
+      browsers: selectedBrowsers.map((browser) => browser.id),
+      catalog: {
+        version: pkgVersion,
+      },
+    };
+    ensureFile(fileRecords, fileOps, ".comhra.lock.json", `${JSON.stringify(lockData, null, 2)}\n`, {
+      reason: "semver lock",
+      overwrite: true,
+    });
+  }
+
+  if (input.inserts) {
+    for (const insert of input.inserts) {
+      const normalizedPath = insert.path.replace(/^[\\/]+/, "").split(path.sep).join("/");
+      let buffer: Buffer;
+      if (Buffer.isBuffer(insert.content)) {
+        buffer = Buffer.from(insert.content as Uint8Array);
+      } else {
+        buffer = Buffer.from(insert.content, "utf8");
+      }
+      const existed = fileRecords.has(normalizedPath);
+      setFileRecord(fileRecords, normalizedPath, buffer, insert.mode);
+      markFileOperation(fileOps, normalizedPath, existed ? "update" : "create", "custom insert");
+    }
+  }
+
+  const envEntries =
+    mergedDevcontainer.containerEnv && typeof mergedDevcontainer.containerEnv === "object"
+      ? mergedDevcontainer.containerEnv
+      : {};
+  const env: Record<string, string> = {};
+  for (const [key, value] of Object.entries(envEntries)) {
+    env[key] = typeof value === "string" ? value : JSON.stringify(value);
+  }
+
+  const portEntries = Array.isArray(mergedDevcontainer.forwardPorts) ? mergedDevcontainer.forwardPorts : [];
+  const ports: MergePlan["ports"] = [];
+  const seenPorts = new Set<number>();
+  for (const entry of portEntries) {
+    const port = parsePort(entry);
+    if (port === null || seenPorts.has(port)) {
+      continue;
+    }
+    seenPorts.add(port);
+    const attr =
+      mergedDevcontainer.portsAttributes && typeof mergedDevcontainer.portsAttributes === "object"
+        ? mergedDevcontainer.portsAttributes[String(port)]
+        : undefined;
+    const visibility =
+      attr && typeof attr === "object" && typeof (attr as Record<string, unknown>).visibility === "string"
+        ? ((attr as Record<string, unknown>).visibility as string)
+        : undefined;
+    ports.push({
+      port,
+      label:
+        attr && typeof attr === "object" && typeof (attr as Record<string, unknown>).label === "string"
+          ? ((attr as Record<string, unknown>).label as string)
+          : undefined,
+      visibility:
+        visibility === "org" || visibility === "public"
+          ? (visibility as "org" | "public")
+          : DEFAULT_PORT_VISIBILITY,
+    });
+  }
+  ports.sort((a, b) => a.port - b.port);
+
+  const plan: MergePlan = {
+    files: Array.from(fileOps.entries())
+      .map(([pathName, op]) => ({ path: pathName, op: op.op, ...(op.reason ? { reason: op.reason } : {}) }))
+      .sort((a, b) => a.path.localeCompare(b.path)),
+    ports,
+    runServices: Array.isArray(mergedDevcontainer.runServices) ? [...mergedDevcontainer.runServices] : [],
+    env,
+    notes: uniq(notes),
+  };
+
+  if (input.dryRun) {
+    return { plan };
+  }
+
+  return { plan, files: toOutputFiles(fileRecords) };
 }
 
 export function listBrowserOptions(): BrowserSidecar[] {

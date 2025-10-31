@@ -11,6 +11,10 @@
   "license": "Apache-2.0",
   "repository": "https://github.com/airnub-labs/devcontainers-catalog",
   "type": "module",
+  "exports": {
+    ".": "./dist/sdk.js",
+    "./cli": "./dist/index.js"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsx src/index.ts",
