@@ -22,6 +22,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@airnub/sdk-codespaces-adapter": "file:../../packages/sdk-codespaces-adapter",
     "@types/node": "^20.12.12",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
