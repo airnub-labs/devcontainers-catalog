@@ -2,7 +2,16 @@ name: Smoke Tests
 
 on:
   pull_request:
+    paths:
+      - 'images/presets/**'
+      - 'services/**'
+      - 'tools/airnub-devc/**'
+      - '.github/workflows/smoke-tests.yml'
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   preset-smoke:
