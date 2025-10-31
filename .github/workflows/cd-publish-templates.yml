@@ -1,4 +1,4 @@
-name: Publish Devcontainer Templates (Stacks)
+name: CD - Publish DevContainer Templates
 on:
   push:
     branches: [ main ]

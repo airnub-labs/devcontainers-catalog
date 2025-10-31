@@ -1,12 +1,16 @@
-name: Validate Devcontainer Metadata
+name: CI - Validate DevContainer Metadata
 
 on:
   pull_request:
     paths:
       - 'features/**'
       - 'templates/**'
-      - '.github/workflows/validate-devcontainers.yml'
+      - '.github/workflows/ci-validate-devcontainers.yml'
   workflow_dispatch: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   validate:

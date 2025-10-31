@@ -1,4 +1,4 @@
-name: Publish Devcontainer Features
+name: CD - Publish DevContainer Features
 on:
   push:
     branches: [ main ]

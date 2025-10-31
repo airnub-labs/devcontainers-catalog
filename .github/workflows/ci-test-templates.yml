@@ -1,11 +1,15 @@
-name: Smoke Test Templates
+name: CI - Test DevContainer Templates
 
 on:
   pull_request:
     paths:
       - 'templates/**'
-      - '.github/workflows/test-templates.yml'
+      - '.github/workflows/ci-test-templates.yml'
   workflow_dispatch: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -13,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Dev Containers CLI
-        run: npm i -g @devcontainers/cli@latest
+        run: npm install -g @devcontainers/cli@0.80.1
       - name: Smoke test each template
         shell: bash
         run: |

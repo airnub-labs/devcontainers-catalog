@@ -1,4 +1,4 @@
-name: PR Checks
+name: CI - PR Checks (Lint & Validate)
 
 on:
   pull_request:
@@ -8,10 +8,12 @@ on:
       - "examples/lesson-manifests/**"
       - "services/**"
       - "images/presets/**"
-      - "docs/**"
       - "Makefile"
-      - "AGENTS.md"
-      - ".github/workflows/**"
+      - ".github/workflows/ci-pr-check.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   check:

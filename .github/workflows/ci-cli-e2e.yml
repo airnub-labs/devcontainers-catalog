@@ -1,4 +1,4 @@
-name: cli-e2e
+name: CI - Airnub CLI (E2E)
 on:
   pull_request:
     paths:
@@ -6,8 +6,12 @@ on:
       - "schemas/**"
       - "services/**"
       - "examples/lesson-manifests/**"
-      - ".github/workflows/cli-e2e.yml"
+      - ".github/workflows/ci-cli-e2e.yml"
   workflow_dispatch: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   e2e:
@@ -22,6 +26,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "24"
+          cache: 'npm'
+          cache-dependency-path: tools/airnub-devc/package-lock.json
 
       - name: Build CLI
         working-directory: tools/airnub-devc
