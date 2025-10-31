@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Dev Containers CLI
-        run: npm i -g @devcontainers/cli@latest
+        run: npm install -g @devcontainers/cli@0.80.1
       - name: Smoke test each template
         shell: bash
         run: |

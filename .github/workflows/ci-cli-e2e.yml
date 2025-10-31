@@ -26,6 +26,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "24"
+          cache: 'npm'
+          cache-dependency-path: tools/airnub-devc/package-lock.json
 
       - name: Build CLI
         working-directory: tools/airnub-devc

@@ -152,6 +152,8 @@ PY
             GIT_SHA=${{ github.sha }}
           provenance: false
           sbom: true
+          cache-from: type=gha,scope=lesson-${{ steps.slug.outputs.slug }}
+          cache-to: type=gha,mode=max,scope=lesson-${{ steps.slug.outputs.slug }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.description=Lesson image for ${{ steps.slug.outputs.org }}/${{ steps.slug.outputs.course }}/${{ steps.slug.outputs.lesson }}

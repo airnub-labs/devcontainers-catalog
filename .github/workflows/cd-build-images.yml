@@ -38,6 +38,8 @@ jobs:
             GIT_SHA=${{ github.sha }}
           provenance: mode=max
           sbom: true
+          cache-from: type=gha,scope=dev-base
+          cache-to: type=gha,mode=max,scope=dev-base
           tags: |
             ghcr.io/airnub-labs/devcontainer-images/dev-base:1.0.0
             ghcr.io/airnub-labs/devcontainer-images/dev-base:1
@@ -71,6 +73,8 @@ jobs:
             GIT_SHA=${{ github.sha }}
           provenance: mode=max
           sbom: true
+          cache-from: type=gha,scope=dev-web
+          cache-to: type=gha,mode=max,scope=dev-web
           tags: |
             ghcr.io/airnub-labs/devcontainer-images/dev-web:1.0.0
             ghcr.io/airnub-labs/devcontainer-images/dev-web:1
