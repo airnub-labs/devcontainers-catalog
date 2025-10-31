@@ -7,6 +7,7 @@ WebRTC fast-path is optionally available in Kasm, but falls back automatically w
 ## Quick start
 - Open the forwarded **6901** URL in your browser and log in.
 - Default password is set via `VNC_PW` (change it!).
+- The endpoint is HTTPS-only, and Codespaces will happily proxy it even though the port number looks "http".
 
 ### Ports
 - **6901** – KasmVNC UI (HTTPS + WebSocket)
