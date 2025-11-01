@@ -7,13 +7,23 @@
   "options": {
     "version": {
       "type": "string",
-      "default": "latest",
+      "default": "2.0.0",
       "description": "Version of Deno to install (semver or release tag)."
     },
     "installCompletions": {
       "type": "boolean",
       "default": true,
       "description": "Install shell completions for bash, zsh, and fish."
+    },
+    "cacheDir": {
+      "type": "string",
+      "default": "",
+      "description": "Directory containing cached Deno archives and SHA256SUMS for offline installs."
+    },
+    "offline": {
+      "type": "boolean",
+      "default": false,
+      "description": "Prevent network access; requires cacheDir assets and pre-installed unzip."
     }
   },
   "installsAfter": [

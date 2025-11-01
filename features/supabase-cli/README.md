@@ -16,12 +16,16 @@ Installs the [Supabase CLI](https://supabase.com/docs/guides/cli) inside a dev c
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
-| `version` | string | `"latest"` | Semver or tag for the Supabase CLI. |
+| `version` | string | `"1.188.0"` | Semver or tag for the Supabase CLI. |
 | `manageLocalStack` | boolean | `false` | Adds `sbx-start`, `sbx-stop`, and `sbx-status` helpers that wrap `supabase` local stack commands. |
 | `services` | string | `""` | Comma-separated Supabase service hints recorded in install metadata. |
 | `projectRef` | string | _optional_ | Populates `SUPABASE_PROJECT_REF` via `/etc/profile.d` and `containerEnv`. |
+| `cacheDir` | string | `""` | Directory containing pre-downloaded Supabase CLI `.deb` and checksum files for offline mode. |
+| `offline` | boolean | `false` | Skip network fetches. Requires `cacheDir` assets and pre-installed dependencies. |
 
 Helper scripts are only created when `manageLocalStack` is enabled. The feature is idempotent and will skip reinstalling the CLI when the requested version is already present.
+
+When `offline` is enabled the installer expects `cacheDir` to contain `supabase_${VERSION}_linux_<arch>.deb` and a corresponding checksum file (for example `supabase_${VERSION}_SHA256SUMS`). Missing artifacts abort the installation instead of falling back to remote downloads.
 
 ### Service name hints
 

@@ -5,11 +5,41 @@ VERSION="${VERSION:-latest}"
 MANAGE_LOCAL_STACK="${MANAGELOCALSTACK:-false}"
 PROJECT_REF="${PROJECTREF:-}"
 SERVICES_RAW="${SERVICES:-}"
+CACHE_DIR="${CACHEDIR:-}"
+OFFLINE="${OFFLINE:-false}"
 FEATURE_DIR="/usr/local/share/devcontainer/features/supabase-cli"
 BIN_DIR="/usr/local/bin"
 PROFILE_DIR="/etc/profile.d"
 
 mkdir -p "${FEATURE_DIR}"
+
+is_truthy() {
+    case "${1:-}" in
+        1|[Tt][Rr][Uu][Ee]|[Yy][Ee][Ss])
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+copy_from_cache() {
+    local filename="$1"
+    local destination="$2"
+
+    if [ -z "${CACHE_DIR}" ]; then
+        return 1
+    fi
+
+    local candidate="${CACHE_DIR%/}/${filename}"
+    if [ -f "${candidate}" ]; then
+        cp "${candidate}" "${destination}"
+        return 0
+    fi
+
+    return 1
+}
 
 verify_sha256() {
     local expected="$1"
@@ -82,6 +112,11 @@ install_supabase_cli() {
     requested=$(normalize_version "${VERSION}")
 
     if [ "${requested}" = "latest" ]; then
+        if is_truthy "${OFFLINE}"; then
+            echo "[supabase-cli] Cannot resolve 'latest' while offline. Please pin a specific version." >&2
+            exit 1
+        fi
+
         if ! requested=$(fetch_latest_tag); then
             echo "[supabase-cli] Failed to determine latest Supabase CLI release tag." >&2
             exit 1
@@ -116,8 +151,17 @@ install_supabase_cli() {
     tmp_deb=$(mktemp -d)
     trap 'rm -rf "${tmp_deb:-}"' EXIT
 
-    echo "[supabase-cli] Downloading ${deb_url}"
-    curl -fsSL "${deb_url}" -o "${tmp_deb}/supabase.deb"
+    if copy_from_cache "${deb_basename}" "${tmp_deb}/supabase.deb"; then
+        echo "[supabase-cli] Using cached ${deb_basename}"
+    else
+        if is_truthy "${OFFLINE}"; then
+            echo "[supabase-cli] Offline mode enabled but ${deb_basename} was not found in cacheDir." >&2
+            exit 1
+        fi
+
+        echo "[supabase-cli] Downloading ${deb_url}"
+        curl -fsSL "${deb_url}" -o "${tmp_deb}/supabase.deb"
+    fi
 
     local checksum_candidates=(
         "https://github.com/supabase/cli/releases/download/${requested}/supabase_${requested#v}_SHA256SUMS"
@@ -127,14 +171,30 @@ install_supabase_cli() {
 
     local checksum_file=""
     for url in "${checksum_candidates[@]}"; do
-        if curl -fsSL "${url}" -o "${tmp_deb}/checksums.txt"; then
-            checksum_file="${tmp_deb}/checksums.txt"
+        local filename
+        filename=$(basename "${url}")
+
+        if copy_from_cache "${filename}" "${tmp_deb}/${filename}"; then
+            checksum_file="${tmp_deb}/${filename}"
+            break
+        fi
+
+        if is_truthy "${OFFLINE}"; then
+            continue
+        fi
+
+        if curl -fsSL "${url}" -o "${tmp_deb}/${filename}"; then
+            checksum_file="${tmp_deb}/${filename}"
             break
         fi
     done
 
     if [ -z "${checksum_file}" ]; then
-        echo "[supabase-cli] Failed to download checksum for ${deb_basename}" >&2
+        if is_truthy "${OFFLINE}"; then
+            echo "[supabase-cli] Offline mode enabled but no checksum file for ${deb_basename} was found in cacheDir." >&2
+        else
+            echo "[supabase-cli] Failed to download checksum for ${deb_basename}" >&2
+        fi
         exit 1
     fi
 
@@ -159,12 +219,21 @@ install_supabase_cli() {
         exit 1
     fi
 
-    apt-get update
+    if ! is_truthy "${OFFLINE}"; then
+        apt-get update
+    else
+        echo "[supabase-cli] Skipping apt-get update due to offline mode. Ensure dependencies are already available." >&2
+    fi
 
     local log_file="/tmp/supabase-cli-install.log"
     : >"${log_file}"
 
     if ! DEBIAN_FRONTEND=noninteractive dpkg -i "${tmp_deb}/supabase.deb" >"${log_file}" 2>&1; then
+        if is_truthy "${OFFLINE}"; then
+            echo "[supabase-cli] Failed to install Supabase CLI deb in offline mode. Ensure dependencies are pre-installed. See ${log_file}." >&2
+            exit 1
+        fi
+
         echo "[supabase-cli] Resolving Supabase CLI dependencies (see ${log_file})"
         DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends -f \
             >>"${log_file}" 2>&1
