@@ -9,6 +9,15 @@
       "purpose": "neko-ui",
       "recommendedPrivacy": "PRIVATE",
       "notes": "Browser-based desktop streaming for Chrome (WebRTC TCP mux; UDP disabled on Codespaces).",
+      "health": {
+        "method": "http-or-tcp",
+        "port": 8080,
+        "path": "/",
+        "interval": 10,
+        "timeout": 3,
+        "retries": 5,
+        "startPeriod": 20
+      },
       "env": [
         {
           "name": "NEKO_USER_PASSWORD",
@@ -30,6 +39,15 @@
       "purpose": "neko-ui-firefox",
       "recommendedPrivacy": "PRIVATE",
       "notes": "Browser-based desktop streaming for Firefox (experimental remote debugging support).",
+      "health": {
+        "method": "http-or-tcp",
+        "port": 8081,
+        "path": "/",
+        "interval": 10,
+        "timeout": 3,
+        "retries": 5,
+        "startPeriod": 20
+      },
       "env": [
         {
           "name": "NEKO_FF_USER_PASSWORD",
@@ -51,6 +69,15 @@
       "purpose": "kasm-ui",
       "recommendedPrivacy": "PRIVATE",
       "notes": "Webtop experience with Chrome via HTTPS (Kasm Workspaces CE licence applies).",
+      "health": {
+        "method": "http-or-tcp",
+        "port": 8443,
+        "path": "/",
+        "interval": 15,
+        "timeout": 5,
+        "retries": 6,
+        "startPeriod": 30
+      },
       "env": [
         {
           "name": "KASM_VNC_PW",

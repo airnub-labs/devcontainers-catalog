@@ -7,6 +7,15 @@ services:
     environment:
       - CHROME_CDP_PORT={{templateOption.chromeCdpPort}}
     shm_size: "2gb"
+    depends_on:
+      webtop:
+        condition: service_healthy
+      novnc:
+        condition: service_healthy
+{{#templateOption.redis}}
+      redis:
+        condition: service_healthy
+{{/templateOption.redis}}
 {{#templateOption.redis}}
   redis:
     image: redis:7-alpine
@@ -14,6 +23,12 @@ services:
       - "6379:6379"
     volumes:
       - redis-data:/data
+    healthcheck:
+      test: ["CMD", "sh", "-c", "(redis-cli ping | grep -q PONG) || (nc -z localhost 6379)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
 {{/templateOption.redis}}
   webtop:
     image: lscr.io/linuxserver/webtop:ubuntu-xfce
@@ -27,12 +42,24 @@ services:
     ports:
       - "${WEBTOP_PORT:-3001}:3000"
     shm_size: "2gb"
+    healthcheck:
+      test: ["CMD", "sh", "-c", "(wget -qO- http://localhost:3000/ >/dev/null 2>&1) || (nc -z localhost 3000)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
   novnc:
     image: ghcr.io/airnub-labs/dev-novnc:latest
     environment:
       - DISPLAY=:1
     ports:
       - "${NOVNC_PORT:-6080}:6080"
+    healthcheck:
+      test: ["CMD", "sh", "-c", "(wget -qO- http://localhost:6080/ >/dev/null 2>&1) || (nc -z localhost 6080)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
 volumes:
   redis-data:
     name: devcontainer-redis-data

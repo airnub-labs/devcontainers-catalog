@@ -37,16 +37,29 @@
       "label": "Chrome DevTools"
     },
     "6901": {
-      "label": "Kasm Chrome (HTTPS)",
+      "label": "Kasm Chrome (sidecar HTTPS)",
       "onAutoForward": "openBrowser"
     }
   },
   "postCreateCommand": "bash .devcontainer/postCreate.sh",
+  "postStartCommand": "./scripts/sidecars-status.sh || true",
+  "mounts": [
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+  ],
   "customizations": {
     "vscode": {
       "settings": {
         "remote.downloadExtensionsLocally": "always",
-        "telemetry.telemetryLevel": "off"
+        "telemetry.telemetryLevel": "off",
+        "remote.portsAttributes": {
+          "{{templateOption.cdpPort}}": {
+            "label": "Chrome DevTools"
+          },
+          "6901": {
+            "label": "Kasm Chrome (sidecar HTTPS)",
+            "onAutoForward": "openBrowser"
+          }
+        }
       },
       "extensions": [
         "dbaeumer.vscode-eslint",

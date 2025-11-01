@@ -143,10 +143,19 @@ check:
 			done; \\
 	fi
 
-.PHONY: stack-up stack-down
+.PHONY: stack-up stack-down sidecars health stats
 stack-up:
-	REDIS?=0 SUPABASE?=0 KAFKA?=0 AIRFLOW?=0 PREFECT?=0 DAGSTER?=0 TEMPORAL?=0 WEBTOP?=0 CHROME_CDP?=0 \\
-	bash scripts/compose_aggregate.sh
+        REDIS?=0 SUPABASE?=0 KAFKA?=0 AIRFLOW?=0 PREFECT?=0 DAGSTER?=0 TEMPORAL?=0 WEBTOP?=0 CHROME_CDP?=0 \\
+        bash scripts/compose_aggregate.sh
 
 stack-down:
-	docker compose down || true
+        docker compose down || true
+
+sidecars:
+	@./scripts/sidecars-status.sh
+
+health:
+	@docker ps --format '{{.Names}}\t{{.Status}}' | grep -E 'webtop|novnc|chrome|cdp|redis|supabase|studio|kong|neko|kasm' || true
+
+stats:
+	@docker stats --no-stream --format '{{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.MemPerc}}'

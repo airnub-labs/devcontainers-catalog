@@ -12,6 +12,9 @@ services:
     volumes:
       - ..:/workspaces:cached
     command: sleep infinity
+    depends_on:
+      kasm-chrome:
+        condition: service_healthy
   # --- Browser sidecar: Kasm Chrome (KasmVNC)
   kasm-chrome:
     image: kasmweb/chrome:1.17.0
@@ -21,3 +24,9 @@ services:
       - "6901:6901"          # HTTPS + WebSocket UI
     environment:
       VNC_PW: "${KASM_VNC_PW:-student}"
+    healthcheck:
+      test: ["CMD", "sh", "-c", "(wget --no-check-certificate -qO- https://localhost:6901/ >/dev/null 2>&1) || (nc -z localhost 6901)"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 30s

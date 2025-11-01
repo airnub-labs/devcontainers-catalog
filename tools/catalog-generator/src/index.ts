@@ -23,6 +23,18 @@ interface SidecarEnvEntry {
   required?: boolean;
 }
 
+type HealthMethod = 'http' | 'tcp' | 'http-or-tcp';
+
+interface SidecarHealth {
+  method: HealthMethod;
+  port?: number;
+  path?: string;
+  interval?: number;
+  timeout?: number;
+  retries?: number;
+  startPeriod?: number;
+}
+
 interface SidecarDescriptor {
   id: string;
   image: string;
@@ -32,6 +44,7 @@ interface SidecarDescriptor {
   recommendedPrivacy: WorkspacePort['recommendedPrivacy'];
   notes?: string;
   env?: SidecarEnvEntry[];
+  health?: SidecarHealth;
 }
 
 interface SidecarRegistryFile {
@@ -62,6 +75,27 @@ function loadSidecarRegistry(): Record<string, SidecarDescriptor> {
 }
 
 const SIDECAR_REGISTRY = loadSidecarRegistry();
+
+function loadScriptAsset(filename: string): string {
+  const searchOrder = [
+    new URL(`../../scripts/${filename}`, import.meta.url),
+    new URL(`./scripts/${filename}`, import.meta.url)
+  ];
+
+  for (const candidate of searchOrder) {
+    try {
+      const filePath = fileURLToPath(candidate);
+      return readFileSync(filePath, 'utf-8');
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  throw new Error(`Unable to locate ${filename} in scripts/ directory`);
+}
 
 const DEFAULT_SCHEMA_VERSION = '1.0.0';
 
@@ -102,6 +136,40 @@ function getSidecar(browserId: string): SidecarDescriptor {
   return sidecar;
 }
 
+function createHealthcheckBlock(sidecar: SidecarDescriptor): string {
+  const health = sidecar.health;
+  if (!health) {
+    return '';
+  }
+
+  const port = health.port ?? sidecar.defaultPort;
+  const path = health.path ?? '/';
+  const interval = health.interval ?? 10;
+  const timeout = health.timeout ?? 3;
+  const retries = health.retries ?? 5;
+  const startPeriod = health.startPeriod;
+
+  let command: string;
+  switch (health.method) {
+    case 'http':
+      command = `wget -qO- http://localhost:${port}${path} >/dev/null 2>&1`;
+      break;
+    case 'tcp':
+      command = `nc -z localhost ${port}`;
+      break;
+    case 'http-or-tcp':
+    default:
+      command = `(wget -qO- http://localhost:${port}${path} >/dev/null 2>&1) || (nc -z localhost ${port})`;
+      break;
+  }
+
+  const shellCommand = `    healthcheck:\n      test: [\"CMD\", \"sh\", \"-c\", \"${command.replace(/"/g, '\\\"')}\"]\n      interval: ${interval}s\n      timeout: ${timeout}s\n      retries: ${retries}`;
+
+  return startPeriod
+    ? `${shellCommand}\n      start_period: ${startPeriod}s\n`
+    : `${shellCommand}\n`;
+}
+
 function createReadme(stackId: string, browsers: string[]): string {
   const browserList = browsers.length > 0 ? browsers.map((id) => `- ${id}`).join('\n') : '- none';
   return `# ${STACK_DEFAULTS[stackId].displayName}\n\n${STACK_DEFAULTS[stackId].description}\n\n` +
@@ -123,13 +191,25 @@ function createClassroomBrowserReadme(): string {
     '- Remind students to keep their ports in Private visibility mode unless your policy says otherwise.\n';
 }
 
-function createDevcontainerJson(stackId: string, browsers: string[], manifestPorts: WorkspacePort[]): string {
+function createDevcontainerJson(
+  stackId: string,
+  browsers: string[],
+  manifestPorts: WorkspacePort[],
+  sidecarLabels: Map<number, string>
+): string {
   const composeFile = '.devcontainer/docker-compose.yml';
   const basePorts = STACK_DEFAULTS[stackId].ports.map((port) => port.port);
   const extraPorts = browsers.map((browserId) => getSidecar(browserId).defaultPort);
+  const forwardPorts = Array.from(new Set([...basePorts, ...extraPorts]));
 
   const portsAttributes = manifestPorts.reduce<Record<string, { label: string }>>((acc, port) => {
     acc[String(port.port)] = { label: port.label };
+    return acc;
+  }, {});
+
+  const remotePortsAttributes = Array.from(manifestPorts.values()).reduce<Record<string, { label: string }>>((acc, port) => {
+    const labelSuffix = sidecarLabels.has(port.port) ? ' (sidecar)' : '';
+    acc[String(port.port)] = { label: `${port.label}${labelSuffix}` };
     return acc;
   }, {});
 
@@ -139,15 +219,18 @@ function createDevcontainerJson(stackId: string, browsers: string[], manifestPor
       dockerComposeFile: [composeFile],
       service: 'workspace',
       postCreateCommand: 'npm install',
+      postStartCommand: './scripts/sidecars-status.sh || true',
       customizations: {
         vscode: {
           settings: {
-            'terminal.integrated.defaultProfile.linux': 'bash'
+            'terminal.integrated.defaultProfile.linux': 'bash',
+            'remote.portsAttributes': remotePortsAttributes
           },
           extensions: ['ms-azuretools.vscode-docker', 'esbenp.prettier-vscode']
         }
       },
-      forwardPorts: [...basePorts, ...extraPorts],
+      mounts: ['source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind'],
+      forwardPorts,
       portsAttributes
     },
     null,
@@ -164,10 +247,12 @@ function createComposeFile(stackId: string, browsers: string[]): string {
       const envSection = envVars.length
         ? '    environment:\n' + envVars.map((entry) => `      - ${entry.name}=\${${entry.name}:-ChangeThisPassword!}`).join('\n') + '\n'
         : '';
+      const healthSection = createHealthcheckBlock(sidecar);
       return `  ${browserId}:\n` +
         `    image: ${sidecar.image}\n` +
         '    restart: unless-stopped\n' +
         envSection +
+        healthSection +
         '    ports:\n' +
         `      - "${sidecar.defaultPort}:${sidecar.defaultPort}"\n` +
         '    labels:\n' +
@@ -206,13 +291,16 @@ export async function generateCatalogWorkspace(input: GeneratorInput): Promise<G
   await mkdir(outDir, { recursive: true });
   await mkdir(path.join(outDir, '.devcontainer'), { recursive: true });
   await mkdir(path.join(outDir, 'classroom-browser'), { recursive: true });
+  await mkdir(path.join(outDir, 'scripts'), { recursive: true });
 
   const uniquePorts = new Map<number, WorkspacePort>();
+  const sidecarLabels = new Map<number, string>();
   STACK_DEFAULTS[input.stackId].ports.forEach((port) => {
     uniquePorts.set(port.port, port);
   });
   input.browsers.forEach((browserId) => {
     const sidecar = getSidecar(browserId);
+    sidecarLabels.set(sidecar.defaultPort, sidecar.label);
     uniquePorts.set(sidecar.defaultPort, {
       port: sidecar.defaultPort,
       label: sidecar.label,
@@ -262,12 +350,14 @@ export async function generateCatalogWorkspace(input: GeneratorInput): Promise<G
   writeFileSync(path.join(outDir, 'README.md'), readme, 'utf-8');
   const classroomReadme = createClassroomBrowserReadme();
   writeFileSync(path.join(outDir, 'classroom-browser/README.md'), classroomReadme, 'utf-8');
-  const devcontainerJson = createDevcontainerJson(input.stackId, input.browsers, manifestPorts);
+  const devcontainerJson = createDevcontainerJson(input.stackId, input.browsers, manifestPorts, sidecarLabels);
   writeFileSync(path.join(outDir, '.devcontainer/devcontainer.json'), devcontainerJson, 'utf-8');
   const composeFile = createComposeFile(input.stackId, input.browsers);
   writeFileSync(path.join(outDir, '.devcontainer/docker-compose.yml'), composeFile, 'utf-8');
   const dockerfile = createDockerfile();
   writeFileSync(path.join(outDir, 'Dockerfile'), dockerfile, 'utf-8');
+  writeFileSync(path.join(outDir, 'scripts/sidecars-status.sh'), loadScriptAsset('sidecars-status.sh'), { encoding: 'utf-8', mode: 0o755 });
+  writeFileSync(path.join(outDir, 'scripts/sidecars-watch.sh'), loadScriptAsset('sidecars-watch.sh'), { encoding: 'utf-8', mode: 0o755 });
 
   const manifestPath = path.join(outDir, 'manifest.json');
   writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf-8');

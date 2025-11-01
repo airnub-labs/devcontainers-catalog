@@ -15,17 +15,31 @@
     },
     "ghcr.io/airnub-labs/devcontainer-features/agent-tooling-clis:1": {}
   },
-  "forwardPorts": [9223, 54326],
+  "forwardPorts": [9223, 54326, 3001, 6080, 6379],
   "portsAttributes": {
     "9223": { "label": "Chrome DevTools" },
-    "54326": { "label": "Supabase Studio" }
+    "54326": { "label": "Supabase Studio" },
+    "3001": { "label": "Webtop (sidecar)" },
+    "6080": { "label": "noVNC (sidecar)" },
+    "6379": { "label": "Redis (sidecar)" }
   },
   "postCreateCommand": "bash .devcontainer/postCreate.sh",
+  "postStartCommand": "bash .devcontainer/scripts/postStart.sh || true; ./scripts/sidecars-status.sh || true",
+  "mounts": [
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+  ],
   "customizations": {
     "vscode": {
       "settings": {
         "remote.downloadExtensionsLocally": "always",
-        "telemetry.telemetryLevel": "off"
+        "telemetry.telemetryLevel": "off",
+        "remote.portsAttributes": {
+          "9223": { "label": "Chrome DevTools" },
+          "54326": { "label": "Supabase Studio" },
+          "3001": { "label": "Webtop (sidecar)" },
+          "6080": { "label": "noVNC (sidecar)" },
+          "6379": { "label": "Redis (sidecar)" }
+        }
       },
       "extensions": [
         "dbaeumer.vscode-eslint",

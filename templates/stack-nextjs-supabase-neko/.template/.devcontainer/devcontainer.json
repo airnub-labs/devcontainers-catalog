@@ -39,20 +39,37 @@
       "label": "Chrome DevTools"
     },
     "8080": {
-      "label": "Neko (Web UI)",
+      "label": "Neko (sidecar Web UI)",
       "onAutoForward": "openBrowser"
     },
     "59000": {
-      "label": "Neko (WebRTC TCP mux)",
+      "label": "Neko (sidecar TCP mux)",
       "onAutoForward": "silent"
     }
   },
   "postCreateCommand": "bash .devcontainer/postCreate.sh",
+  "postStartCommand": "./scripts/sidecars-status.sh || true",
+  "mounts": [
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+  ],
   "customizations": {
     "vscode": {
       "settings": {
         "remote.downloadExtensionsLocally": "always",
-        "telemetry.telemetryLevel": "off"
+        "telemetry.telemetryLevel": "off",
+        "remote.portsAttributes": {
+          "{{templateOption.cdpPort}}": {
+            "label": "Chrome DevTools"
+          },
+          "8080": {
+            "label": "Neko (sidecar Web UI)",
+            "onAutoForward": "openBrowser"
+          },
+          "59000": {
+            "label": "Neko (sidecar TCP mux)",
+            "onAutoForward": "silent"
+          }
+        }
       },
       "extensions": [
         "dbaeumer.vscode-eslint",
