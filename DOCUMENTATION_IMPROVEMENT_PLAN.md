@@ -1,8 +1,10 @@
 # Documentation Improvement Plan
 
 **Date:** 2025-11-01
-**Status:** Proposed
+**Status:** SUPERSEDED - See DOCUMENTATION_IMPROVEMENT_PLAN_REVISED.md
 **Overall Goal:** Create a well-structured, non-duplicative, and highly valuable documentation system
+
+> ⚠️ **NOTE:** This plan was created before analyzing commit timestamps. It incorrectly treated mvp-launch/ as artifacts to archive when they actually contain the MOST RECENT architectural decisions (updated Oct 30-31, Nov 1). See **DOCUMENTATION_IMPROVEMENT_PLAN_REVISED.md** for the corrected plan that reflects current architecture.
 
 ---
 
