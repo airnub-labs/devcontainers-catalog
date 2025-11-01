@@ -15,7 +15,7 @@ services:
       # Required credential - inject via devcontainer.json "containerEnv" or Codespaces secrets
       VNC_PW: "${KASM_VNC_PW?set}"
     healthcheck:
-      test: ["CMD-SHELL", "curl -kfsS https://localhost:6901/ || exit 1"]
+      test: ["CMD-SHELL", "((wget --no-check-certificate -qO- https://localhost:6901/ >/dev/null 2>&1) || (curl -kfsS https://localhost:6901/ >/dev/null 2>&1) || (command -v nc >/dev/null 2>&1 && nc -z localhost 6901) || (echo >/dev/tcp/localhost/6901))"]
       interval: 10s
       timeout: 5s
       retries: 10
