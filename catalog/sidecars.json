@@ -2,6 +2,63 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "sidecars": [
     {
+      "id": "novnc",
+      "image": "ghcr.io/airnub-labs/dev-novnc:latest",
+      "defaultPort": 6080,
+      "label": "noVNC (sidecar)",
+      "purpose": "novnc-ui",
+      "recommendedPrivacy": "PRIVATE",
+      "notes": "Web-based VNC proxy for lightweight desktops.",
+      "health": {
+        "method": "http",
+        "port": 6080,
+        "path": "/",
+        "interval": "10s",
+        "timeout": "3s",
+        "retries": 5,
+        "start_period": "15s"
+      }
+    },
+    {
+      "id": "webtop",
+      "image": "lscr.io/linuxserver/webtop:ubuntu-xfce",
+      "defaultPort": 3000,
+      "label": "Webtop (sidecar)",
+      "purpose": "web-desktop",
+      "recommendedPrivacy": "PRIVATE",
+      "notes": "Full Linux desktop in the browser backed by LinuxServer's Webtop.",
+      "health": {
+        "method": "http",
+        "port": 3000,
+        "path": "/",
+        "interval": "10s",
+        "timeout": "3s",
+        "retries": 5,
+        "start_period": "15s"
+      }
+    },
+    {
+      "id": "redis",
+      "image": "redis:7-alpine",
+      "defaultPort": 6379,
+      "label": "Redis (sidecar)",
+      "purpose": "cache",
+      "recommendedPrivacy": "PRIVATE",
+      "notes": "Ephemeral Redis cache for local development.",
+      "health": {
+        "method": "cmd",
+        "cmd": [
+          "redis-cli",
+          "ping"
+        ],
+        "expect": "PONG",
+        "interval": "10s",
+        "timeout": "3s",
+        "retries": 5,
+        "start_period": "10s"
+      }
+    },
+    {
       "id": "neko-chrome",
       "image": "ghcr.io/m1k1o/neko/chrome:latest",
       "defaultPort": 8080,
@@ -71,6 +128,8 @@
       "notes": "Webtop experience with Chrome via HTTPS (Kasm Workspaces CE licence applies).",
       "health": {
         "method": "http",
+        "scheme": "https",
+        "tlsSkipVerify": true,
         "port": 6901,
         "path": "/",
         "interval": "15s",
@@ -85,6 +144,244 @@
           "required": true
         }
       ]
+    },
+    {
+      "id": "chrome-cdp",
+      "image": "ghcr.io/browserless/chrome:latest",
+      "defaultPort": 3000,
+      "label": "Chrome CDP (sidecar)",
+      "purpose": "chrome-cdp",
+      "recommendedPrivacy": "PRIVATE",
+      "notes": "Headless Chrome with the DevTools Protocol exposed over HTTP.",
+      "health": {
+        "method": "http",
+        "port": 3000,
+        "path": "/json/version",
+        "interval": "10s",
+        "timeout": "5s",
+        "retries": 10,
+        "start_period": "15s"
+      }
+    },
+    {
+      "id": "supabase-db",
+      "image": "supabase/postgres:15.1.1.67",
+      "defaultPort": 5432,
+      "label": "Supabase Postgres",
+      "purpose": "database",
+      "recommendedPrivacy": "PRIVATE",
+      "notes": "Supabase Postgres instance seeded for local development.",
+      "health": {
+        "method": "postgres",
+        "port": 5432,
+        "interval": "10s",
+        "timeout": "5s",
+        "retries": 5,
+        "start_period": "20s"
+      },
+      "env": [
+        {
+          "name": "POSTGRES_PASSWORD",
+          "description": "Database password used for Supabase services",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "supabase-rest",
+      "image": "supabase/postgrest:v11.2.1",
+      "defaultPort": 3000,
+      "label": "Supabase REST",
+      "purpose": "supabase-rest",
+      "recommendedPrivacy": "PRIVATE",
+      "notes": "PostgREST API exposed by Supabase.",
+      "health": {
+        "method": "http",
+        "port": 3000,
+        "path": "/",
+        "interval": "15s",
+        "timeout": "5s",
+        "retries": 6,
+        "start_period": "20s"
+      }
+    },
+    {
+      "id": "supabase-realtime",
+      "image": "supabase/realtime:v2.25.35",
+      "defaultPort": 4000,
+      "label": "Supabase Realtime",
+      "purpose": "supabase-realtime",
+      "recommendedPrivacy": "PRIVATE",
+      "notes": "Realtime websocket service for Supabase.",
+      "health": {
+        "method": "http",
+        "port": 4000,
+        "path": "/health",
+        "interval": "15s",
+        "timeout": "5s",
+        "retries": 6,
+        "start_period": "20s"
+      }
+    },
+    {
+      "id": "supabase-studio",
+      "image": "supabase/studio:20240408-4e7ac8e",
+      "defaultPort": 3000,
+      "label": "Supabase Studio",
+      "purpose": "supabase-studio",
+      "recommendedPrivacy": "PRIVATE",
+      "notes": "Supabase Studio admin interface.",
+      "health": {
+        "method": "http",
+        "port": 3000,
+        "path": "/",
+        "interval": "15s",
+        "timeout": "5s",
+        "retries": 6,
+        "start_period": "20s"
+      }
+    },
+    {
+      "id": "dagster",
+      "image": "dagster/dagster:1.7.5",
+      "defaultPort": 3000,
+      "label": "Dagster (sidecar)",
+      "purpose": "workflow-dagster",
+      "recommendedPrivacy": "PRIVATE",
+      "notes": "Dagster UI and API for orchestrating data pipelines.",
+      "health": {
+        "method": "http",
+        "port": 3000,
+        "path": "/",
+        "interval": "10s",
+        "timeout": "5s",
+        "retries": 20,
+        "start_period": "20s"
+      }
+    },
+    {
+      "id": "prefect",
+      "image": "prefecthq/prefect:2-latest",
+      "defaultPort": 4200,
+      "label": "Prefect (sidecar)",
+      "purpose": "workflow-prefect",
+      "recommendedPrivacy": "PRIVATE",
+      "notes": "Prefect orchestration UI and API.",
+      "health": {
+        "method": "http",
+        "port": 4200,
+        "path": "/api/health",
+        "interval": "10s",
+        "timeout": "5s",
+        "retries": 20,
+        "start_period": "20s"
+      }
+    },
+    {
+      "id": "temporal",
+      "image": "temporalio/auto-setup:1.25.0",
+      "defaultPort": 7233,
+      "label": "Temporal (sidecar)",
+      "purpose": "workflow-temporal",
+      "recommendedPrivacy": "PRIVATE",
+      "notes": "Temporal service (gRPC).",
+      "health": {
+        "method": "tcp",
+        "port": 7233,
+        "interval": "10s",
+        "timeout": "5s",
+        "retries": 30,
+        "start_period": "30s"
+      }
+    },
+    {
+      "id": "temporal-ui",
+      "image": "temporalio/ui:2.24.0",
+      "defaultPort": 8080,
+      "label": "Temporal UI (sidecar)",
+      "purpose": "workflow-temporal-ui",
+      "recommendedPrivacy": "PRIVATE",
+      "notes": "Temporal Web UI for inspecting workflows.",
+      "health": {
+        "method": "http",
+        "port": 8080,
+        "path": "/health",
+        "interval": "10s",
+        "timeout": "5s",
+        "retries": 30,
+        "start_period": "30s"
+      }
+    },
+    {
+      "id": "linux-chrome",
+      "image": "ghcr.io/linuxserver/chrome:latest",
+      "defaultPort": 3000,
+      "label": "Linux Chrome (sidecar)",
+      "purpose": "linux-chrome-ui",
+      "recommendedPrivacy": "PRIVATE",
+      "notes": "Chrome desktop delivered via LinuxServer Chrome container.",
+      "health": {
+        "method": "http",
+        "port": 3000,
+        "path": "/",
+        "interval": "10s",
+        "timeout": "5s",
+        "retries": 12,
+        "start_period": "15s"
+      }
+    },
+    {
+      "id": "airflow",
+      "image": "apache/airflow:2.9.2",
+      "defaultPort": 8080,
+      "label": "Airflow (sidecar)",
+      "purpose": "workflow-airflow",
+      "recommendedPrivacy": "PRIVATE",
+      "notes": "Apache Airflow webserver and scheduler.",
+      "health": {
+        "method": "http",
+        "port": 8080,
+        "path": "/health",
+        "interval": "15s",
+        "timeout": "5s",
+        "retries": 20,
+        "start_period": "30s"
+      }
+    },
+    {
+      "id": "kafka",
+      "image": "bitnami/kafka:3.7",
+      "defaultPort": 9092,
+      "label": "Kafka (sidecar)",
+      "purpose": "event-stream",
+      "recommendedPrivacy": "PRIVATE",
+      "notes": "Single-node Kafka with KRaft mode enabled.",
+      "health": {
+        "method": "tcp",
+        "port": 9092,
+        "interval": "10s",
+        "timeout": "5s",
+        "retries": 20,
+        "start_period": "30s"
+      }
+    },
+    {
+      "id": "inbucket",
+      "image": "inbucket/inbucket:stable",
+      "defaultPort": 9000,
+      "label": "Inbucket (sidecar)",
+      "purpose": "mail-dev",
+      "recommendedPrivacy": "PRIVATE",
+      "notes": "Disposable SMTP and webmail testing utility.",
+      "health": {
+        "method": "http",
+        "port": 9000,
+        "path": "/",
+        "interval": "10s",
+        "timeout": "5s",
+        "retries": 10,
+        "start_period": "15s"
+      }
     }
   ]
 }

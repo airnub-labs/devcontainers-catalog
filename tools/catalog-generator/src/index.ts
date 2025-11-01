@@ -36,6 +36,8 @@ interface SidecarHealth {
   retries?: number;
   start_period?: string | number;
   startPeriod?: string | number;
+  scheme?: 'http' | 'https';
+  tlsSkipVerify?: boolean;
 }
 
 interface SidecarDescriptor {
@@ -64,6 +66,8 @@ interface NormalizedSidecarHealth {
   timeout: string;
   retries: number;
   start_period?: string;
+  scheme?: 'http' | 'https';
+  tlsSkipVerify?: boolean;
 }
 
 function toDuration(value: string | number | undefined, fallback: string): string {
@@ -118,6 +122,17 @@ function normalizeHealthDefinition(sidecar: SidecarDescriptor): NormalizedSideca
     retries,
     start_period: startPeriod ? toDuration(startPeriod, '0s') : undefined
   };
+
+  if (normalized.method === 'http') {
+    const scheme = health.scheme ?? 'http';
+    if (scheme !== 'http' && scheme !== 'https') {
+      throw new Error(`Unsupported HTTP scheme for sidecar ${sidecar.id}: ${scheme}`);
+    }
+    normalized.scheme = scheme;
+    if (health.tlsSkipVerify !== undefined) {
+      normalized.tlsSkipVerify = Boolean(health.tlsSkipVerify);
+    }
+  }
 
   if (normalized.method === 'cmd') {
     if (!normalized.cmd || normalized.cmd.length === 0) {
@@ -239,8 +254,22 @@ function createHealthcheckBlock(sidecar: SidecarDescriptor): string {
       if (!resolvedPort) {
         throw new Error(`HTTP healthcheck for sidecar ${sidecar.id} requires a port`);
       }
+      const scheme = health.scheme ?? 'http';
       const path = health.path?.startsWith('/') ? health.path : `/${health.path ?? ''}`;
-      command = `((wget -qO- http://localhost:${resolvedPort}${path} >/dev/null 2>&1) || (curl -fsS http://localhost:${resolvedPort}${path} >/dev/null 2>&1) || (command -v nc >/dev/null 2>&1 && nc -z localhost ${resolvedPort}) || (echo >/dev/tcp/localhost/${resolvedPort}))`;
+      const url = `${scheme}://localhost:${resolvedPort}${path}`;
+      const wgetCommand = scheme === 'https' && health.tlsSkipVerify
+        ? `wget --no-check-certificate -qO- ${url}`
+        : `wget -qO- ${url}`;
+      const curlCommand = scheme === 'https' && health.tlsSkipVerify
+        ? `curl -kfsS ${url}`
+        : `curl -fsS ${url}`;
+      const attempts = [
+        `(${wgetCommand} >/dev/null 2>&1)`,
+        `(${curlCommand} >/dev/null 2>&1)`,
+        `(command -v nc >/dev/null 2>&1 && nc -z localhost ${resolvedPort})`,
+        `(echo >/dev/tcp/localhost/${resolvedPort})`
+      ];
+      command = `(${attempts.join(' || ')})`;
       break;
     }
     case 'tcp': {
