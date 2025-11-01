@@ -5,6 +5,8 @@
 - **Templates** → ship a ready-to-use `.devcontainer/` payload (can be multi-container via Compose).
 - **Images** → prebuilt base(s) to speed builds.
 
+> ⚙️ **Local setup note:** before hacking on the catalog, check the [Prerequisites](CONTRIBUTING.md#prerequisites) for `make check` so the validation suite passes on your machine.
+
 > There’s no formal **“Stack”** object in the devcontainers spec. In this catalog, a **stack** is just a **flavor of Template** that combines features + sidecars + ports into a tested combo.
 
 ## What’s in this repo
