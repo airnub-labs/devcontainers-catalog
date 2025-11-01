@@ -267,7 +267,7 @@ function createHealthcheckBlock(sidecar: SidecarDescriptor): string {
         `(${wgetCommand} >/dev/null 2>&1)`,
         `(${curlCommand} >/dev/null 2>&1)`,
         `(command -v nc >/dev/null 2>&1 && nc -z localhost ${resolvedPort})`,
-        `(echo >/dev/tcp/localhost/${resolvedPort})`
+        `(command -v bash >/dev/null 2>&1 && bash -lc 'echo > /dev/tcp/localhost/${resolvedPort}')`
       ];
       command = `(${attempts.join(' || ')})`;
       break;
@@ -276,7 +276,7 @@ function createHealthcheckBlock(sidecar: SidecarDescriptor): string {
       if (!resolvedPort) {
         throw new Error(`TCP healthcheck for sidecar ${sidecar.id} requires a port`);
       }
-      command = `((command -v nc >/dev/null 2>&1 && nc -z localhost ${resolvedPort}) || (echo >/dev/tcp/localhost/${resolvedPort}))`;
+      command = `((command -v nc >/dev/null 2>&1 && nc -z localhost ${resolvedPort}) || (command -v bash >/dev/null 2>&1 && bash -lc 'echo > /dev/tcp/localhost/${resolvedPort}'))`;
       break;
     }
     case 'cmd': {
@@ -292,7 +292,7 @@ function createHealthcheckBlock(sidecar: SidecarDescriptor): string {
       ];
       if (resolvedPort) {
         attempts.push(`(command -v nc >/dev/null 2>&1 && nc -z localhost ${resolvedPort})`);
-        attempts.push(`(echo >/dev/tcp/localhost/${resolvedPort})`);
+        attempts.push(`(command -v bash >/dev/null 2>&1 && bash -lc 'echo > /dev/tcp/localhost/${resolvedPort}')`);
       }
       command = `(${attempts.join(' || ')})`;
       break;
@@ -301,7 +301,7 @@ function createHealthcheckBlock(sidecar: SidecarDescriptor): string {
       if (!resolvedPort) {
         throw new Error(`Postgres healthcheck for sidecar ${sidecar.id} requires a port`);
       }
-      command = `((command -v pg_isready >/dev/null 2>&1 && pg_isready -q) || (command -v nc >/dev/null 2>&1 && nc -z localhost ${resolvedPort}) || (echo >/dev/tcp/localhost/${resolvedPort}))`;
+      command = `((command -v pg_isready >/dev/null 2>&1 && pg_isready -q) || (command -v nc >/dev/null 2>&1 && nc -z localhost ${resolvedPort}) || (command -v bash >/dev/null 2>&1 && bash -lc 'echo > /dev/tcp/localhost/${resolvedPort}'))`;
       break;
     }
     default: {

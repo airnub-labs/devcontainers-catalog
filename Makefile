@@ -115,6 +115,7 @@ check:
 	@command -v yq >/dev/null 2>&1 || echo "[warn] yq not installed"
 	@[ -f schemas/lesson-env.schema.json ] || (echo "[fail] schema missing" && exit 1)
 	$(PYTHON) scripts/validate_lessons.py
+	bash scripts/check_sidecar_scripts.sh
 	$(MAKE) gen-all
 	if command -v npm >/dev/null 2>&1; then \
 		npm --prefix tools/airnub-devc ci; \

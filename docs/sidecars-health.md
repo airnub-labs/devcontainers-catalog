@@ -10,7 +10,7 @@ Docker healthchecks give the orchestrator a consistent indicator for whether a b
 - Friendly port labels surfaced through the `remote.portsAttributes` VS Code setting.
 - A post-start script (`./scripts/sidecars-status.sh`) that prints health state and a one-shot CPU/memory snapshot.
 
-The probes are intentionally minimal: BusyBox `wget`/`nc` when available, otherwise `/dev/tcp/` fallbacks. No background metrics agents or Prometheus exporters are introduced.
+The probes are intentionally minimal: BusyBox `wget`/`nc` when available, otherwise guarded `/dev/tcp/` fallbacks executed through `bash -lc` only when Bash is present. No background metrics agents or Prometheus exporters are introduced.
 
 ## Probe summary
 
@@ -39,7 +39,7 @@ Every emitted `healthcheck` uses Compose `CMD-SHELL` arrays so we can express th
 
 ## Using the status scripts
 
-After the devcontainer service starts, the `postStartCommand` runs `./scripts/sidecars-status.sh`. You can invoke it manually at any time:
+After the devcontainer service starts, the `postStartCommand` runs `./scripts/sidecars-status.sh`. The helper exits non-zero when any matching sidecar reports a health status other than `healthy`, making it suitable for lightweight CI smoke checks. You can invoke it manually at any time:
 
 ```bash
 ./scripts/sidecars-status.sh

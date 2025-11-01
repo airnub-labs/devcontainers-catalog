@@ -14,9 +14,18 @@ if [ -z "${containers}" ]; then
   exit 0
 fi
 
+exit_code=0
+
 while IFS= read -r name; do
   state=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}n/a{{end}}' "${name}" 2>/dev/null || echo n/a)
-  echo -e "health\t${name}\t${state}"
+  printf 'health\t%s\t%s\n' "${name}" "${state}"
+  if [ "${state}" != "healthy" ]; then
+    exit_code=1
+  fi
 done <<<"${containers}"
 
-echo "${containers}" | xargs -r docker stats --no-stream --format 'stats\t{{.Name}}\tCPU={{.CPUPerc}}\tMEM={{.MemUsage}} ({{.MemPerc}})'
+if ! echo "${containers}" | xargs -r docker stats --no-stream --format 'stats\t{{.Name}}\tCPU={{.CPUPerc}}\tMEM={{.MemUsage}} ({{.MemPerc}})'; then
+  exit_code=1
+fi
+
+exit "${exit_code}"
