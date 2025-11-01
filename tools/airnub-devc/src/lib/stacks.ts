@@ -51,29 +51,173 @@ type FileRecord = {
   mode?: number;
 };
 
+/**
+ * Describes a file to inject into the generated workspace.
+ *
+ * @example
+ * ```typescript
+ * const inserts: RepoInsert[] = [
+ *   {
+ *     path: "scripts/setup.sh",
+ *     content: "#!/bin/bash\\necho 'Hello, student!'",
+ *     mode: 0o755
+ *   },
+ *   {
+ *     path: "docs/lesson-plan.md",
+ *     content: "# Week 1: Introduction\\n\\nToday we learn..."
+ *   }
+ * ];
+ * ```
+ *
+ * @public
+ */
 export type RepoInsert = {
+  /**
+   * Relative path within the workspace (e.g., "scripts/init.sh").
+   * Leading slashes are stripped automatically.
+   */
   path: string;
+
+  /**
+   * File content as string or Buffer.
+   * For binary files, use Buffer.
+   */
   content: string | Buffer;
+
+  /**
+   * UNIX file mode (permissions) as octal number.
+   *
+   * @example 0o755 // executable script
+   * @example 0o644 // regular file
+   * @default 0o644
+   */
   mode?: number;
 };
 
+/**
+ * Describes the file operations, ports, and notes for a stack generation.
+ *
+ * The plan is returned by {@link generateStack} and provides a detailed
+ * overview of what will be created or modified when the stack is materialized.
+ *
+ * @example
+ * ```typescript
+ * const { plan } = await generateStack({ template: "web" });
+ *
+ * console.log("Files:");
+ * plan.files.forEach(f => console.log(`  ${f.op}: ${f.path}`));
+ *
+ * console.log("\nPorts:");
+ * plan.ports.forEach(p => console.log(`  ${p.port} (${p.visibility})`));
+ *
+ * console.log("\nNotes:");
+ * plan.notes.forEach(n => console.warn(`  ⚠ ${n}`));
+ * ```
+ *
+ * @public
+ */
 export type MergePlan = {
+  /** List of file operations (create, update, skip). */
   files: Array<{ path: string; op: "create" | "update" | "skip"; reason?: string }>;
+
+  /**
+   * Ports to be forwarded by the dev container.
+   * Sorted numerically.
+   */
   ports: Array<{ port: number; label?: string; visibility?: "private" | "org" | "public" }>;
+
+  /** Services to auto-start via `runServices` in devcontainer.json. */
   runServices: string[];
+
+  /** Environment variables to inject via `containerEnv`. */
   env: Record<string, string>;
+
+  /**
+   * Warnings and informational messages about the generation.
+   * Common notes include port reassignments and required env vars.
+   */
   notes: string[];
 };
 
+/**
+ * Configuration for generating a dev container stack.
+ *
+ * This type defines all options available when generating a stack via
+ * {@link generateStack}. At minimum, you must provide a `template` ID.
+ *
+ * @example
+ * ```typescript
+ * const input: GenerateStackInput = {
+ *   template: "nextjs-supabase",
+ *   browsers: ["neko-chrome"],
+ *   features: ["ghcr.io/airnub-labs/devcontainer-features/cursor-ai:1"],
+ *   preset: "ghcr.io/airnub-labs/devcontainer-images/dev-web:latest",
+ *   variables: {
+ *     PROJECT_NAME: "AI Fundamentals Week 2",
+ *     SUPABASE_PROJECT_ID: "abc123"
+ *   },
+ *   semverLock: true,
+ *   dryRun: false,
+ *   allowExperimental: false
+ * };
+ * ```
+ *
+ * @public
+ */
 export type GenerateStackInput = {
+  /**
+   * Template ID from the catalog (e.g., "nextjs-supabase", "web").
+   *
+   * @example "nextjs-supabase"
+   */
   template: string;
+
+  /**
+   * Browser sidecar IDs to include (e.g., "neko-chrome", "kasm-chrome").
+   * Ports will be automatically reassigned if conflicts occur.
+   *
+   * @default []
+   */
   browsers?: string[];
+
+  /**
+   * Additional Dev Container features to install.
+   * Must be fully-qualified OCI references.
+   *
+   * @example ["ghcr.io/airnub-labs/devcontainer-features/deno:1"]
+   * @default []
+   */
   features?: string[];
+
+  /**
+   * Files to inject into the generated workspace.
+   * Useful for adding custom scripts, configs, or lesson content.
+   *
+   * @default []
+   */
   inserts?: RepoInsert[];
+
+  /**
+   * Prebuilt image reference to use instead of local Dockerfile build.
+   * When set to an empty string, removes the image field entirely.
+   *
+   * @example "ghcr.io/airnub-labs/devcontainer-images/lesson-ai:1.0.0"
+   */
   preset?: string | null;
+
+  /** Variables for template placeholder substitution (e.g., {{PROJECT_NAME}}). */
   variables?: Record<string, string>;
+
+  /**
+   * Generate a `.comhra.lock.json` file with pinned versions.
+   * Recommended for production lesson deployments.
+   */
   semverLock?: boolean;
+
+  /** Return only the plan without file buffers (preview mode). */
   dryRun?: boolean;
+
+  /** Allow experimental browser sidecars and features. */
   allowExperimental?: boolean;
 };
 
@@ -719,15 +863,62 @@ async function mergeDevcontainerData({
   return { data: mergedData, warnings };
 }
 
+/**
+ * Options for {@link generateStackTemplate}.
+ *
+ * Use this type when you want to materialize a stack directly to disk instead
+ * of receiving file buffers. It largely mirrors {@link GenerateStackInput}
+ * but expects already-resolved browser sidecar definitions.
+ *
+ * @public
+ */
 export type GenerateStackOptions = {
+  /** Absolute path to the catalog repository root. */
   repoRoot: string;
+
+  /** Template identifier under `templates/` (e.g., `nextjs-supabase`). */
   templateId: string;
+
+  /** Output directory where the stack should be written. */
   outDir: string;
+
+  /** Overwrite the output directory if it already exists. */
   force?: boolean;
+
+  /** Browser sidecars to merge into the template. */
   browsers: BrowserSidecar[];
+
+  /** Preserve mustache sections when reserializing the devcontainer template. */
   preserveTemplateSections?: boolean;
 };
 
+/**
+ * Parses browser sidecar selection from CLI options.
+ *
+ * Accepts browsers as:
+ * - CSV string: `"neko-chrome,kasm-chrome"`
+ * - Array: `["neko-chrome", "kasm-chrome"]`
+ * - Combination of both (merged and deduplicated)
+ *
+ * @param options - Browser selection options from CLI flags
+ * @param options.withBrowsersCsv - Comma-separated browser IDs
+ * @param options.withBrowser - Array of browser IDs
+ * @param options.includeExperimental - Allow experimental browsers
+ * @returns Array of selected browser sidecar configurations
+ * @throws {Error} When an unknown browser ID is provided
+ * @throws {Error} When an experimental browser is used without the flag
+ *
+ * @example
+ * ```typescript
+ * const browsers = parseBrowserSelection({
+ *   withBrowsersCsv: "neko-chrome,kasm-chrome",
+ *   includeExperimental: false
+ * });
+ * console.log(browsers.map(b => b.id));
+ * ```
+ *
+ * @internal
+ */
 export function parseBrowserSelection(options: {
   withBrowsersCsv?: string;
   withBrowser?: string[];
@@ -764,6 +955,35 @@ export function parseBrowserSelection(options: {
   return selected;
 }
 
+/**
+ * Generates a stack template and writes it to disk.
+ *
+ * This is a file-system version of {@link generateStack} that directly writes
+ * the output to the specified directory. Use this when you want to materialize
+ * a stack immediately rather than working with file buffers.
+ *
+ * **Safety:**
+ * - Requires `force: true` to overwrite an existing directory
+ * - Preserves template sections when `preserveTemplateSections: true`
+ *
+ * @param options - Generation options including output directory
+ * @throws {Error} When the template does not exist
+ * @throws {Error} When the output directory exists and force is false
+ *
+ * @example
+ * ```typescript
+ * await generateStackTemplate({
+ *   repoRoot: "/path/to/catalog",
+ *   templateId: "nextjs-supabase",
+ *   outDir: "./workspace",
+ *   browsers: [nekoChromeSidecar],
+ *   force: true
+ * });
+ * ```
+ *
+ * @public
+ * @since 0.1.0
+ */
 export async function generateStackTemplate(options: GenerateStackOptions) {
   const templateDir = path.join(options.repoRoot, "templates", options.templateId, ".template");
   if (!await fs.pathExists(templateDir)) {
@@ -821,6 +1041,75 @@ export async function generateStackTemplate(options: GenerateStackOptions) {
   }
 }
 
+/**
+ * Generates a complete dev container stack from a template.
+ *
+ * This function:
+ * - Loads the specified template from the catalog
+ * - Merges browser sidecars (handling port conflicts automatically)
+ * - Adds custom features to the devcontainer configuration
+ * - Injects custom files via the `inserts` option
+ * - Generates lesson scaffolding (docs, assessments, metadata)
+ * - Returns a plan describing all file operations
+ *
+ * **Port Conflict Resolution:**
+ * If a browser sidecar requires a port already in use by the template,
+ * the function automatically reassigns it to a port in the range 45000-49999.
+ *
+ * **Dry Run Mode:**
+ * When `dryRun: true`, returns only the plan without file buffers.
+ * This is useful for previewing changes before committing.
+ *
+ * @param input - Stack generation configuration
+ * @returns Object containing the merge plan and optional file buffers
+ * @throws {Error} When the template does not exist
+ * @throws {Error} When an unknown browser sidecar ID is provided
+ * @throws {Error} When an experimental feature is used without the flag
+ *
+ * @example
+ * ```typescript
+ * import { promises as fs } from "fs";
+ * import { generateStack } from "@airnub/devc";
+ *
+ * // Generate a Next.js stack with Chrome sidecar
+ * const result = await generateStack({
+ *   template: "nextjs-supabase",
+ *   browsers: ["neko-chrome"],
+ *   features: ["ghcr.io/airnub-labs/devcontainer-features/deno:1"],
+ *   preset: "ghcr.io/airnub-labs/devcontainer-images/dev-web:latest",
+ *   variables: { PROJECT_NAME: "My Lesson" },
+ *   semverLock: true
+ * });
+ *
+ * console.log(`Generated ${result.plan.files.length} files`);
+ * console.log(`Forwarding ${result.plan.ports.length} ports`);
+ *
+ * // Write files to disk
+ * for (const [path, buffer] of result.files!) {
+ *   await fs.writeFile(path, buffer);
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // Dry run to preview changes
+ * const preview = await generateStack({
+ *   template: "web",
+ *   browsers: ["kasm-chrome"],
+ *   dryRun: true
+ * });
+ *
+ * console.log("Files to be created/updated:");
+ * preview.plan.files.forEach(f => {
+ *   console.log(`  ${f.op}: ${f.path}`);
+ * });
+ * ```
+ *
+ * @see {@link GenerateStackInput} for all available options
+ * @see {@link MergePlan} for the plan structure
+ * @public
+ * @since 0.1.0
+ */
 export async function generateStack(input: GenerateStackInput): Promise<{ plan: MergePlan; files?: Map<string, Buffer> }> {
   const repoRoot = resolveRepoRoot();
   const templateDir = path.join(repoRoot, "templates", input.template, ".template");
@@ -1130,6 +1419,20 @@ export async function generateStack(input: GenerateStackInput): Promise<{ plan: 
   return { plan, files: toOutputFiles(fileRecords) };
 }
 
+/**
+ * Lists browser sidecars bundled with the catalog.
+ *
+ * @param includeExperimental - Include experimental browsers that may change
+ * @returns Array of browser sidecar definitions
+ *
+ * @example
+ * ```typescript
+ * const browsers = listBrowserOptions();
+ * console.log(browsers.map(browser => browser.label));
+ * ```
+ *
+ * @public
+ */
 export function listBrowserOptions(includeExperimental = false): BrowserSidecar[] {
   return includeExperimental ? BROWSER_SIDECARS : BROWSER_SIDECARS.filter((browser) => !browser.experimental);
 }

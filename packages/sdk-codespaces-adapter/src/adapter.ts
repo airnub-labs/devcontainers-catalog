@@ -12,10 +12,70 @@ import { makeOctokit } from "./github-auth.js";
 import { GithubClient } from "./github-client.js";
 import * as Gh from "./gh.js";
 
+/**
+ * High-level client for managing GitHub Codespaces.
+ *
+ * This adapter wraps the GitHub REST API and provides convenience methods
+ * for common codespace operations. It handles:
+ * - Authentication (PAT or GitHub App)
+ * - Rate limiting with exponential backoff
+ * - Polling for codespace readiness
+ * - Secret encryption using libsodium
+ *
+ * **Lifecycle:**
+ * 1. Create an adapter with {@link makeCodespacesAdapter}
+ * 2. Authenticate with {@link CodespacesAdapter.ensureAuth | ensureAuth}
+ * 3. Perform operations (create, list, etc.)
+ *
+ * @example
+ * ```typescript
+ * const adapter = new CodespacesAdapter();
+ * await adapter.ensureAuth({ kind: "pat", token: "ghp_..." });
+ *
+ * const codespace = await adapter.create({
+ *   repo: { owner: "airnub-labs", repo: "devcontainers-catalog" },
+ *   displayName: "My Workspace",
+ *   machine: "standardLinux32gb",
+ *   ports: [{ port: 3000, visibility: "private", label: "App" }]
+ * });
+ * ```
+ *
+ * @see {@link makeCodespacesAdapter} for the factory function
+ * @see {@link ICodespacesAdapter} for the interface contract
+ * @public
+ */
 export class CodespacesAdapter implements ICodespacesAdapter {
   private client?: GithubClient;
   private baseUrl?: string;
 
+  /**
+   * Authenticates the adapter with GitHub.
+   *
+   * Must be called before any other methods. Supports:
+   * - Personal Access Token (PAT)
+   * - GitHub App installation tokens
+   *
+   * @param auth - Authentication credentials
+   * @param opts - Optional configuration overrides
+   * @param opts.baseUrl - Custom GitHub API URL (for Enterprise)
+   * @returns Promise that resolves when authentication succeeds
+   * @throws {Error} When authentication fails
+   *
+   * @example
+   * ```typescript
+   * // PAT authentication
+   * await adapter.ensureAuth({ kind: "pat", token: process.env.GITHUB_TOKEN! });
+   *
+   * // GitHub App authentication
+   * import { readFileSync } from "node:fs";
+   * await adapter.ensureAuth({
+   *   kind: "github-app",
+   *   appId: 123456,
+   *   installationId: 789012,
+   *   privateKeyPem: readFileSync("private-key.pem", "utf8")
+   * });
+   * ```
+   */
   async ensureAuth(auth: AuthMode, opts?: { baseUrl?: string }) {
     const { octokit, baseUrl } = await makeOctokit(auth, opts);
     this.client = new GithubClient(octokit);
@@ -29,22 +89,73 @@ export class CodespacesAdapter implements ICodespacesAdapter {
     return this.client;
   }
 
+  /**
+   * Lists codespaces accessible to the authenticated user.
+   *
+   * @param params - Optional filters
+   * @param params.owner - Filter by repository owner
+   * @param params.repo - Filter by repository name
+   * @param params.state - Filter by state ("available", "stopped", etc.)
+   * @returns Array of codespace info objects
+   * @throws {ValidationError} When not authenticated
+   */
   async listCodespaces(params?: { owner?: string; repo?: string; state?: string }) {
     return this.assertClient().listCodespaces(params);
   }
 
+  /**
+   * Retrieves a codespace by its name.
+   *
+   * @param name - Codespace name (e.g., `airnub-devcontainers-main-abc123`)
+   * @returns Codespace info or `null` if not found
+   * @throws {ValidationError} When not authenticated
+   */
   async getCodespaceByName(name: string) {
     return this.assertClient().getCodespaceByName(name);
   }
 
+  /**
+   * Retrieves a codespace by its ID or name.
+   *
+   * Alias for {@link CodespacesAdapter.getCodespaceByName | getCodespaceByName}
+   * for convenience when the identifier type is ambiguous.
+   *
+   * @param id - Codespace ID or name
+   * @returns Codespace info or `null` if not found
+   * @throws {ValidationError} When not authenticated
+   */
   async getCodespace(id: string) {
     return this.assertClient().getCodespace(id);
   }
 
+  /**
+   * Lists available machine types for a repository.
+   *
+   * Machine types determine the CPU, memory, and storage available to the codespace.
+   * Use this to present a dropdown of supported options before creation.
+   *
+   * @param repo - Repository reference
+   * @returns Array of machine type names
+   * @throws {ValidationError} When not authenticated
+   */
   async listMachines(repo: RepoRef) {
     return this.assertClient().listRepoMachines(repo);
   }
 
+  /**
+   * Plans a codespace creation by validating inputs and returning actions.
+   *
+   * This is a dry-run method that checks:
+   * - Whether the machine type is available for the repository
+   * - Whether the devcontainer path exists
+   * - Whether `schoolMode` conflicts with port visibility settings
+   *
+   * Use this to preview operations before calling {@link CodespacesAdapter.create | create}.
+   *
+   * @param req - Codespace creation request
+   * @returns Plan with actions and validation notes
+   * @throws {ValidationError} When not authenticated
+   */
   async planCreate(req: CreateCodespaceRequest): Promise<Plan> {
     const client = this.assertClient();
     const notes: Plan["notes"] = [];
@@ -84,6 +195,19 @@ export class CodespacesAdapter implements ICodespacesAdapter {
     return { actions, notes };
   }
 
+  /**
+   * Creates a new GitHub Codespace.
+   *
+   * This method:
+   * 1. Creates the codespace via the GitHub API
+   * 2. Polls until the codespace is ready or stopped
+   * 3. Applies port visibility settings if provided
+   * 4. Returns the final codespace state
+   *
+   * @param req - Codespace creation request
+   * @returns Created codespace information
+   * @throws {ValidationError} When GitHub does not return a codespace name or the adapter is not authenticated
+   */
   async create(req: CreateCodespaceRequest): Promise<CodespaceInfo> {
     const client = this.assertClient();
     const response = await client.createCodespace({
@@ -122,12 +246,25 @@ export class CodespacesAdapter implements ICodespacesAdapter {
     return finalState;
   }
 
+  /**
+   * Stops a running codespace.
+   *
+   * @param target - Codespace identifier (name or id)
+   * @throws {ValidationError} When neither name nor id is provided or the adapter is not authenticated
+   */
   async stop(target: { id?: string; name?: string }): Promise<void> {
     const name = target.name ?? target.id;
     if (!name) throw new ValidationError("codespace name or id required");
     await this.assertClient().stop(name);
   }
 
+  /**
+   * Starts a stopped codespace and waits for it to become available.
+   *
+   * @param target - Codespace identifier
+   * @returns Updated codespace information
+   * @throws {ValidationError} When neither name nor id is provided or the adapter is not authenticated
+   */
   async start(target: { id?: string; name?: string }): Promise<CodespaceInfo> {
     const name = target.name ?? target.id;
     if (!name) throw new ValidationError("codespace name or id required");
@@ -148,12 +285,25 @@ export class CodespacesAdapter implements ICodespacesAdapter {
     return fallback;
   }
 
+  /**
+   * Permanently deletes a codespace.
+   *
+   * @param target - Codespace identifier
+   * @throws {ValidationError} When neither name nor id is provided or the adapter is not authenticated
+   */
   async delete(target: { id?: string; name?: string }): Promise<void> {
     const name = target.name ?? target.id;
     if (!name) throw new ValidationError("codespace name or id required");
     await this.assertClient().delete(name);
   }
 
+  /**
+   * Updates port visibility and labels for a codespace.
+   *
+   * @param target - Codespace identifier
+   * @param ports - Array of port configurations
+   * @throws {ValidationError} When neither name nor id is provided or the adapter is not authenticated
+   */
   async setPorts(target: { id?: string; name?: string }, ports: PortRequest[]): Promise<void> {
     const name = target.name ?? target.id;
     if (!name) throw new ValidationError("codespace name or id required");
@@ -165,6 +315,17 @@ export class CodespacesAdapter implements ICodespacesAdapter {
     }
   }
 
+  /**
+   * Sets encrypted secrets for codespaces.
+   *
+   * Secrets are encrypted using libsodium and the repository/org/user public key
+   * before being sent to GitHub.
+   *
+   * @param scope - Secret scope
+   * @param entries - Key-value pairs of secret names and values
+   * @param ctx - Context for repo or org secrets
+   * @throws {ValidationError} When required context is missing or the adapter is not authenticated
+   */
   async setSecrets(scope: "repo" | "org" | "user", entries: Record<string, string>, ctx?: { repo?: RepoRef; org?: string }) {
     const client = this.assertClient();
     const items = Object.entries(entries);
@@ -198,6 +359,13 @@ export class CodespacesAdapter implements ICodespacesAdapter {
     }
   }
 
+  /**
+   * Gets the web URL for a codespace.
+   *
+   * @param target - Codespace identifier
+   * @returns Full HTTPS URL to access the codespace in a browser
+   * @throws {ValidationError} When the codespace cannot be found or the adapter is not authenticated
+   */
   async openUrl(target: { id?: string; name?: string }): Promise<string> {
     const name = target.name ?? target.id;
     if (!name) throw new ValidationError("codespace name or id required");
@@ -207,6 +375,19 @@ export class CodespacesAdapter implements ICodespacesAdapter {
   }
 }
 
+/**
+ * Creates a new {@link CodespacesAdapter} instance.
+ *
+ * @returns A fresh adapter instance (not authenticated)
+ *
+ * @example
+ * ```typescript
+ * import { makeCodespacesAdapter } from "@airnub/sdk-codespaces-adapter";
+ *
+ * const adapter = makeCodespacesAdapter();
+ * await adapter.ensureAuth({ kind: "pat", token: process.env.GITHUB_TOKEN! });
+ * ```
+ */
 export function makeCodespacesAdapter(): ICodespacesAdapter {
   return new CodespacesAdapter();
 }
