@@ -82,7 +82,7 @@ function parseKeyValue(values: string[] | undefined): Record<string, string> {
 }
 
 async function withAdapter<T>(opts: GlobalAuthOptions, fn: (adapter: ReturnType<typeof makeCodespacesAdapter>) => Promise<T>) {
-  const adapter = makeCodespacesAdapter({ baseUrl: opts.apiUrl });
+  const adapter = makeCodespacesAdapter();
   const auth = resolveAuth();
   await adapter.ensureAuth(auth, { baseUrl: opts.apiUrl });
   return fn(adapter);
@@ -194,8 +194,13 @@ export function registerCodespacesCommands(program: Command): void {
             console.log(` - ${color(note.level.toUpperCase())}: ${note.message}`);
           }
         }
-        if (!plan.actions.length) {
+        if (plan.notes.some((note) => note.level === "error")) {
           console.error(chalk.red("Plan contains errors; creation skipped."));
+          process.exitCode = 1;
+          return;
+        }
+        if (!plan.actions.length) {
+          console.error(chalk.red("Plan did not contain executable actions."));
           process.exitCode = 1;
           return;
         }

@@ -19,10 +19,9 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js"
   },
-  "dependencies": {
-    "@types/node": "^20.12.12"
-  },
+  "dependencies": {},
   "devDependencies": {
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "@types/node": "^20.12.12"
   }
 }

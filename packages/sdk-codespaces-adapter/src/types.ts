@@ -5,6 +5,7 @@ export type AuthMode =
 export type RepoRef = { owner: string; repo: string; ref?: string };
 export type Region = string;
 export type PortVisibility = "private" | "org" | "public";
+export type PortRequest = { port: number; visibility: PortVisibility; label?: string };
 
 export type CreateCodespaceRequest = {
   repo: RepoRef;
@@ -16,7 +17,7 @@ export type CreateCodespaceRequest = {
   retentionPeriodMinutes?: number;
   environmentVariables?: Record<string, string>;
   secrets?: Record<string, string>;
-  ports?: Array<{ port: number; visibility: PortVisibility; label?: string }>;
+  ports?: PortRequest[];
   startImmediately?: boolean;
   schoolMode?: boolean;
 };
@@ -37,7 +38,7 @@ export type PlanNote = { level: "info" | "warn" | "error"; message: string };
 export type Plan = {
   actions: Array<
     | { op: "create-codespace"; req: CreateCodespaceRequest }
-    | { op: "update-ports"; req: Array<{ port:number; visibility: PortVisibility; label?: string }>; target: { id?: string; name?: string } }
+    | { op: "update-ports"; req: PortRequest[]; target: { id?: string; name?: string } }
     | { op: "stop-codespace"; target: { id?: string; name?: string } }
     | { op: "start-codespace"; target: { id?: string; name?: string } }
     | { op: "delete-codespace"; target: { id?: string; name?: string } }
@@ -57,7 +58,7 @@ export interface ICodespacesAdapter {
   stop(target: { id?: string; name?: string }): Promise<void>;
   start(target: { id?: string; name?: string }): Promise<CodespaceInfo>;
   delete(target: { id?: string; name?: string }): Promise<void>;
-  setPorts(target: { id?: string; name?: string }, ports: Array<{ port:number; visibility: PortVisibility; label?: string }>): Promise<void>;
+  setPorts(target: { id?: string; name?: string }, ports: PortRequest[]): Promise<void>;
   setSecrets(scope: "repo" | "org" | "user", entries: Record<string,string>, ctx?: { repo?: RepoRef; org?: string }): Promise<void>;
   openUrl(target: { id?: string; name?: string }): Promise<string>;
 }

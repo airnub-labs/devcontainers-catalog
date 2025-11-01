@@ -33,7 +33,11 @@ export async function runGh(args: string[], opts?: { env?: NodeJS.ProcessEnv; ti
     });
     child.on("error", (error: unknown) => {
       if (timer) clearTimeout(timer);
-      reject(new GhError(`failed to spawn gh: ${String(error)}`));
+      const hint =
+        process.platform === "win32"
+          ? "Install GitHub CLI from https://cli.github.com/ and ensure gh.exe is on PATH."
+          : "Install GitHub CLI (https://cli.github.com/) and ensure 'gh' is on PATH.";
+      reject(new GhError(`Failed to spawn 'gh'. ${hint} Error: ${String(error)}`));
     });
     child.on("close", (code: number | null) => {
       if (timer) clearTimeout(timer);
