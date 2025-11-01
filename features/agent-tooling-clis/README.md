@@ -19,11 +19,15 @@ Installs coding-agent client CLIs for Codex, Claude, and Gemini using the first 
 | `installCodex` | boolean | `true` | Install the Codex CLI (`@openai/codex`). |
 | `installClaude` | boolean | `false` | Install the Claude CLI (`@anthropic-ai/claude-code`). |
 | `installGemini` | boolean | `false` | Install the Gemini CLI (`@google/gemini-cli`). |
-| `codexVersion` | string | `"latest"` | Version/tag for the Codex CLI (`@openai/codex`). |
-| `claudeVersion` | string | `"latest"` | Version/tag for the Claude CLI (`@anthropic-ai/claude-code`). |
-| `geminiVersion` | string | `"latest"` | Version/tag for the Gemini CLI (`@google/gemini-cli`). |
+| `codexVersion` | string | `"0.4.0"` | Version/tag for the Codex CLI (`@openai/codex`). |
+| `claudeVersion` | string | `"0.3.2"` | Version/tag for the Claude CLI (`@anthropic-ai/claude-code`). |
+| `geminiVersion` | string | `"0.2.1"` | Version/tag for the Gemini CLI (`@google/gemini-cli`). |
+| `cacheDir` | string | `""` | Directory containing cached npm tarballs for enabled CLIs. |
+| `offline` | boolean | `false` | Skip registry lookups; requires tarballs within `cacheDir`. |
 
 The feature skips installation if a CLI binary is already on the `PATH` or if neither `pnpm` nor `npm` is available.
+
+When `offline` is enabled the installer attempts to source tarballs named `<scope>-<name>-<version>.tgz` (the default naming used by `npm pack`). Place these under `cacheDir` prior to building the dev container; missing artifacts trigger a failure rather than falling back to the public registry.
 
 ## Project-scoped MCP wiring
 

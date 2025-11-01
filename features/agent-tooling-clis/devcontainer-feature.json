@@ -22,18 +22,28 @@
     },
     "codexVersion": {
       "type": "string",
-      "default": "latest",
+      "default": "0.4.0",
       "description": "Version (semver or tag) of the Codex CLI to install."
     },
     "claudeVersion": {
       "type": "string",
-      "default": "latest",
+      "default": "0.3.2",
       "description": "Version (semver or tag) of the Claude CLI to install."
     },
     "geminiVersion": {
       "type": "string",
-      "default": "latest",
+      "default": "0.2.1",
       "description": "Version (semver or tag) of the Gemini CLI to install."
+    },
+    "cacheDir": {
+      "type": "string",
+      "default": "",
+      "description": "Directory containing cached npm tarballs for the selected CLIs."
+    },
+    "offline": {
+      "type": "boolean",
+      "default": false,
+      "description": "Block network fetches; requires cacheDir tarballs for each enabled CLI."
     }
   },
   "installsAfter": [

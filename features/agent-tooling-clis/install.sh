@@ -7,10 +7,23 @@ INSTALL_GEMINI="${INSTALLGEMINI:-false}"
 VERSION_CODEX="${CODEXVERSION:-latest}"
 VERSION_CLAUDE="${CLAUDEVERSION:-latest}"
 VERSION_GEMINI="${GEMINIVERSION:-latest}"
+CACHE_DIR="${CACHEDIR:-}"
+OFFLINE="${OFFLINE:-false}"
 FEATURE_DIR="/usr/local/share/devcontainer/features/agent-tooling-clis"
 LAST_INSTALLED_VERSION=""
 
 mkdir -p "${FEATURE_DIR}"
+
+is_truthy() {
+    case "${1:-}" in
+        1|[Tt][Rr][Uu][Ee]|[Yy][Ee][Ss])
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
 
 trim_first_line() {
     python3 - <<'PYTHON'
@@ -38,6 +51,11 @@ resolve_latest_version() {
     local preferred="${2:-}"
     local version=""
     local result=""
+
+    if is_truthy "${OFFLINE}"; then
+        echo "[agent-tooling-clis] Cannot resolve latest version of ${package} while offline. Specify an explicit version or provide a cached tarball." >&2
+        return 1
+    fi
 
     if [ "${preferred}" = "pnpm" ] && command -v pnpm >/dev/null 2>&1; then
         result=$(pnpm view "${package}" version 2>/dev/null || true)
@@ -129,7 +147,9 @@ install_cli() {
 
     local desired_version="${requested_version}"
     if [ -z "${desired_version}" ]; then
-        desired_version=$(resolve_latest_version "${package}" "${manager}")
+        if ! desired_version=$(resolve_latest_version "${package}" "${manager}"); then
+            return 1
+        fi
     fi
 
     local installed_version
@@ -164,15 +184,33 @@ install_cli() {
 
     local target="${package}"
     local install_success="false"
+    local version_to_install=""
+    if [ -n "${desired_version}" ]; then
+        version_to_install="${desired_version}"
+    elif [ -n "${requested_version}" ]; then
+        version_to_install="${requested_version}"
+    fi
+
+    local tarball_path=""
+    if [ -n "${version_to_install}" ] && [ -n "${CACHE_DIR}" ]; then
+        local sanitized
+        sanitized="${package#@}"
+        sanitized="${sanitized//\//-}"
+        local tarball_name="${sanitized}-${version_to_install}.tgz"
+        local candidate="${CACHE_DIR%/}/${tarball_name}"
+        if [ -f "${candidate}" ]; then
+            tarball_path="${candidate}"
+        fi
+    fi
 
     if [ "${needs_install}" = "true" ]; then
-        local version_to_install="${desired_version}"
-        if [ -z "${version_to_install}" ] && [ -n "${requested_version}" ]; then
-            version_to_install="${requested_version}"
-        fi
-
-        if [ -n "${version_to_install}" ]; then
+        if [ -n "${tarball_path}" ]; then
+            target="${tarball_path}"
+        elif [ -n "${version_to_install}" ]; then
             target="${package}@${version_to_install}"
+        elif is_truthy "${OFFLINE}"; then
+            echo "[agent-tooling-clis] Offline mode enabled but no cached tarball found for ${package}." >&2
+            return 1
         fi
 
         local installer=( )
