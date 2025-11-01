@@ -73,7 +73,8 @@ export async function generatePresetBuildContext(opts: GeneratePresetOptions) {
 
   const existingExtensions = ensureArray(devcontainer.customizations?.vscode?.extensions);
   const extraExtensions = ensureArray(manifest.spec.vscode_extensions);
-  const mergedExtensions = Array.from(new Set([...existingExtensions, ...extraExtensions]));
+  const copilotExtensions = manifest.spec.enable_copilot ? ["github.copilot", "github.copilot-chat"] : [];
+  const mergedExtensions = Array.from(new Set([...existingExtensions, ...extraExtensions, ...copilotExtensions]));
 
   const existingSettings = devcontainer.customizations?.vscode?.settings ?? {};
   const mergedSettings = {
@@ -164,7 +165,12 @@ export async function generateWorkspaceScaffold(opts: GenerateScaffoldOptions) {
           "remote.downloadExtensionsLocally": "always",
           ...(manifest.spec.settings ?? {}),
         },
-        extensions: ensureArray(manifest.spec.vscode_extensions),
+        extensions: Array.from(
+          new Set([
+            ...ensureArray(manifest.spec.vscode_extensions),
+            ...(manifest.spec.enable_copilot ? ["github.copilot", "github.copilot-chat"] : []),
+          ]),
+        ),
       },
     },
   };
