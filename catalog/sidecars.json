@@ -27,6 +27,11 @@
       "purpose": "web-desktop",
       "recommendedPrivacy": "PRIVATE",
       "notes": "Full Linux desktop in the browser backed by LinuxServer's Webtop.",
+      "usage": {
+        "summary": "LinuxServer.io Webtop follows the upstream image terms; review licensing expectations before sharing with students.",
+        "url": "https://github.com/linuxserver/docker-webtop#license",
+        "docs": "docs/sidecars.md#linuxserver-webtop"
+      },
       "health": {
         "method": "http",
         "port": 3000,
@@ -66,6 +71,11 @@
       "purpose": "neko-ui",
       "recommendedPrivacy": "PRIVATE",
       "notes": "Browser-based desktop streaming for Chrome (WebRTC TCP mux; UDP disabled on Codespaces).",
+      "usage": {
+        "summary": "Neko is maintained upstream by m1k1o; review the project's licence before redistributing the sidecar.",
+        "url": "https://github.com/m1k1o/neko/blob/master/LICENSE",
+        "docs": "docs/sidecars.md#neko-browser-sidecars"
+      },
       "health": {
         "method": "http",
         "port": 8080,
@@ -96,6 +106,11 @@
       "purpose": "neko-ui-firefox",
       "recommendedPrivacy": "PRIVATE",
       "notes": "Browser-based desktop streaming for Firefox (experimental remote debugging support).",
+      "usage": {
+        "summary": "Neko is maintained upstream by m1k1o; review the project's licence before redistributing the sidecar.",
+        "url": "https://github.com/m1k1o/neko/blob/master/LICENSE",
+        "docs": "docs/sidecars.md#neko-browser-sidecars"
+      },
       "health": {
         "method": "http",
         "port": 8081,
@@ -126,6 +141,11 @@
       "purpose": "kasm-ui",
       "recommendedPrivacy": "PRIVATE",
       "notes": "Webtop experience with Chrome via HTTPS (Kasm Workspaces CE licence applies).",
+      "usage": {
+        "summary": "Kasm Workspaces Community Edition licence applies; accept upstream terms before distribution.",
+        "url": "https://www.kasmweb.com/kasm-workspaces-license",
+        "docs": "docs/sidecars.md#kasm-chrome"
+      },
       "health": {
         "method": "http",
         "scheme": "https",

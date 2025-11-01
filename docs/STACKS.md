@@ -5,6 +5,8 @@
 - `stack-nextjs-supabase-browsers`
 - `stack-web-node-supabase-webtop`
 
+> **Heads-up:** Third-party desktop sidecars (Neko, Kasm, LinuxServer Webtop) ship with their own usage terms. Review [docs/sidecars.md](./sidecars.md) while planning stacks that include them.
+
 ## Options to standardize
 - `guiProvider`: `webtop` | `novnc`
 - `chromeCdpPort`: default 9222

@@ -2,6 +2,8 @@
 
 Multi-container template featuring a headless development container plus a `linuxserver/webtop` sidecar for touch-friendly Chrome debugging. Template options let you:
 
+> **Usage terms:** Review [docs/sidecars.md#linuxserver-webtop](../../docs/sidecars.md#linuxserver-webtop) before bundling Webtop in a classroom workspace.
+
 - Pick whether the webtop mounts managed Chrome policies (`policyMode`).
 - Override the policy file that gets mounted via `chromePolicies` (leave blank to follow the selected policy mode).
 - Adjust the forwarded desktop port (`webtopPort`).
