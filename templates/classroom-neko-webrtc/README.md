@@ -2,6 +2,8 @@
 
 This template runs a **full graphical Chrome** in a sidecar using **Neko** and streams it to the browser via **WebRTC**.
 
+> **Usage terms:** Review [docs/sidecars.md#neko-browser-sidecars](../../docs/sidecars.md#neko-browser-sidecars) before distributing Neko-powered classrooms.
+
 - **Works in Codespaces (TCP-mux)** and locally (UDP recommended).
 - Default is **TCP-only** for maximum compatibility (Codespaces’ port proxy is TCP/HTTPS).
 - Add STUN/TURN to improve NAT traversal for home networks.

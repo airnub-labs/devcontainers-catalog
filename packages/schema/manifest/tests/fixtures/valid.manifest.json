@@ -36,6 +36,15 @@
   "notes": {
     "prefersUDP": false,
     "codespacesFallback": "tcp-mux",
-    "other": "Ensure private ports remain private unless testing"
+    "other": "Ensure private ports remain private unless testing",
+    "thirdPartyLicences": [
+      {
+        "id": "neko-chrome",
+        "label": "Neko Chrome (WebRTC)",
+        "summary": "Review upstream licensing before redistribution.",
+        "docs": "docs/sidecars.md#neko-browser-sidecars",
+        "url": "https://github.com/m1k1o/neko/blob/master/LICENSE"
+      }
+    ]
   }
 }

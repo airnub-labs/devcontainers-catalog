@@ -139,6 +139,7 @@ export const BROWSER_SIDECARS: BrowserSidecar[] = [
     requiredEnv: ["NEKO_USER_PASSWORD", "NEKO_ADMIN_PASSWORD"],
     notes: [
       "Set NEKO_USER_PASSWORD and NEKO_ADMIN_PASSWORD via containerEnv or secrets before sharing a workspace.",
+      "Review Neko usage terms before distribution: docs/sidecars.md#neko-browser-sidecars.",
     ],
     compatibility: {
       codespaces: {
@@ -164,6 +165,7 @@ export const BROWSER_SIDECARS: BrowserSidecar[] = [
     notes: [
       "Firefox remote debugging support is experimental; use --include-experimental to enable.",
       "Set NEKO_FF_USER_PASSWORD and NEKO_FF_ADMIN_PASSWORD via containerEnv or secrets before sharing a workspace.",
+      "Review Neko usage terms before distribution: docs/sidecars.md#neko-browser-sidecars.",
     ],
     compatibility: {
       codespaces: {
@@ -184,7 +186,10 @@ export const BROWSER_SIDECARS: BrowserSidecar[] = [
       6901: { label: "Kasm Chrome (HTTPS)", onAutoForward: "openBrowser" },
     },
     requiredEnv: ["KASM_VNC_PW"],
-    notes: ["Accept the Kasm Workspaces CE licence and set KASM_VNC_PW before distribution."],
+    notes: [
+      "Accept the Kasm Workspaces CE licence and set KASM_VNC_PW before distribution.",
+      "Usage guidance: docs/sidecars.md#kasm-chrome.",
+    ],
   },
 ];
 

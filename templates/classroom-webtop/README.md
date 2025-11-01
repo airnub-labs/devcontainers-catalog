@@ -2,6 +2,8 @@
 
 This template pairs the standard catalog devcontainer image with the `linuxserver/webtop` sidecar so students can access a full desktop over the browser.
 
+> **Usage terms:** Review [docs/sidecars.md#linuxserver-webtop](../../docs/sidecars.md#linuxserver-webtop) before sharing this sidecar with students.
+
 ## Services
 
 - `devcontainer` — Codespaces-compatible workspace container using the catalog base image.

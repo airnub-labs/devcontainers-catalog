@@ -2,6 +2,8 @@
 
 Full Firefox browser delivered via [Neko](https://github.com/m1k1o/neko) with TCP mux defaults for Codespaces-friendly WebRTC.
 
+> **Usage terms:** Review [docs/sidecars.md#neko-browser-sidecars](../../docs/sidecars.md#neko-browser-sidecars) before distributing Neko Firefox to students.
+
 - **Web UI** on port **8081** (auto-opened when forwarded)
 - **TCP mux** on port **59010** (silent forward; required for Codespaces)
 - Optional UDP mux for local acceleration (commented)
