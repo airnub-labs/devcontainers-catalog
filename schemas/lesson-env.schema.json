@@ -33,6 +33,10 @@
           "default": "ubuntu-24.04"
         },
         "vscode_extensions": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "enable_copilot": {
+          "type": "boolean",
+          "description": "When true, adds the GitHub Copilot and Copilot Chat extensions to the generated devcontainer."
+        },
         "settings": { "type": "object", "additionalProperties": true },
         "features": {
           "type": "object",
