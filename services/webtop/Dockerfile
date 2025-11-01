@@ -3,7 +3,7 @@ WORKDIR /src
 COPY packages/sidecar-agent/package.json packages/sidecar-agent/tsconfig.json ./sidecar-agent/
 COPY packages/sidecar-agent/src ./sidecar-agent/src
 WORKDIR /src/sidecar-agent
-RUN npm install && npm run build
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi && npm run build
 
 FROM ghcr.io/linuxserver/webtop:ubuntu-mate
 
