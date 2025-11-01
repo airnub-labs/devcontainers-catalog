@@ -1,15 +1,14 @@
 {
   "name": "@airnub/sdk-codespaces-adapter",
   "version": "0.1.0",
-  "description": "Thin typed SDK for managing GitHub Codespaces for Comhrá lesson scaffolding.",
   "license": "Apache-2.0",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     }
   },
   "scripts": {
@@ -17,16 +16,13 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@octokit/auth-app": "^6.1.3",
-    "@octokit/request": "^8.4.0",
     "@octokit/rest": "^20.1.1",
-    "@types/node": "^20.12.12",
-    "debug": "^4.3.7",
-    "tweetsodium": "^0.0.5"
+    "@octokit/auth-app": "^6.0.6",
+    "libsodium-wrappers": "^0.7.13"
   },
   "devDependencies": {
-    "nock": "^13.5.4",
     "typescript": "^5.6.3",
-    "vitest": "^1.6.0"
+    "vitest": "^2.1.4",
+    "nock": "^13.5.4"
   }
 }

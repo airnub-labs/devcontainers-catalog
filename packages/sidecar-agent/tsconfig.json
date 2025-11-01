@@ -1,0 +1,9 @@
+{
+  "extends": "../sdk-codespaces-adapter/tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist"]
+}
