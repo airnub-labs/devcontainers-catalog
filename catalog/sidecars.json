@@ -10,13 +10,13 @@
       "recommendedPrivacy": "PRIVATE",
       "notes": "Browser-based desktop streaming for Chrome (WebRTC TCP mux; UDP disabled on Codespaces).",
       "health": {
-        "method": "http-or-tcp",
+        "method": "http",
         "port": 8080,
         "path": "/",
-        "interval": 10,
-        "timeout": 3,
+        "interval": "10s",
+        "timeout": "3s",
         "retries": 5,
-        "startPeriod": 20
+        "start_period": "20s"
       },
       "env": [
         {
@@ -40,13 +40,13 @@
       "recommendedPrivacy": "PRIVATE",
       "notes": "Browser-based desktop streaming for Firefox (experimental remote debugging support).",
       "health": {
-        "method": "http-or-tcp",
+        "method": "http",
         "port": 8081,
         "path": "/",
-        "interval": 10,
-        "timeout": 3,
+        "interval": "10s",
+        "timeout": "3s",
         "retries": 5,
-        "startPeriod": 20
+        "start_period": "20s"
       },
       "env": [
         {
@@ -64,19 +64,19 @@
     {
       "id": "kasm-chrome",
       "image": "kasmweb/chrome:1.17.0",
-      "defaultPort": 8443,
+      "defaultPort": 6901,
       "label": "Kasm Chrome HTTPS",
       "purpose": "kasm-ui",
       "recommendedPrivacy": "PRIVATE",
       "notes": "Webtop experience with Chrome via HTTPS (Kasm Workspaces CE licence applies).",
       "health": {
-        "method": "http-or-tcp",
-        "port": 8443,
+        "method": "http",
+        "port": 6901,
         "path": "/",
-        "interval": 15,
-        "timeout": 5,
+        "interval": "15s",
+        "timeout": "5s",
         "retries": 6,
-        "startPeriod": 30
+        "start_period": "30s"
       },
       "env": [
         {

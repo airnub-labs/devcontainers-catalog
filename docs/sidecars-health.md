@@ -12,6 +12,18 @@ Docker healthchecks give the orchestrator a consistent indicator for whether a b
 
 The probes are intentionally minimal: BusyBox `wget`/`nc` when available, otherwise `/dev/tcp/` fallbacks. No background metrics agents or Prometheus exporters are introduced.
 
+## Probe summary
+
+| Sidecar | Probe | Notes |
+|---------|-------|-------|
+| `neko-chrome`, `neko-firefox` | HTTP `GET /` on `8080`/`8081` | Tries `wget`, then `curl`, then `nc`, finally `/dev/tcp` so the probe works even if one tool is missing. |
+| `kasm-chrome` | HTTPS `GET /` on `6901` | Uses `wget --no-check-certificate` then `curl -k` before falling back to TCP connect. |
+| `webtop` | HTTP `GET /` on container port `3000` | Same HTTP → TCP fallback chain as the Neko probes. |
+| `novnc` | HTTP `GET /` on `6080` | Same HTTP → TCP fallback chain. |
+| `redis` | `redis-cli ping` expecting `PONG` | Falls back to TCP `6379` via `nc` or `/dev/tcp` when the CLI is unavailable. |
+
+Every emitted `healthcheck` uses Compose `CMD-SHELL` arrays so we can express these fallback chains without installing additional packages.
+
 ## Using the status scripts
 
 After the devcontainer service starts, the `postStartCommand` runs `./scripts/sidecars-status.sh`. You can invoke it manually at any time:
@@ -43,9 +55,9 @@ Because browser sidecars run in sibling containers, the **Process** column in th
 
 ## Adding new sidecars
 
-1. Extend `catalog/sidecars.json` with the container image, default port, and `health` metadata.
-2. Update any template compose files to include a matching `healthcheck` (HTTP preferred, TCP fallback).
-3. Ensure the devcontainer mounts the Docker socket and calls the status script.
+1. Extend `catalog/sidecars.json` with the container image, default port, and `health` metadata (set `method` to `http`, `tcp`, `cmd`, or `postgres` and include ports/commands as needed).
+2. Run the catalog generator to update affected templates; it injects the correct Compose `healthcheck` stanza plus port labels automatically.
+3. Ensure the devcontainer mounts the Docker socket and calls the status script (the generator handles this for new stacks).
 4. Run `npm test` inside `tools/catalog-generator` to verify the generator emits the new health wiring.
 
 All sidecars should remain cheap to probe and must not rely on heavy instrumentation stacks.

@@ -24,7 +24,7 @@ services:
     volumes:
       - redis-data:/data
     healthcheck:
-      test: ["CMD", "sh", "-c", "(redis-cli ping | grep -q PONG) || (nc -z localhost 6379)"]
+      test: ["CMD-SHELL", "((command -v redis-cli >/dev/null 2>&1 && redis-cli ping | grep -q PONG) || (command -v nc >/dev/null 2>&1 && nc -z localhost 6379) || (echo >/dev/tcp/localhost/6379))"]
       interval: 10s
       timeout: 3s
       retries: 5
@@ -43,7 +43,7 @@ services:
       - "${WEBTOP_PORT:-3001}:3000"
     shm_size: "2gb"
     healthcheck:
-      test: ["CMD", "sh", "-c", "(wget -qO- http://localhost:3000/ >/dev/null 2>&1) || (nc -z localhost 3000)"]
+      test: ["CMD-SHELL", "((wget -qO- http://localhost:3000/ >/dev/null 2>&1) || (curl -fsS http://localhost:3000/ >/dev/null 2>&1) || (command -v nc >/dev/null 2>&1 && nc -z localhost 3000) || (echo >/dev/tcp/localhost/3000))"]
       interval: 10s
       timeout: 3s
       retries: 5
@@ -55,7 +55,7 @@ services:
     ports:
       - "${NOVNC_PORT:-6080}:6080"
     healthcheck:
-      test: ["CMD", "sh", "-c", "(wget -qO- http://localhost:6080/ >/dev/null 2>&1) || (nc -z localhost 6080)"]
+      test: ["CMD-SHELL", "((wget -qO- http://localhost:6080/ >/dev/null 2>&1) || (curl -fsS http://localhost:6080/ >/dev/null 2>&1) || (command -v nc >/dev/null 2>&1 && nc -z localhost 6080) || (echo >/dev/tcp/localhost/6080))"]
       interval: 10s
       timeout: 3s
       retries: 5

@@ -25,7 +25,7 @@ services:
     environment:
       VNC_PW: "${KASM_VNC_PW:-student}"
     healthcheck:
-      test: ["CMD", "sh", "-c", "(wget --no-check-certificate -qO- https://localhost:6901/ >/dev/null 2>&1) || (nc -z localhost 6901)"]
+      test: ["CMD-SHELL", "((wget --no-check-certificate -qO- https://localhost:6901/ >/dev/null 2>&1) || (curl -kfsS https://localhost:6901/ >/dev/null 2>&1) || (command -v nc >/dev/null 2>&1 && nc -z localhost 6901) || (echo >/dev/tcp/localhost/6901))"]
       interval: 15s
       timeout: 5s
       retries: 6

@@ -33,7 +33,7 @@ services:
     # environment:
     #   NEKO_WEBRTC_UDPMUX: "59010"
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:8081/ || exit 1"]
+      test: ["CMD-SHELL", "((wget -qO- http://localhost:8081/ >/dev/null 2>&1) || (curl -fsS http://localhost:8081/ >/dev/null 2>&1) || (command -v nc >/dev/null 2>&1 && nc -z localhost 8081) || (echo >/dev/tcp/localhost/8081))"]
       interval: 10s
       timeout: 3s
       retries: 10

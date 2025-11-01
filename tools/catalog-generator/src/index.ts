@@ -23,16 +23,19 @@ interface SidecarEnvEntry {
   required?: boolean;
 }
 
-type HealthMethod = 'http' | 'tcp' | 'http-or-tcp';
+type HealthMethod = 'http' | 'tcp' | 'cmd' | 'postgres';
 
 interface SidecarHealth {
-  method: HealthMethod;
+  method: HealthMethod | 'http-or-tcp';
   port?: number;
   path?: string;
-  interval?: number;
-  timeout?: number;
+  cmd?: string[];
+  expect?: string;
+  interval?: string | number;
+  timeout?: string | number;
   retries?: number;
-  startPeriod?: number;
+  start_period?: string | number;
+  startPeriod?: string | number;
 }
 
 interface SidecarDescriptor {
@@ -51,6 +54,87 @@ interface SidecarRegistryFile {
   sidecars: SidecarDescriptor[];
 }
 
+interface NormalizedSidecarHealth {
+  method: HealthMethod;
+  port?: number;
+  path?: string;
+  cmd?: string[];
+  expect?: string;
+  interval: string;
+  timeout: string;
+  retries: number;
+  start_period?: string;
+}
+
+function toDuration(value: string | number | undefined, fallback: string): string {
+  if (value === undefined || value === null) {
+    return fallback;
+  }
+  if (typeof value === 'number') {
+    return `${value}s`;
+  }
+  return value;
+}
+
+function shellEscape(arg: string): string {
+  if (/^[A-Za-z0-9_\/.=:-]+$/.test(arg)) {
+    return arg;
+  }
+  const escaped = arg.replace(/'/g, "'\"'\"'");
+  return "'" + escaped + "'";
+}
+
+function normalizeHealthDefinition(sidecar: SidecarDescriptor): NormalizedSidecarHealth | undefined {
+  const health = sidecar.health;
+  if (!health) {
+    return undefined;
+  }
+
+  const methodMap: Record<string, HealthMethod> = {
+    http: 'http',
+    tcp: 'tcp',
+    cmd: 'cmd',
+    postgres: 'postgres',
+    'http-or-tcp': 'http'
+  };
+
+  const normalizedMethod = methodMap[health.method];
+  if (!normalizedMethod) {
+    throw new Error(`Unsupported health method for sidecar ${sidecar.id}: ${health.method}`);
+  }
+
+  const retries = health.retries ?? 5;
+  const interval = toDuration(health.interval, '10s');
+  const timeout = toDuration(health.timeout, '3s');
+  const startPeriod = health.start_period ?? health.startPeriod;
+  const normalized: NormalizedSidecarHealth = {
+    method: normalizedMethod,
+    port: health.port,
+    path: health.path,
+    cmd: health.cmd,
+    expect: health.expect,
+    interval,
+    timeout,
+    retries,
+    start_period: startPeriod ? toDuration(startPeriod, '0s') : undefined
+  };
+
+  if (normalized.method === 'cmd') {
+    if (!normalized.cmd || normalized.cmd.length === 0) {
+      throw new Error(`Sidecar ${sidecar.id} health definition requires a cmd array`);
+    }
+  }
+
+  if (normalized.method === 'postgres') {
+    normalized.port = normalized.port ?? sidecar.defaultPort;
+    if (!normalized.port) {
+      throw new Error(`Sidecar ${sidecar.id} postgres healthcheck requires a port`);
+    }
+  }
+
+  return normalized;
+}
+
 function loadSidecarRegistry(): Record<string, SidecarDescriptor> {
   const searchOrder = [
     new URL('../../catalog/sidecars.json', import.meta.url),
@@ -62,7 +146,12 @@ function loadSidecarRegistry(): Record<string, SidecarDescriptor> {
       const filePath = fileURLToPath(candidate);
       const contents = readFileSync(filePath, 'utf-8');
       const parsed = JSON.parse(contents) as SidecarRegistryFile;
-      return Object.fromEntries(parsed.sidecars.map((sidecar) => [sidecar.id, sidecar]));
+      return Object.fromEntries(
+        parsed.sidecars.map((sidecar) => {
+          normalizeHealthDefinition(sidecar);
+          return [sidecar.id, sidecar];
+        })
+      );
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         continue;
@@ -137,37 +226,76 @@ function getSidecar(browserId: string): SidecarDescriptor {
 }
 
 function createHealthcheckBlock(sidecar: SidecarDescriptor): string {
-  const health = sidecar.health;
+  const health = normalizeHealthDefinition(sidecar);
   if (!health) {
     return '';
   }
 
-  const port = health.port ?? sidecar.defaultPort;
-  const path = health.path ?? '/';
-  const interval = health.interval ?? 10;
-  const timeout = health.timeout ?? 3;
-  const retries = health.retries ?? 5;
-  const startPeriod = health.startPeriod;
-
+  const resolvedPort = health.port ?? sidecar.defaultPort;
   let command: string;
+
   switch (health.method) {
-    case 'http':
-      command = `wget -qO- http://localhost:${port}${path} >/dev/null 2>&1`;
+    case 'http': {
+      if (!resolvedPort) {
+        throw new Error(`HTTP healthcheck for sidecar ${sidecar.id} requires a port`);
+      }
+      const path = health.path?.startsWith('/') ? health.path : `/${health.path ?? ''}`;
+      command = `((wget -qO- http://localhost:${resolvedPort}${path} >/dev/null 2>&1) || (curl -fsS http://localhost:${resolvedPort}${path} >/dev/null 2>&1) || (command -v nc >/dev/null 2>&1 && nc -z localhost ${resolvedPort}) || (echo >/dev/tcp/localhost/${resolvedPort}))`;
       break;
-    case 'tcp':
-      command = `nc -z localhost ${port}`;
+    }
+    case 'tcp': {
+      if (!resolvedPort) {
+        throw new Error(`TCP healthcheck for sidecar ${sidecar.id} requires a port`);
+      }
+      command = `((command -v nc >/dev/null 2>&1 && nc -z localhost ${resolvedPort}) || (echo >/dev/tcp/localhost/${resolvedPort}))`;
       break;
-    case 'http-or-tcp':
-    default:
-      command = `(wget -qO- http://localhost:${port}${path} >/dev/null 2>&1) || (nc -z localhost ${port})`;
+    }
+    case 'cmd': {
+      if (!health.cmd || health.cmd.length === 0) {
+        throw new Error(`CMD healthcheck for sidecar ${sidecar.id} requires a command`);
+      }
+      const cmdParts = health.cmd;
+      const commandName = cmdParts[0];
+      const commandInvocation = cmdParts.map((part) => shellEscape(part)).join(' ');
+      const expectClause = health.expect ? ` | grep -q ${shellEscape(health.expect)}` : '';
+      const attempts = [
+        `(command -v ${shellEscape(commandName)} >/dev/null 2>&1 && ${commandInvocation}${expectClause})`
+      ];
+      if (resolvedPort) {
+        attempts.push(`(command -v nc >/dev/null 2>&1 && nc -z localhost ${resolvedPort})`);
+        attempts.push(`(echo >/dev/tcp/localhost/${resolvedPort})`);
+      }
+      command = `(${attempts.join(' || ')})`;
       break;
+    }
+    case 'postgres': {
+      if (!resolvedPort) {
+        throw new Error(`Postgres healthcheck for sidecar ${sidecar.id} requires a port`);
+      }
+      command = `((command -v pg_isready >/dev/null 2>&1 && pg_isready -q) || (command -v nc >/dev/null 2>&1 && nc -z localhost ${resolvedPort}) || (echo >/dev/tcp/localhost/${resolvedPort}))`;
+      break;
+    }
+    default: {
+      const exhaustiveCheck: never = health.method;
+      throw new Error(`Unsupported health method for sidecar ${sidecar.id}: ${exhaustiveCheck}`);
+    }
   }
 
-  const shellCommand = `    healthcheck:\n      test: [\"CMD\", \"sh\", \"-c\", \"${command.replace(/"/g, '\\\"')}\"]\n      interval: ${interval}s\n      timeout: ${timeout}s\n      retries: ${retries}`;
+  const lines = [
+    '    healthcheck:',
+    `      test: ["CMD-SHELL", "${command.replace(/"/g, '\"')}"]`,
+    `      interval: ${health.interval}`,
+    `      timeout: ${health.timeout}`,
+    `      retries: ${health.retries}`
+  ];
 
-  return startPeriod
-    ? `${shellCommand}\n      start_period: ${startPeriod}s\n`
-    : `${shellCommand}\n`;
+  if (health.start_period) {
+    lines.push(`      start_period: ${health.start_period}`);
+  }
+
+  lines.push('');
+
+  return lines.join('\n');
 }
 
 function createReadme(stackId: string, browsers: string[]): string {

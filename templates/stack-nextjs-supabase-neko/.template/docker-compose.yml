@@ -31,7 +31,7 @@ services:
       # NEKO_WEBRTC_ICESERVERS_FRONTEND: >-
       #   [{"urls":["stun:stun.l.google.com:19302"]}]
     healthcheck:
-      test: ["CMD", "sh", "-c", "(wget -qO- http://localhost:8080/ >/dev/null 2>&1) || (nc -z localhost 8080)"]
+      test: ["CMD-SHELL", "((wget -qO- http://localhost:8080/ >/dev/null 2>&1) || (curl -fsS http://localhost:8080/ >/dev/null 2>&1) || (command -v nc >/dev/null 2>&1 && nc -z localhost 8080) || (echo >/dev/tcp/localhost/8080))"]
       interval: 10s
       timeout: 3s
       retries: 5
