@@ -40,6 +40,16 @@ Detailed combinations:
 
 ## Technical Specifications
 
+### [Versioning Strategy](./versioning.md)
+**Semantic versioning for features, templates, and images**
+
+Versioning practices:
+- Feature semantic versioning
+- Template and stack versioning
+- Image tagging strategy (semver, major, latest)
+- Digest pinning for production
+- Release artifact table
+
 ### Lesson Manifest Schema
 *(To be created in Phase 6)*
 

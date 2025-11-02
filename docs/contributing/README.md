@@ -26,15 +26,6 @@ For maintainers:
 - Publishing workflows
 - Repository management
 
-### [Security](./security.md)
-**Security policies and vulnerability reporting**
-
-Security practices:
-- Vulnerability disclosure process
-- Security best practices
-- Secrets management
-- Reporting security issues
-
 ---
 
 ## Quick Start for Contributors
@@ -103,6 +94,7 @@ Security practices:
 
 - **[Main CONTRIBUTING.md](../../CONTRIBUTING.md)** - Repository contribution guidelines
 - **[CODE_OF_CONDUCT.md](../../CODE_OF_CONDUCT.md)** - Community standards
+- **[SECURITY.md](../../SECURITY.md)** - Security policies and vulnerability reporting
 - **[Architecture](../architecture/README.md)** - System design
 
 ---
