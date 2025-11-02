@@ -14,6 +14,15 @@ This template runs a **full graphical Chrome** in a sidecar using **Neko** and s
 - The forwarded port **8080** opens the Neko UI.
 - Set `NEKO_USER_PASSWORD` and `NEKO_ADMIN_PASSWORD` via Codespaces secrets or `.devcontainer/devcontainer.json` before launch.
 
+## Parity matrix
+
+| Aspect | Local Docker | Codespaces | Prebuild availability | Codespaces-only considerations |
+| --- | --- | --- | --- | --- |
+| Startup path | Use Dev Containers locally and follow [Quick start](#quick-start) to open port 8080. | Codespaces users follow the same [Quick start](#quick-start) instructions once the workspace boots. | Pair with a manifest preset so the workspace image prebuilds while Neko’s sidecar starts at runtime. | Store Neko passwords as Codespaces secrets and share the forwarded link only with attendees. |
+| Ports | `8080` (UI) plus TCP/UDP mux as documented in [Quick start](#quick-start). | Codespaces forwards `8080` and the TCP mux (`59000/tcp`); UDP remains local-only. | Port metadata is baked into the template so prebuilds require no extra config. | Leave UDP disabled in Codespaces and rely on TCP mux; add STUN/TURN only when the network allows. |
+| Sidecars | Chrome Neko container runs alongside the workspace; optional UDP mux can be enabled locally. | Same sidecar runs with TCP mux defaults in Codespaces. | Sidecar image is fetched at runtime, keeping the prebuilt workspace lean. | Monitor Codespaces health notifications to know when the Neko sidecar is ready before sharing URLs. |
+| Minimum resources | Allocate at least 4 CPUs / 8 GB locally for a smooth desktop stream. | Choose a 4-core / 8 GB Codespace (or larger) for collaborative sessions. | Prebuilding the workspace prevents post-create install spikes from delaying the browser sidecar. | Codespaces will pause idle sessions; reopen forwarded ports if the Neko UI times out. |
+
 ### Ports
 - **8080** – Neko Web UI
 - **59000/tcp** – WebRTC TCP mux (Codespaces-safe)

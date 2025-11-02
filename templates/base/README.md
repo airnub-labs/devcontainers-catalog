@@ -20,6 +20,15 @@ A minimal devcontainer template that tracks `mcr.microsoft.com/devcontainers/bas
 | **Fast (Prebuilt)** | 1. Add `spec.base_preset: full` to your manifest.<br>2. `npx @airnub/devc generate <manifest> --out-images images/presets/generated --out-templates templates/generated` | Ships the `full` preset image so students receive Node, pnpm, and Python pre-baked on Codespaces/iPad. |
 | **Flexible (Feature)** | `devcontainer up --workspace-folder templates/base` | Keeps the template light so you can layer only the features you need. |
 
+## Parity matrix
+
+| Aspect | Local Docker | Codespaces | Prebuild availability | Codespaces-only considerations |
+| --- | --- | --- | --- | --- |
+| Startup path | Use `devcontainer up --workspace-folder templates/base` as described under [Quick modes](#quick-modes) › Flexible (Feature). | Generate with `npx @airnub/devc generate …` following [Quick modes](#quick-modes) › Fast (Prebuilt) so manifests hydrate the workspace. | `spec.base_preset: full` publishes a cached image so Codespaces skips feature installs. | Pin the preset tag in manifests so Codespaces resumes from the cached image after rebuilds. |
+| Ports | No forwards by default; add them locally when needed to keep parity explicit. | Same as local—declare ports in the manifest so Codespaces mirrors the forwards. | Prebuilt preset ships without port forwards, leaving manifests free to overlay services. | Codespaces shows no forwarded ports until manifests add them, keeping workspaces private by default. |
+| Sidecars | None included; pull service fragments with `devc add service` after generation. | None included; generator adds sidecars consistently for both targets. | Prebuild flow excludes sidecars so image builds remain fast. | When adding sidecars, set manifest port visibility so Codespaces labels them correctly. |
+| Minimum resources | Runs comfortably on Docker Desktop defaults (2 CPUs / 4 GB). | Verified on 2-core / 4 GB Codespaces. | Cached preset prevents post-create install spikes on small machines. | Codespaces can auto-upgrade if you raise `spec.resources`; defaults work for classroom starts. |
+
 ## Local ↔ Codespaces parity checklist
 
 - **Ports** — none declared; add `forwardPorts` downstream to keep parity explicit.

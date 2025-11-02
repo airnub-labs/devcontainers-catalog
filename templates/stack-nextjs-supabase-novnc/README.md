@@ -37,6 +37,15 @@ Pin your runtime by committing a `stack.lock.json` with image digests (dev, GUI,
 | **Fast (Prebuilt)** | 1. Use `spec.base_preset: node-pnpm` in your manifest.<br>2. `npx @airnub/devc generate <manifest> --out-images images/presets/generated --out-templates templates/generated` | Students land on a prebuilt Next.js + Supabase image with GUI fragments already merged. |
 | **Flexible (Feature)** | `devcontainer templates apply --template-id ghcr.io/airnub-labs/devcontainer-templates/stack-nextjs-supabase-novnc:1.0.0 --workspace-folder .` | Copy when you want to toggle Redis, Supabase CLI mode, or GUI provider before sharing. |
 
+## Parity matrix
+
+| Aspect | Local Docker | Codespaces | Prebuild availability | Codespaces-only considerations |
+| --- | --- | --- | --- | --- |
+| Startup path | Apply the template locally per [Quick modes](#quick-modes) › Flexible (Feature) when adjusting GUI options. | Use the manifest flow in [Quick modes](#quick-modes) › Fast (Prebuilt) so Codespaces opens with the same stack. | `spec.base_preset: node-pnpm` prebuilds the workspace while GUI/Redis sidecars launch at runtime. | Pin preset digests to keep Codespaces rebuilds aligned with local testing. |
+| Ports | App (3000), GUI (3001/6080), and CDP (`{{templateOption.chromeCdpPort}}`) map exactly as shown in [Services & Ports](#services--ports). | Codespaces forwards the same labelled ports automatically. | Port metadata is part of the template, so prebuilds inherit it without extra work. | Keep GUI ports private; expose only when running a guided session. |
+| Sidecars | Optional Redis and GUI sidecars compose locally depending on template options. | Identical sidecars launch in Codespaces when the same options are selected. | Sidecar images pull at runtime keeping the prebuilt workspace lean. | Watch Codespaces health notifications for Redis/GUI readiness before starting demos. |
+| Minimum resources | Plan for 4 CPUs / 8 GB locally when running Next.js + Supabase + GUI. | Select at least a 4-core / 8 GB Codespace for equivalent headroom. | Prebuilt workspace image prevents pnpm installs from delaying GUI start-up. | Consider upgrading the Codespace if Supabase migrations and GUI rendering happen simultaneously. |
+
 ## Local ↔ Codespaces parity checklist
 
 - **Ports** — App (3000), GUI (3001/6080), and CDP (`{{templateOption.chromeCdpPort}}`) are labelled so Codespaces matches local Docker.
