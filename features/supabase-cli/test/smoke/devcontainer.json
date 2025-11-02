@@ -1,0 +1,6 @@
+{
+  "build": {
+    "context": "../..",
+    "dockerfile": "features/supabase-cli/test/smoke/Dockerfile"
+  }
+}

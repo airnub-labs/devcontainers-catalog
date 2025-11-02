@@ -1,0 +1,6 @@
+{
+  "build": {
+    "context": "../..",
+    "dockerfile": "features/cuda-lite/test/smoke/Dockerfile"
+  }
+}
