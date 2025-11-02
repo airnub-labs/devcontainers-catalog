@@ -53,7 +53,29 @@ flowchart LR
 
 **Classroom tip:** Prefer **prebuilt lesson images** for students (no feature re-installs). Instructors select service fragments (Redis, Supabase, Kafka/KRaft, Airflow, Prefect, Dagster, Temporal, Webtop/CDP) and the generator emits an **aggregate compose** so the whole stack runs with one command.
 
-See: [docs/getting-started/classroom-quick-start.md](docs/getting-started/classroom-quick-start.md) · [docs/saas-edu-platform-vision.md](docs/saas-edu-platform-vision.md)
+See: [docs/getting-started/classroom-quick-start.md](docs/getting-started/classroom-quick-start.md) · [docs/vision/saas-edu-platform-vision.md](docs/vision/saas-edu-platform-vision.md)
+
+---
+
+## 📚 Documentation
+
+**Quick Links:**
+- 🚀 **[Fast Classroom Setup](docs/getting-started/classroom-quick-start.md)** - Get students coding in <2 minutes
+- 🏗️ **[Architecture Overview](docs/architecture/README.md)** - System design and principles
+- 📖 **[Full Documentation Hub](docs/README.md)** - Complete documentation index
+- 🔮 **[MVP Strategy](docs/mvp/README.md)** - Current strategic direction
+
+**Key Principles:**
+- ⭐ **[Separation of Concerns](docs/architecture/separation-of-concerns-devcontainers-vs-comhra.md)** - Catalog is education-agnostic, stateless generator
+- **[Dev Environments Strategy](docs/mvp/dev-environments-strategy.md)** - Provider-agnostic design (local Docker, Codespaces, etc.)
+- **[Manifest Authoring](docs/getting-started/manifest-authoring.md)** - Declarative, reproducible environments
+
+**For Contributors:**
+- [Contributing Guide](CONTRIBUTING.md) - How to contribute
+- [Development Setup](docs/contributing/development.md) - Get your dev environment ready
+- [Testing Guidelines](docs/contributing/testing.md) - Testing standards
+
+---
 
 ## Templates ↔ presets map
 

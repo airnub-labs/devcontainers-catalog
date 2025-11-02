@@ -1,5 +1,11 @@
 # Separation of Concerns — devcontainers-catalog (agnostic) vs comhrá (Edu SaaS)
 
+**Navigation:** [Documentation Hub](../README.md) > [MVP](./README.md) > Separation of Concerns
+
+> ⭐ **CRITICAL PRINCIPLE:** The catalog is education-agnostic and stateless
+
+---
+
 ## Position
 
 **devcontainers-catalog must remain education-agnostic and stateless.** It should not contain any database persistence or platform-specific logic. All persistence, cohort/course concepts, and provider orchestration live in **comhrá (the Education SaaS)** or other consuming platforms.
