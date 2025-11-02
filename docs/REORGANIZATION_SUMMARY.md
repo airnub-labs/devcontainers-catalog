@@ -424,16 +424,9 @@ All archived files explain why they were archived and where to find current info
 ## Related Documents
 
 - **[CHANGELOG.md](../CHANGELOG.md)** - Version history
-- **[Documentation Hub](../docs/README.md)** - Main documentation index
-- **Phase Completion Summaries:**
-  - [Phase 0 Complete](../PHASE_0_COMPLETE.md)
-  - [Phase 1 Complete](../PHASE_1_COMPLETE.md)
-  - [Phase 2 Complete](../PHASE_2_COMPLETE.md)
-  - [Phase 3 Complete](../PHASE_3_COMPLETE.md)
-  - [Phase 4 Complete](../PHASE_4_COMPLETE.md)
-  - [Phase 5 Complete](../PHASE_5_COMPLETE.md)
-  - [Phase 6 Complete](../PHASE_6_COMPLETE.md)
-  - [Phase 7 Complete](../PHASE_7_COMPLETE.md)
+- **[Documentation Hub](README.md)** - Main documentation index
+- **[Architecture Overview](architecture/README.md)** - System design principles
+- **[Contributing Guidelines](../CONTRIBUTING.md)** - How to contribute
 
 ---
 
