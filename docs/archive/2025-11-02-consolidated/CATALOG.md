@@ -1,3 +1,15 @@
+> ⚠️ **ARCHIVED DOCUMENT**
+>
+> **Archived Date:** 2025-11-02
+> **Reason:** Consolidated into comprehensive catalog design document
+> **See Instead:** [docs/architecture/catalog-design.md](../architecture/catalog-design.md)
+>
+> This document has been merged with CATALOG-ARCHITECTURE.md into a single
+> comprehensive catalog design guide. All unique information from both documents
+> has been preserved and organized in the consolidated version.
+
+---
+
 # Devcontainers Catalog Matrix
 
 The catalog ships reusable Dev Container **features**, **templates**, and **images**. Use this matrix to understand what each asset provides and how they compose together.
