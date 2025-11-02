@@ -1,3 +1,15 @@
+> ⚠️ **ARCHIVED DOCUMENT**
+>
+> **Archived Date:** 2025-11-02
+> **Reason:** Completed verification checklist
+> **Status:** ✅ All checks passed (Oct 30, 2024)
+>
+> This was a one-time verification checklist to confirm repository hardening
+> and security measures. All checks have been completed successfully. The
+> document is preserved here for historical reference and audit purposes.
+
+---
+
 # Classroom hardening verification
 
 - ✅ `templates/classroom-webtop/.template/.devcontainer/devcontainer.json` — missing before; added per spec.

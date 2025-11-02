@@ -1,3 +1,15 @@
+> ⚠️ **ARCHIVED DOCUMENT**
+>
+> **Archived Date:** 2025-11-02
+> **Reason:** Superseded by SPEC-ALIGNMENT.md (already marked as legacy)
+> **See Instead:** [SPEC-ALIGNMENT.md](../../SPEC-ALIGNMENT.md)
+>
+> This document was a legacy note explaining the transition from mixed workspace/catalog
+> repo to catalog-only layout. It was already marked as legacy and has been superseded
+> by SPEC-ALIGNMENT.md.
+
+---
+
 # Dev Container packaging roadmap (Legacy)
 
 > **Note:** Active guidance now lives in [`SPEC-ALIGNMENT.md`](./SPEC-ALIGNMENT.md). This legacy note is retained only to explain the transition from a mixed workspace/catalog repo to the catalog-only layout introduced in 2024.

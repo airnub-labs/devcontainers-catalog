@@ -38,32 +38,34 @@ Documents are organized by **archival date** to maintain clear historical timeli
 
 **Theme:** Older architectural patterns superseded by current MVP strategy
 
-**Status:** Phase 1 (Structure Created) - Content to be archived in Phase 2
+| Document | Original Date | Reason Archived | See Instead |
+|----------|---------------|-----------------|-------------|
+| `workspace-architecture-0.md` | 2024-10-28 | Superseded by MVP strategy | [docs/mvp/](../../mvp/) |
+| `workspace-architecture-1.md` | 2024-10-28 | Superseded by MVP strategy | [docs/mvp/](../../mvp/) |
+| `devcontainer-spec-alignment.md` | 2024-10-28 | Superseded (marked LEGACY) | [SPEC-ALIGNMENT.md](../../SPEC-ALIGNMENT.md) |
 
-**Planned Content:**
-- `workspace-architecture-0.md` - Superseded by MVP strategy
-- `workspace-architecture-1.md` - Superseded by MVP strategy
-- `catalog-architecture.md` - To be consolidated
-- `devcontainer-spec-alignment.md` - Superseded (marked LEGACY)
+**Context:** These documents from late October 2024 described earlier approaches to workspace organization and catalog architecture. They were superseded when the team adopted the current MVP-focused, education-agnostic strategy detailed in `docs/mvp/`.
 
 ### 2024-10-30/
 
 **Theme:** One-time artifacts from initial repository setup and review
 
-**Status:** Phase 1 (Structure Created) - Content to be archived in Phase 2
+| Document | Original Date | Reason Archived | Status |
+|----------|---------------|-----------------|--------|
+| `VARIFY.md` | 2024-10-30 | Completed verification | ✅ All checks passed |
+| `REVIEW_AND_SCORES.md` | 2024-10-30 | Historical review | 📊 Score: 8.2/10 (Very Good) |
 
-**Planned Content:**
-- `varify-checklist.md` - Completed verification checklist
-- `review-and-scores.md` - Historical repository quality review
+**Context:** These documents were created during the initial repository hardening and quality assessment phase. The verification checklist was completed successfully, and the comprehensive review provides valuable baseline metrics (8.2/10 score indicating production readiness).
 
 ### 2024-10-31/
 
 **Theme:** Completed improvement plans
 
-**Status:** Phase 1 (Structure Created) - Content to be archived in Phase 2
+| Document | Original Date | Reason Archived | Status |
+|----------|---------------|-----------------|--------|
+| `WORKFLOW_IMPROVEMENT_PLAN.md` | 2024-10-31 | Implementation complete | ✅ Improvements applied |
 
-**Planned Content:**
-- `workflow-improvement-plan.md` - Implementation complete
+**Context:** This workflow optimization plan was created to improve GitHub Actions efficiency. After implementation, it was archived to preserve the decision-making process and approach.
 
 ---
 
@@ -99,18 +101,18 @@ Each archived document has a header note in one of these formats:
 
 ## Archive Statistics
 
-**Total Archived Documents:** 0 (Phase 1 - Structure only)
+**Total Archived Documents:** 6
 
 **Documents by Type:**
-- Superseded architectural docs: 0 (to be added in Phase 2)
-- Completed artifacts: 0 (to be added in Phase 2)
-- Historical records: 0 (to be added in Phase 2)
+- Superseded architectural docs: 3 (workspace-architecture-0, workspace-architecture-1, devcontainer-spec-alignment)
+- Completed artifacts: 2 (VARIFY, WORKFLOW_IMPROVEMENT_PLAN)
+- Historical records: 1 (REVIEW_AND_SCORES)
 - Consolidated docs: 0 (to be added in Phase 4)
 
 **Timeline:**
-- Oct 28, 2024: 0 documents (structure created, content in Phase 2)
-- Oct 30, 2024: 0 documents (structure created, content in Phase 2)
-- Oct 31, 2024: 0 documents (structure created, content in Phase 2)
+- Oct 28, 2024: 3 documents (superseded architectural patterns)
+- Oct 30, 2024: 2 documents (verification checklist + quality review)
+- Oct 31, 2024: 1 document (workflow improvement plan)
 
 ---
 

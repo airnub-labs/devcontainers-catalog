@@ -1,3 +1,15 @@
+> ⚠️ **ARCHIVED DOCUMENT**
+>
+> **Archived Date:** 2025-11-02
+> **Reason:** Superseded by current MVP strategy
+> **See Instead:** [docs/mvp/](../../mvp/)
+>
+> This document described workspace variants with multiple GUI options (webtop, novnc).
+> It has been superseded by the current MVP architecture which focuses on education-agnostic,
+> stateless devcontainer generation. See the link above for current strategic direction.
+
+---
+
 # docs/WORKSPACE-ARCHITECTURE.md (v0.2)
 
 ## Overview

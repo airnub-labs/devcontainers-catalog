@@ -1,3 +1,16 @@
+> ⚠️ **ARCHIVED DOCUMENT**
+>
+> **Archived Date:** 2025-11-02
+> **Reason:** Superseded by current MVP strategy
+> **See Instead:** [docs/mvp/](../../mvp/)
+>
+> This document described an older meta-workspace pattern for organizing
+> multiple development environments in a single container. It has been
+> superseded by the current MVP architecture which focuses on education-agnostic,
+> stateless devcontainer generation. See the link above for current strategic direction.
+
+---
+
 # Workspace architecture
 
 This repository acts as a "meta" workspace so you can develop multiple Airnub Labs projects inside a single Dev Container (locally or in GitHub Codespaces). Instead of juggling many containers or mismatched Supabase ports, every project points at the same shared runtime.

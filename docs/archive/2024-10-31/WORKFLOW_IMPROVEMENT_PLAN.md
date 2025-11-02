@@ -1,3 +1,15 @@
+> ⚠️ **ARCHIVED DOCUMENT**
+>
+> **Archived Date:** 2025-11-02
+> **Reason:** Completed improvement plan
+> **Status:** ✅ Implementation complete (Oct 31, 2024)
+>
+> This was a workflow optimization plan created to improve GitHub Actions efficiency.
+> After implementation, it was archived to preserve the decision-making process and
+> approach. The document is preserved here for historical reference.
+
+---
+
 # GitHub Workflows Improvement Plan
 
 ## Executive Summary
