@@ -1,0 +1,128 @@
+name: Coverage Diff
+
+on:
+  pull_request:
+    paths:
+      - 'packages/**/*.ts'
+      - 'tools/**/*.ts'
+      - '!**/*.spec.ts'
+      - '!**/*.test.ts'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  coverage-diff:
+    name: Coverage Comparison
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install and test PR branch (airnub-devc)
+        working-directory: tools/airnub-devc
+        run: |
+          npm ci
+          npm run test:coverage
+          cp coverage/coverage-summary.json /tmp/pr-coverage-devc.json
+
+      - name: Install and test PR branch (sdk-codespaces)
+        working-directory: packages/sdk-codespaces-adapter
+        run: |
+          npm ci
+          npm run test:coverage
+          cp coverage/coverage-summary.json /tmp/pr-coverage-sdk.json
+
+      - name: Checkout base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+          clean: false
+
+      - name: Test base branch (airnub-devc)
+        working-directory: tools/airnub-devc
+        run: |
+          npm ci
+          npm run test:coverage
+          cp coverage/coverage-summary.json /tmp/base-coverage-devc.json
+
+      - name: Test base branch (sdk-codespaces)
+        working-directory: packages/sdk-codespaces-adapter
+        run: |
+          npm ci
+          npm run test:coverage
+          cp coverage/coverage-summary.json /tmp/base-coverage-sdk.json
+
+      - name: Generate coverage diff report
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            function readCoverage(path) {
+              return JSON.parse(fs.readFileSync(path, 'utf8'));
+            }
+
+            function getMetric(summary, key) {
+              const section = summary.total?.[key];
+              return section && typeof section.pct !== 'undefined' ? Number(section.pct) : 0;
+            }
+
+            function formatDiff(prVal, baseVal) {
+              const diff = (prVal - baseVal).toFixed(2);
+              const sign = diff >= 0 ? '+' : '';
+              const emoji = diff > 0 ? '📈' : diff < 0 ? '📉' : '➡️';
+              return `${emoji} ${sign}${diff}%`;
+            }
+
+            function formatRow(metric, baseVal, prVal) {
+              return `| ${metric} | ${baseVal.toFixed(2)}% | ${prVal.toFixed(2)}% | ${formatDiff(prVal, baseVal)} |`;
+            }
+
+            const prDevc = readCoverage('/tmp/pr-coverage-devc.json');
+            const baseDevc = readCoverage('/tmp/base-coverage-devc.json');
+            const prSdk = readCoverage('/tmp/pr-coverage-sdk.json');
+            const baseSdk = readCoverage('/tmp/base-coverage-sdk.json');
+
+            const metrics = ['lines', 'statements', 'functions', 'branches'];
+
+            const devcRows = metrics
+              .map((metric) => formatRow(metric.charAt(0).toUpperCase() + metric.slice(1), getMetric(baseDevc, metric), getMetric(prDevc, metric)))
+              .join('\n');
+
+            const sdkRows = metrics
+              .map((metric) => formatRow(metric.charAt(0).toUpperCase() + metric.slice(1), getMetric(baseSdk, metric), getMetric(prSdk, metric)))
+              .join('\n');
+
+            const body = `## 📊 Coverage Diff Report
+
+            ### \`airnub-devc\`
+
+            | Metric | Base | PR | Diff |
+            |--------|------|----|------|
+            ${devcRows}
+
+            ### \`sdk-codespaces-adapter\`
+
+            | Metric | Base | PR | Diff |
+            |--------|------|----|------|
+            ${sdkRows}
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });

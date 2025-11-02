@@ -13,7 +13,13 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui",
+    "docs": "typedoc",
+    "docs:watch": "typedoc --watch",
+    "docs:json": "typedoc --json ../../docs-site/api/sdk-codespaces.json"
   },
   "dependencies": {
     "@octokit/rest": "^20.1.1",
@@ -21,8 +27,11 @@
     "libsodium-wrappers": "^0.7.13"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "^2.1.4",
+    "nock": "^13.5.4",
+    "typedoc": "^0.26.0",
+    "typedoc-plugin-markdown": "^4.2.0",
     "typescript": "^5.6.3",
-    "vitest": "^2.1.4",
-    "nock": "^13.5.4"
+    "vitest": "^2.1.4"
   }
 }
