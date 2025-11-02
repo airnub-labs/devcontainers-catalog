@@ -30,22 +30,6 @@
 - `images/dev-base/` — A thin base on top of `mcr.microsoft.com/devcontainers/base` with overridable build args.
 - `docs/` — Guides, architecture notes, and CI examples.
 
-## 📚 Documentation
-
-### User Documentation
-- [Getting Started](./docs/README.md)
-- [CLI Usage Guide](./docs/cli-devc.md)
-- [Development Guide](./DEVELOPMENT.md)
-
-### API Documentation
-- [📦 Airnub DevContainers CLI API](https://airnub-labs.github.io/devcontainers-catalog/api/airnub-devc/)
-- [🚀 Codespaces Adapter SDK API](https://airnub-labs.github.io/devcontainers-catalog/api/sdk-codespaces-adapter/)
-
-### Architecture
-- [Architecture Decision Records](./docs/adr/README.md)
-- [Catalog Architecture](./docs/CATALOG-ARCHITECTURE.md)
-- [Platform Architecture](./docs/platform-architecture.md)
-
 ## If you only have 5 minutes
 
 ```mermaid

@@ -18,5 +18,5 @@ devc --help
 ## 📖 Documentation
 
 - [Full API Documentation](https://airnub-labs.github.io/devcontainers-catalog/api/airnub-devc/)
-- [CLI Usage Guide](../../docs/cli-devc.md)
-- [Examples](../../docs/cli-devc.md#examples)
+- [CLI Usage Guide](../../docs/guides/cli-devc.md)
+- [Examples](../../docs/guides/cli-devc.md#examples)
