@@ -60,7 +60,7 @@ This split serves both worlds: agile development (templates) and instant classro
 - Open the lesson repo in Codespaces (or locally with Dev Containers).
 - The container pulls the prebuilt image → no Feature installs → class begins immediately.
 
-A more detailed step-by-step guide is in `docs/quick-start-fast-classroom.md`.
+A more detailed step-by-step guide is in `docs/getting-started/classroom-quick-start.md`.
 
 ## 4. Beyond “hello world”: full ecosystems out of the box
 
@@ -404,7 +404,7 @@ You’re already close. Add:
 - `/services/*` compose fragments:
   - redis, supabase (vendor official compose), kafka-kraft, kafka-utils (optional).
 - Docs:
-  - `docs/quick-start-fast-classroom.md` (already created),
+  - `docs/getting-started/classroom-quick-start.md` (consolidated classroom guide),
   - `docs/saas-edu-platform-vision.md` (this doc),
   - `docs/services.md` (how fragments are merged, secrets handling).
 - Consistency:

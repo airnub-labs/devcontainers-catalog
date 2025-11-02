@@ -1,4 +1,17 @@
-Quick Start — Classroom Fast-Start (Instructor prebuild → Students pull)
+> ⚠️ **ARCHIVED DOCUMENT**
+>
+> **Archived Date:** 2025-11-02
+> **Reason:** Consolidated into comprehensive classroom quick-start guide
+> **See Instead:** [docs/getting-started/classroom-quick-start.md](../../getting-started/classroom-quick-start.md)
+>
+> This document has been merged with classroom-fast-start.md into a single
+> comprehensive classroom quick-start guide. All unique information from both documents
+> has been preserved and organized in the consolidated version, which covers both
+> manifest-driven and direct preset build approaches.
+
+---
+
+# Quick Start — Classroom Fast-Start (Instructor prebuild → Students pull)
 
 Goal: The instructor builds a dev environment once, validates it, then students open Codespaces (or local Dev Containers) that pull a prebuilt image — no waiting for Features (Node, Python, pnpm, Jupyter, etc.) to re-install.
 

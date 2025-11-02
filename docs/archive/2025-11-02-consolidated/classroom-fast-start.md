@@ -1,3 +1,16 @@
+> ⚠️ **ARCHIVED DOCUMENT**
+>
+> **Archived Date:** 2025-11-02
+> **Reason:** Consolidated into comprehensive classroom quick-start guide
+> **See Instead:** [docs/getting-started/classroom-quick-start.md](../../getting-started/classroom-quick-start.md)
+>
+> This document has been merged with quick-start-fast-classroom.md into a single
+> comprehensive classroom quick-start guide. All unique information from both documents
+> has been preserved and organized in the consolidated version, which covers both
+> manifest-driven and direct preset build approaches.
+
+---
+
 # Classroom Fast Start Guide
 
 This guide walks instructors through producing a fast-start lesson image and scaffold so students launch into an identical workspace locally or in Codespaces.

@@ -53,7 +53,7 @@ flowchart LR
 
 **Classroom tip:** Prefer **prebuilt lesson images** for students (no feature re-installs). Instructors select service fragments (Redis, Supabase, Kafka/KRaft, Airflow, Prefect, Dagster, Temporal, Webtop/CDP) and the generator emits an **aggregate compose** so the whole stack runs with one command.
 
-See: [docs/quick-start-fast-classroom.md](docs/quick-start-fast-classroom.md) · [docs/saas-edu-platform-vision.md](docs/saas-edu-platform-vision.md)
+See: [docs/getting-started/classroom-quick-start.md](docs/getting-started/classroom-quick-start.md) · [docs/saas-edu-platform-vision.md](docs/saas-edu-platform-vision.md)
 
 ## Templates ↔ presets map
 
