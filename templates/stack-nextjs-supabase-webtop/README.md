@@ -50,6 +50,15 @@ Add a `stack.lock.json` (example below) to pin image digests and feature version
 | **Fast (Prebuilt)** | 1. Configure `spec.base_preset: node-pnpm` in your lesson manifest.<br>2. `npx @airnub/devc generate <manifest> --out-images images/presets/generated --out-templates templates/generated` | Gives learners a prebuilt Next.js + Supabase desktop with Redis/CDP ready to go. |
 | **Flexible (Feature)** | `devcontainer templates apply --template-id ghcr.io/airnub-labs/devcontainer-templates/stack-nextjs-supabase-webtop:1.0.0 --workspace-folder .` | Start from source when you need to tweak GUI providers or Compose wiring. |
 
+## Parity matrix
+
+| Aspect | Local Docker | Codespaces | Prebuild availability | Codespaces-only considerations |
+| --- | --- | --- | --- | --- |
+| Startup path | Apply the template locally via [Quick modes](#quick-modes) › Flexible (Feature) to customise GUI/Redis options. | Use the manifest-driven [Quick modes](#quick-modes) › Fast (Prebuilt) to boot Codespaces with the same stack. | `spec.base_preset: node-pnpm` prebuilds the workspace while GUI/Redis sidecars run at runtime. | Pin preset digests to keep Codespaces prebuilds aligned with your local tests. |
+| Ports | App (3000), GUI (3001/6080), and CDP (`{{templateOption.chromeCdpPort}}`) align with the [Services & Ports](#services--ports) table. | Codespaces forwards the same labelled ports automatically. | Port metadata lives in the template, so prebuilds inherit it without extra steps. | Keep GUI ports private until you intentionally share the desktop. |
+| Sidecars | GUI and optional Redis sidecars compose locally using the template options. | Same sidecars launch in Codespaces using the generated compose overrides. | Sidecar images pull at runtime leaving the prebuilt workspace lean. | Watch Codespaces health messages to confirm Webtop/noVNC readiness before demos. |
+| Minimum resources | Allocate 4 CPUs / 8 GB locally when running the full stack. | Select at least a 4-core / 8 GB Codespace for equivalent performance. | Cached preset avoids pnpm installs from delaying desktop availability. | Increase Codespaces resources if Supabase migrations and GUI usage saturate CPU. |
+
 ## Local ↔ Codespaces parity checklist
 
 - **Ports** — App (3000), GUI (3001/6080), and CDP (`{{templateOption.chromeCdpPort}}`) labelled to mirror Codespaces & local dev.
