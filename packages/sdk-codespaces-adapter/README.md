@@ -2,6 +2,11 @@
 
 Thin, typed SDK for provisioning and managing GitHub Codespaces instances used by Comhrá lesson scaffolds. The adapter wraps the GitHub REST API with deterministic helpers designed for classroom automation.
 
+## 📖 API Documentation
+
+Full API documentation is available at:
+👉 [https://airnub-labs.github.io/devcontainers-catalog/api/sdk-codespaces-adapter/](https://airnub-labs.github.io/devcontainers-catalog/api/sdk-codespaces-adapter/)
+
 ## Features
 
 - Stateless helpers for creating, starting, stopping, and deleting Codespaces.

@@ -1,0 +1,105 @@
+name: Snyk Security Scan
+
+on:
+  pull_request:
+    paths:
+      - '**/package.json'
+      - '**/package-lock.json'
+      - '.github/workflows/ci-snyk-scan.yml'
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '0 2 * * *'
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: write
+
+jobs:
+  snyk-npm:
+    name: Snyk - NPM Dependencies
+    runs-on: ubuntu-latest
+    if: ${{ secrets.SNYK_TOKEN != '' }}
+    strategy:
+      matrix:
+        include:
+          - path: tools/airnub-devc
+            name: airnub-devc
+          - path: packages/sdk-codespaces-adapter
+            name: sdk-codespaces-adapter
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ${{ matrix.path }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.path }}
+        run: npm ci
+
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: test
+          args: --severity-threshold=high --all-projects --sarif-file-output=snyk.sarif
+        continue-on-error: true
+
+      - name: Upload Snyk results to GitHub Security
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: snyk.sarif
+          category: snyk-${{ matrix.name }}
+
+      - name: Snyk Monitor (track dependencies)
+        if: github.ref == 'refs/heads/main'
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: monitor
+          args: --all-projects --org=${{ secrets.SNYK_ORG_ID }}
+
+  snyk-docker:
+    name: Snyk - Docker Images
+    runs-on: ubuntu-latest
+    if: ${{ secrets.SNYK_TOKEN != '' }}
+    strategy:
+      matrix:
+        include:
+          - context: images/dev-base
+            name: dev-base
+          - context: images/dev-web
+            name: dev-web
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image for scanning
+        working-directory: ${{ matrix.context }}
+        run: docker build -t ${{ matrix.name }}:scan .
+
+      - name: Run Snyk to check Docker image for vulnerabilities
+        uses: snyk/actions/docker@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          image: ${{ matrix.name }}:scan
+          args: --severity-threshold=high --file=${{ matrix.context }}/Dockerfile --sarif-file-output=snyk.sarif
+        continue-on-error: true
+
+      - name: Upload Snyk results to GitHub Security
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: snyk.sarif
+          category: snyk-docker-${{ matrix.name }}

@@ -1,0 +1,61 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["./src/index.ts"],
+  "entryPointStrategy": "expand",
+  "out": "../../docs-site/api/sdk-codespaces-adapter",
+  "plugin": ["typedoc-plugin-markdown"],
+  "name": "Codespaces Adapter SDK",
+  "includeVersion": true,
+  "readme": "./README.md",
+  "categorizeByGroup": true,
+  "categoryOrder": [
+    "Core",
+    "Authentication",
+    "Codespaces",
+    "Secrets",
+    "Types",
+    "*"
+  ],
+  "groupOrder": [
+    "Classes",
+    "Functions",
+    "Interfaces",
+    "Type Aliases",
+    "Enums"
+  ],
+  "exclude": [
+    "**/*.spec.ts",
+    "**/*.test.ts",
+    "**/node_modules/**",
+    "**/dist/**"
+  ],
+  "excludePrivate": true,
+  "excludeProtected": false,
+  "excludeInternal": true,
+  "validation": {
+    "notExported": true,
+    "invalidLink": true,
+    "notDocumented": false
+  },
+  "sort": ["source-order"],
+  "kindSortOrder": [
+    "Class",
+    "Interface",
+    "Function",
+    "TypeAlias",
+    "Enum",
+    "Variable"
+  ],
+  "navigation": {
+    "includeCategories": true,
+    "includeGroups": true
+  },
+  "visibilityFilters": {
+    "protected": true,
+    "private": false,
+    "inherited": true,
+    "external": false
+  },
+  "searchInComments": true,
+  "searchInDocuments": true
+}

@@ -1,5 +1,11 @@
 # Airnub DevContainers Catalog
 
+[![CI Status](https://github.com/airnub-labs/devcontainers-catalog/actions/workflows/ci-cli-test.yml/badge.svg)](https://github.com/airnub-labs/devcontainers-catalog/actions/workflows/ci-cli-test.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/airnub-labs/<GIST_ID>/raw/devcontainers-catalog-coverage.json)](https://github.com/airnub-labs/devcontainers-catalog/actions/workflows/ci-coverage-report.yml)
+[![TypeDoc](https://img.shields.io/badge/API%20Docs-TypeDoc-blue)](https://airnub-labs.github.io/devcontainers-catalog/)
+[![Security: Trivy](https://img.shields.io/badge/Security-Trivy-green)](https://github.com/airnub-labs/devcontainers-catalog/security)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENCE)
+
 **Primitives:**
 - **Features** → install tooling (Supabase CLI, Node, CUDA, etc.). No services, idempotent.
 - **Templates** → ship a ready-to-use `.devcontainer/` payload (can be multi-container via Compose).
@@ -23,6 +29,22 @@
 - `images/presets/` — **Prebuildable image presets**. Each folder contains a `devcontainer.json` used by `devcontainer build` to bake/publish a fast-start image to GHCR.
 - `images/dev-base/` — A thin base on top of `mcr.microsoft.com/devcontainers/base` with overridable build args.
 - `docs/` — Guides, architecture notes, and CI examples.
+
+## 📚 Documentation
+
+### User Documentation
+- [Getting Started](./docs/README.md)
+- [CLI Usage Guide](./docs/cli-devc.md)
+- [Development Guide](./DEVELOPMENT.md)
+
+### API Documentation
+- [📦 Airnub DevContainers CLI API](https://airnub-labs.github.io/devcontainers-catalog/api/airnub-devc/)
+- [🚀 Codespaces Adapter SDK API](https://airnub-labs.github.io/devcontainers-catalog/api/sdk-codespaces-adapter/)
+
+### Architecture
+- [Architecture Decision Records](./docs/adr/README.md)
+- [Catalog Architecture](./docs/CATALOG-ARCHITECTURE.md)
+- [Platform Architecture](./docs/platform-architecture.md)
 
 ## If you only have 5 minutes
 
