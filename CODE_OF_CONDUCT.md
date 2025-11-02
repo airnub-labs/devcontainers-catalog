@@ -30,7 +30,7 @@ Project maintainers are responsible for clarifying the standards of acceptable b
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behaviour may be reported to the maintainers listed in [MAINTAINERS.md](docs/MAINTAINERS.md). All complaints will be reviewed and investigated promptly and fairly. Maintainers are obligated to respect the privacy and security of the reporter.
+Instances of abusive, harassing, or otherwise unacceptable behaviour may be reported to the maintainers listed in [MAINTAINERS.md](docs/contributing/maintainers.md). All complaints will be reviewed and investigated promptly and fairly. Maintainers are obligated to respect the privacy and security of the reporter.
 
 Project maintainers who do not follow or enforce the Code of Conduct in good faith may face temporary or permanent repercussions as determined by other maintainers.
 

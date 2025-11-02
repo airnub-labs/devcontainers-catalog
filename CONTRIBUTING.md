@@ -5,10 +5,10 @@ Thank you for helping build the chat-to-classroom platform! This repository host
 ## Before You Start
 
 1. **Review the docs**
-   - [CATALOG.md](docs/CATALOG.md) for structure and lifecycle expectations
-   - [DEVELOPMENT.md](docs/DEVELOPMENT.md) for local setup and tooling
-   - [SECURITY.md](docs/SECURITY.md) for vulnerability and secret handling policies
-   - [agents-mcp-contract.md](docs/agents-mcp-contract.md) for SaaS integration contracts
+   - [Catalog Design](docs/architecture/catalog-design.md) for structure and lifecycle expectations
+   - [Development Setup](docs/contributing/development.md) for local setup and tooling
+   - [Security Policy](SECURITY.md) for vulnerability and secret handling policies
+   - [MCP Contract](docs/architecture/agents-mcp-contract.md) for SaaS integration contracts
 2. **Pick or file an issue**
    - Use the provided issue templates to outline the problem, manifest impact, and acceptance criteria.
    - For new ideas, highlight how the change helps instructors go from chat to classroom faster.
@@ -56,4 +56,4 @@ Thank you for helping build the chat-to-classroom platform! This repository host
 - Watch for Dependabot PRs and coordinate releases to keep student environments up to date.
 - Celebrate! Your contribution helps instructors deliver rich classroom experiences through a single chat prompt.
 
-For any questions, reach out to the maintainers listed in [MAINTAINERS.md](docs/MAINTAINERS.md).
+For any questions, reach out to the maintainers listed in [MAINTAINERS.md](docs/contributing/maintainers.md).
