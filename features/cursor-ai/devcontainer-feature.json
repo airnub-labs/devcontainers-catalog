@@ -7,8 +7,18 @@
   "options": {
     "version": {
       "type": "string",
-      "default": "latest",
+      "default": "0.3.3",
       "description": "Version (semver or npm tag) of @cursorai/cli to install."
+    },
+    "cacheDir": {
+      "type": "string",
+      "default": "",
+      "description": "Directory containing cached @cursorai/cli tarballs (npm pack output)."
+    },
+    "offline": {
+      "type": "boolean",
+      "default": false,
+      "description": "Avoid network requests; requires cacheDir tarballs for installation."
     }
   },
   "installsAfter": [

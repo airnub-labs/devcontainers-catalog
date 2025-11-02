@@ -33,6 +33,15 @@ export interface ManifestNotes {
   prefersUDP?: boolean;
   codespacesFallback?: ManifestCodespacesFallback;
   other?: string;
+  thirdPartyLicences?: ManifestThirdPartyLicence[];
+}
+
+export interface ManifestThirdPartyLicence {
+  id: string;
+  label: string;
+  summary: string;
+  url?: string;
+  docs?: string;
 }
 
 export interface Manifest {

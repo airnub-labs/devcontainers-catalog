@@ -1,0 +1,249 @@
+name: Coverage Report
+
+on:
+  pull_request:
+    paths:
+      - 'packages/**/*.ts'
+      - 'tools/**/*.ts'
+      - 'packages/**/package.json'
+      - 'tools/**/package.json'
+      - '.github/workflows/ci-coverage-report.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'packages/**/*.ts'
+      - 'tools/**/*.ts'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  coverage-airnub-devc:
+    name: Coverage - airnub-devc
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: tools/airnub-devc/package-lock.json
+
+      - name: Install dependencies
+        working-directory: tools/airnub-devc
+        run: npm ci
+
+      - name: Run tests with coverage
+        working-directory: tools/airnub-devc
+        run: npm run test:coverage
+
+      - name: Generate coverage summary
+        id: coverage-summary
+        working-directory: tools/airnub-devc
+        run: |
+          LINES=$(jq -r '.total.lines.pct' coverage/coverage-summary.json)
+          STATEMENTS=$(jq -r '.total.statements.pct' coverage/coverage-summary.json)
+          FUNCTIONS=$(jq -r '.total.functions.pct' coverage/coverage-summary.json)
+          BRANCHES=$(jq -r '.total.branches.pct' coverage/coverage-summary.json)
+
+          echo "lines=$LINES" >> "$GITHUB_OUTPUT"
+          echo "statements=$STATEMENTS" >> "$GITHUB_OUTPUT"
+          echo "functions=$FUNCTIONS" >> "$GITHUB_OUTPUT"
+          echo "branches=$BRANCHES" >> "$GITHUB_OUTPUT"
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-airnub-devc
+          path: |
+            tools/airnub-devc/coverage/coverage-summary.json
+            tools/airnub-devc/coverage/lcov.info
+            tools/airnub-devc/coverage/cobertura-coverage.xml
+          retention-days: 30
+
+      - name: Comment coverage on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const lines = '${{ steps.coverage-summary.outputs.lines }}';
+            const statements = '${{ steps.coverage-summary.outputs.statements }}';
+            const functions = '${{ steps.coverage-summary.outputs.functions }}';
+            const branches = '${{ steps.coverage-summary.outputs.branches }}';
+
+            const body = `## 📊 Coverage Report: \`airnub-devc\`
+
+            | Metric | Coverage |
+            |--------|----------|
+            | **Lines** | ${lines}% |
+            | **Statements** | ${statements}% |
+            | **Functions** | ${functions}% |
+            | **Branches** | ${branches}% |
+
+            <details>
+            <summary>Coverage Thresholds</summary>
+
+            - ✅ Lines: 80%
+            - ✅ Statements: 80%
+            - ✅ Functions: 80%
+            - ✅ Branches: 75%
+
+            </details>
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+  coverage-sdk-codespaces:
+    name: Coverage - sdk-codespaces-adapter
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: packages/sdk-codespaces-adapter/package-lock.json
+
+      - name: Install dependencies
+        working-directory: packages/sdk-codespaces-adapter
+        run: npm ci
+
+      - name: Run tests with coverage
+        working-directory: packages/sdk-codespaces-adapter
+        run: npm run test:coverage
+
+      - name: Generate coverage summary
+        id: coverage-summary
+        working-directory: packages/sdk-codespaces-adapter
+        run: |
+          LINES=$(jq -r '.total.lines.pct' coverage/coverage-summary.json)
+          STATEMENTS=$(jq -r '.total.statements.pct' coverage/coverage-summary.json)
+          FUNCTIONS=$(jq -r '.total.functions.pct' coverage/coverage-summary.json)
+          BRANCHES=$(jq -r '.total.branches.pct' coverage/coverage-summary.json)
+
+          echo "lines=$LINES" >> "$GITHUB_OUTPUT"
+          echo "statements=$STATEMENTS" >> "$GITHUB_OUTPUT"
+          echo "functions=$FUNCTIONS" >> "$GITHUB_OUTPUT"
+          echo "branches=$BRANCHES" >> "$GITHUB_OUTPUT"
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-sdk-codespaces
+          path: |
+            packages/sdk-codespaces-adapter/coverage/coverage-summary.json
+            packages/sdk-codespaces-adapter/coverage/lcov.info
+            packages/sdk-codespaces-adapter/coverage/cobertura-coverage.xml
+          retention-days: 30
+
+      - name: Comment coverage on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const lines = '${{ steps.coverage-summary.outputs.lines }}';
+            const statements = '${{ steps.coverage-summary.outputs.statements }}';
+            const functions = '${{ steps.coverage-summary.outputs.functions }}';
+            const branches = '${{ steps.coverage-summary.outputs.branches }}';
+
+            const body = `## 📊 Coverage Report: \`sdk-codespaces-adapter\`
+
+            | Metric | Coverage |
+            |--------|----------|
+            | **Lines** | ${lines}% |
+            | **Statements** | ${statements}% |
+            | **Functions** | ${functions}% |
+            | **Branches** | ${branches}% |
+
+            <details>
+            <summary>Coverage Thresholds</summary>
+
+            - ✅ Lines: 75%
+            - ✅ Statements: 75%
+            - ✅ Functions: 75%
+            - ✅ Branches: 70%
+
+            </details>
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+  coverage-badge:
+    name: Generate Coverage Badge
+    runs-on: ubuntu-latest
+    needs:
+      - coverage-airnub-devc
+      - coverage-sdk-codespaces
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    env:
+      GIST_ID: ${{ secrets.COVERAGE_BADGE_GIST_ID }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          path: ./coverage-reports
+
+      - name: Calculate average coverage
+        id: calc-coverage
+        run: |
+          DEVC_LINES=$(jq -r '.total.lines.pct' coverage-reports/coverage-airnub-devc/coverage-summary.json)
+          SDK_LINES=$(jq -r '.total.lines.pct' coverage-reports/coverage-sdk-codespaces/coverage-summary.json)
+
+          AVG_COVERAGE=$(echo "scale=1; ($DEVC_LINES + $SDK_LINES) / 2" | bc)
+
+          if (( $(echo "$AVG_COVERAGE >= 90" | bc -l) )); then
+            COLOR="brightgreen"
+          elif (( $(echo "$AVG_COVERAGE >= 80" | bc -l) )); then
+            COLOR="green"
+          elif (( $(echo "$AVG_COVERAGE >= 70" | bc -l) )); then
+            COLOR="yellowgreen"
+          else
+            COLOR="yellow"
+          fi
+
+          echo "coverage=$AVG_COVERAGE" >> "$GITHUB_OUTPUT"
+          echo "color=$COLOR" >> "$GITHUB_OUTPUT"
+
+      - name: Create coverage badge
+        if: env.GIST_ID != ''
+        uses: schneegans/dynamic-badges-action@v1.7.0
+        with:
+          auth: ${{ secrets.GITHUB_TOKEN }}
+          gistID: ${{ env.GIST_ID }}
+          filename: devcontainers-catalog-coverage.json
+          label: coverage
+          message: ${{ steps.calc-coverage.outputs.coverage }}%
+          color: ${{ steps.calc-coverage.outputs.color }}
+
+      - name: Warn when badge secret missing
+        if: env.GIST_ID == ''
+        run: echo "Skipping badge update because COVERAGE_BADGE_GIST_ID secret is not configured."

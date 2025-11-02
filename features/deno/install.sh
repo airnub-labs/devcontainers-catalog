@@ -3,10 +3,40 @@ set -euo pipefail
 
 VERSION="${VERSION:-latest}"
 INSTALL_COMPLETIONS="${INSTALLCOMPLETIONS:-true}"
+CACHE_DIR="${CACHEDIR:-}"
+OFFLINE="${OFFLINE:-false}"
 FEATURE_DIR="/usr/local/share/devcontainer/features/deno"
 BIN_DIR="/usr/local/bin"
 
 mkdir -p "${FEATURE_DIR}"
+
+is_truthy() {
+    case "${1:-}" in
+        1|[Tt][Rr][Uu][Ee]|[Yy][Ee][Ss])
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+copy_from_cache() {
+    local filename="$1"
+    local destination="$2"
+
+    if [ -z "${CACHE_DIR}" ]; then
+        return 1
+    fi
+
+    local candidate="${CACHE_DIR%/}/${filename}"
+    if [ -f "${candidate}" ]; then
+        cp "${candidate}" "${destination}"
+        return 0
+    fi
+
+    return 1
+}
 
 normalize_version() {
     local raw="$1"
@@ -23,6 +53,11 @@ normalize_version() {
 }
 
 fetch_latest_tag() {
+    if is_truthy "${OFFLINE}"; then
+        echo "[deno] Cannot resolve 'latest' while offline. Please pin a specific version." >&2
+        return 1
+    fi
+
     python3 - <<'PYTHON'
 import json
 import sys
@@ -64,6 +99,11 @@ PYTHON
 ensure_unzip() {
     if command -v unzip >/dev/null 2>&1; then
         return 0
+    fi
+
+    if is_truthy "${OFFLINE}"; then
+        echo "[deno] unzip is not available and offline mode is enabled. Install unzip ahead of time or disable offline mode." >&2
+        exit 1
     fi
 
     apt-get update
@@ -141,17 +181,35 @@ install_deno() {
     tmp_dir=$(mktemp -d)
     trap 'rm -rf "${tmp_dir}"' EXIT
 
-    echo "[deno] Downloading ${url}"
-    if ! curl -fsSL "${url}" -o "${tmp_dir}/deno.zip"; then
-        echo "[deno] Failed to download ${url}" >&2
-        exit 1
+    if copy_from_cache "deno-${target}.zip" "${tmp_dir}/deno.zip"; then
+        echo "[deno] Using cached deno-${target}.zip"
+    else
+        if is_truthy "${OFFLINE}"; then
+            echo "[deno] Offline mode enabled but deno-${target}.zip was not found in cacheDir." >&2
+            exit 1
+        fi
+
+        echo "[deno] Downloading ${url}"
+        if ! curl -fsSL "${url}" -o "${tmp_dir}/deno.zip"; then
+            echo "[deno] Failed to download ${url}" >&2
+            exit 1
+        fi
     fi
 
     local sums_url="https://dl.deno.land/release/${requested}/SHA256SUMS"
     local sums_file="${tmp_dir}/SHA256SUMS"
-    if ! curl -fsSL "${sums_url}" -o "${sums_file}"; then
-        echo "[deno] Failed to download ${sums_url}" >&2
-        exit 1
+    if copy_from_cache "SHA256SUMS" "${sums_file}"; then
+        :
+    else
+        if is_truthy "${OFFLINE}"; then
+            echo "[deno] Offline mode enabled but SHA256SUMS was not found in cacheDir." >&2
+            exit 1
+        fi
+
+        if ! curl -fsSL "${sums_url}" -o "${sums_file}"; then
+            echo "[deno] Failed to download ${sums_url}" >&2
+            exit 1
+        fi
     fi
 
     local expected

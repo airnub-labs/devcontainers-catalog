@@ -8,6 +8,8 @@ Supported browsers (current):
 - `neko-firefox`  (WebRTC; TCP mux by default; optional UDP locally)
 - `kasm-chrome`   (KasmVNC; HTTPS + WebSocket)
 
+> **Usage terms:** Review [docs/sidecars.md](../../docs/sidecars.md) for licensing requirements tied to these desktop sidecars.
+
 ## How to select browsers
 Use the generator:
 - CSV: `--with-browsers neko-chrome,kasm-chrome`

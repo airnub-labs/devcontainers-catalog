@@ -2,6 +2,8 @@
 
 This stack composes the existing `nextjs-supabase` template and adds a **full Chrome** via **Kasm Workspaces** (KasmVNC).
 
+> **Usage terms:** Review [docs/sidecars.md#kasm-chrome](../../docs/sidecars.md#kasm-chrome) before shipping this stack to students.
+
 - **Proxy/Codespaces-friendly**: default transport is **HTTPS + WebSocket**.
 - **One-click classroom demo**: Kasm port is auto-labeled; demo page at `/classroom-browser`.
 

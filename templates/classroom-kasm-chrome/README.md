@@ -15,5 +15,5 @@ WebRTC fast-path is optionally available in Kasm, but falls back automatically w
 ## Notes
 - Increase `shm_size` for stability during heavy browsing.
 - Manage extensions/policies in a full Kasm deployment; this template is the minimal sidecar variant.
-- Kasm Workspaces Community Edition is distributed under its own [licence](https://www.kasmweb.com/kasm-workspaces-license); review before distribution.
+- Kasm Workspaces Community Edition is distributed under its own [licence](https://www.kasmweb.com/kasm-workspaces-license); review before distribution. See also [docs/sidecars.md#kasm-chrome](../../docs/sidecars.md#kasm-chrome).
 - Smoke test script: `scripts/smoke-kasm.sh` checks the HTTPS entrypoint (uses `curl --insecure`).

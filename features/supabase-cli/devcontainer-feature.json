@@ -7,7 +7,7 @@
   "options": {
     "version": {
       "type": "string",
-      "default": "latest",
+      "default": "1.188.0",
       "description": "Version of the Supabase CLI to install (npm tag or semver)."
     },
     "manageLocalStack": {
@@ -24,6 +24,16 @@
       "type": "string",
       "default": "",
       "description": "Supabase project reference (exported as SUPABASE_PROJECT_REF if provided)."
+    },
+    "cacheDir": {
+      "type": "string",
+      "default": "",
+      "description": "Directory containing pre-downloaded Supabase CLI .deb and checksum files for offline installation."
+    },
+    "offline": {
+      "type": "boolean",
+      "default": false,
+      "description": "Skip external network requests; requires cacheDir assets and pre-installed dependencies."
     }
   },
   "containerEnv": {

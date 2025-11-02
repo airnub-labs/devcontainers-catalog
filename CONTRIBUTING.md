@@ -15,6 +15,21 @@ Thank you for helping build the chat-to-classroom platform! This repository host
 3. **Discuss breaking changes early**
    - Schema changes, renamed images, or template removals require a migration plan captured in `docs/MIGRATION*.md`.
 
+## Prerequisites
+
+Run `make check` before opening a pull request. The target fans out into schema validation, generator dry-runs, JavaScript unit tests, shell linting, and optional Docker Compose validation, so having the following tooling locally keeps the loop fast:
+
+| Tool | Version | Purpose in `make check` | Install tips |
+| --- | --- | --- | --- |
+| Python | 3.11+ | Executes `scripts/validate_lessons.py`, `scripts/manifest_slug.py`, and the generator module (`make gen-all`). | `pipx install pipenv` then `pipenv install --python 3.11`, or use the repo devcontainer where Python is preinstalled. |
+| Python deps | `pyyaml`, `jsonschema` | Required by the validation scripts. | `pip install "pyyaml>=6" "jsonschema>=4"` (can be done in a virtualenv). |
+| Node.js + npm | Node 24+, npm 10+ | Installs and runs the `tools/airnub-devc` unit tests when available. | Use `nvm install 24 && nvm use 24`, or install Node via your package manager (Homebrew, asdf, etc.). |
+| jq / yq | Latest | Surface manifest lint warnings early. | `brew install jq yq`, `apt-get install jq`, and `pipx install yq`. |
+| shellcheck | 0.9+ | Lints all tracked shell scripts. | `brew install shellcheck` or `apt-get install shellcheck`. |
+| Docker CLI + Docker Compose | 24+ | Validates generated `docker-compose.classroom.yml` bundles when Docker is available. | Install Docker Desktop, Rancher Desktop, or `apt-get install docker.io docker-compose-plugin`. |
+
+Partial runs are supported. If `make check` cannot find npm, shellcheck, or Docker on your `PATH`, it will skip those steps and emit a warning rather than fail the run. This is handy when working on a laptop without Docker; keep full validation in CI for parity.
+
 ## Development Environment
 
 1. **Clone and install tooling**

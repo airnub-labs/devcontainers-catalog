@@ -1,0 +1,71 @@
+name: Publish SBOM
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**/package.json'
+      - '**/package-lock.json'
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate-sbom:
+    name: Generate Software Bill of Materials
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - path: tools/airnub-devc
+            name: airnub-devc
+          - path: packages/sdk-codespaces-adapter
+            name: sdk-codespaces-adapter
+          - path: tools/catalog-generator
+            name: catalog-generator
+          - path: packages/sidecar-agent
+            name: sidecar-agent
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ${{ matrix.path }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.path }}
+        run: npm ci
+
+      - name: Generate SBOM (CycloneDX JSON)
+        working-directory: ${{ matrix.path }}
+        run: npx @cyclonedx/cyclonedx-npm --output-file sbom-${{ matrix.name }}-cyclonedx.json --output-format JSON --spec-version 1.5
+
+      - name: Generate SBOM (SPDX JSON)
+        working-directory: ${{ matrix.path }}
+        run: npx @cyclonedx/cyclonedx-npm --output-file sbom-${{ matrix.name }}-spdx.json --output-format SPDX --spec-version 2.3
+
+      - name: Upload SBOM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ matrix.name }}
+          path: |
+            ${{ matrix.path }}/sbom-${{ matrix.name }}-cyclonedx.json
+            ${{ matrix.path }}/sbom-${{ matrix.name }}-spdx.json
+          retention-days: 90
+
+      - name: Attach SBOM to release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ matrix.path }}/sbom-${{ matrix.name }}-cyclonedx.json
+            ${{ matrix.path }}/sbom-${{ matrix.name }}-spdx.json
+          tag_name: ${{ github.event.release.tag_name }}

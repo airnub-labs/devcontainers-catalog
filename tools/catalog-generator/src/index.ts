@@ -23,6 +23,12 @@ interface SidecarEnvEntry {
   required?: boolean;
 }
 
+interface SidecarUsageNotice {
+  summary: string;
+  url?: string;
+  docs?: string;
+}
+
 type HealthMethod = 'http' | 'tcp' | 'cmd' | 'postgres';
 
 interface SidecarHealth {
@@ -50,6 +56,7 @@ interface SidecarDescriptor {
   notes?: string;
   env?: SidecarEnvEntry[];
   health?: SidecarHealth;
+  usage?: SidecarUsageNotice;
 }
 
 interface SidecarRegistryFile {
@@ -240,6 +247,34 @@ function getSidecar(browserId: string): SidecarDescriptor {
   return sidecar;
 }
 
+type UsageEntry = {
+  id: string;
+  label: string;
+  summary: string;
+  url?: string;
+  docs?: string;
+};
+
+function collectUsageEntries(browsers: string[]): UsageEntry[] {
+  return Array.from(
+    new Map(
+      browsers
+        .map((id) => getSidecar(id))
+        .filter((sidecar) => sidecar.usage)
+        .map((sidecar) => [
+          sidecar.id,
+          {
+            id: sidecar.id,
+            label: sidecar.label,
+            summary: sidecar.usage?.summary ?? '',
+            url: sidecar.usage?.url,
+            docs: sidecar.usage?.docs
+          }
+        ])
+    ).values()
+  );
+}
+
 function createHealthcheckBlock(sidecar: SidecarDescriptor): string {
   const health = normalizeHealthDefinition(sidecar);
   if (!health) {
@@ -329,6 +364,27 @@ function createHealthcheckBlock(sidecar: SidecarDescriptor): string {
 
 function createReadme(stackId: string, browsers: string[]): string {
   const browserList = browsers.length > 0 ? browsers.map((id) => `- ${id}`).join('\n') : '- none';
+  const usageEntries = collectUsageEntries(browsers);
+
+  const usageSection = usageEntries.length
+    ? '## Third-party usage terms\n\n' +
+      'The selected desktop sidecars rely on upstream projects. Review their licensing/usage terms before distributing a classroom workspace.\n\n' +
+      usageEntries
+        .map((entry) => {
+          const links: string[] = [];
+          if (entry.docs) {
+            links.push(`[catalog guidance](${entry.docs})`);
+          }
+          if (entry.url) {
+            links.push(`[upstream licence](${entry.url})`);
+          }
+          const suffix = links.length ? ` (${links.join(' · ')})` : '';
+          return `- **${entry.label}** — ${entry.summary}${suffix}`;
+        })
+        .join('\n') +
+      '\n\n'
+    : '';
+
   return `# ${STACK_DEFAULTS[stackId].displayName}\n\n${STACK_DEFAULTS[stackId].description}\n\n` +
     '## Safety checklist\n\n' +
     '- Update sidecar passwords before inviting students.\n' +
@@ -336,6 +392,7 @@ function createReadme(stackId: string, browsers: string[]): string {
     '- Share the `/classroom-browser` link with Chromebook/iPad users.\n\n' +
     '## Included browsers\n\n' +
     `${browserList}\n\n` +
+    usageSection +
     '## Running locally\n\n' +
     'Use VS Code Dev Containers or GitHub Codespaces to open the workspace.\n';
 }
@@ -479,6 +536,24 @@ export async function generateCatalogWorkspace(input: GeneratorInput): Promise<G
     });
   });
 
+  const usageEntries = collectUsageEntries(input.browsers);
+
+  const manifestNotes: WorkspaceManifest['notes'] = {
+    prefersUDP: false,
+    codespacesFallback: 'https-ws',
+    other: 'Rotate sidecar passwords and keep ports set to Private unless course policy dictates otherwise.'
+  };
+
+  if (usageEntries.length) {
+    manifestNotes.thirdPartyLicences = usageEntries.map((entry) => ({
+      id: entry.id,
+      label: entry.label,
+      summary: entry.summary,
+      docs: entry.docs ?? 'docs/sidecars.md',
+      url: entry.url
+    }));
+  }
+
   const manifest: WorkspaceManifest = {
     schemaVersion: DEFAULT_SCHEMA_VERSION,
     stackId: input.stackId,
@@ -496,11 +571,7 @@ export async function generateCatalogWorkspace(input: GeneratorInput): Promise<G
       readme: 'README.md',
       classroomBrowser: 'classroom-browser'
     },
-    notes: {
-      prefersUDP: false,
-      codespacesFallback: 'https-ws',
-      other: 'Rotate sidecar passwords and keep ports set to Private unless course policy dictates otherwise.'
-    }
+    notes: manifestNotes
   };
 
   const readme = createReadme(input.stackId, input.browsers);
