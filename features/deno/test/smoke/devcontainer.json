@@ -1,0 +1,6 @@
+{
+  "build": {
+    "context": "../..",
+    "dockerfile": "features/deno/test/smoke/Dockerfile"
+  }
+}

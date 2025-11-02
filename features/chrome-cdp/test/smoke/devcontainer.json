@@ -1,0 +1,6 @@
+{
+  "build": {
+    "context": "../..",
+    "dockerfile": "features/chrome-cdp/test/smoke/Dockerfile"
+  }
+}

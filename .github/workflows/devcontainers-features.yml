@@ -1,0 +1,69 @@
+name: CI - Devcontainer Feature Smoke Tests
+
+on:
+  pull_request:
+    paths:
+      - 'features/**'
+      - '.github/workflows/devcontainers-features.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      features: ${{ steps.collect.outputs.features }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: collect
+        run: |
+          set -euo pipefail
+          features_json=$(python3 - <<'PYTHON'
+import json
+import os
+
+base = "features"
+paths = []
+for name in sorted(os.listdir(base)):
+    full = os.path.join(base, name)
+    if not os.path.isdir(full):
+        continue
+    if os.path.isfile(os.path.join(full, "devcontainer-feature.json")):
+        paths.append(name)
+print(json.dumps(paths))
+PYTHON
+)
+          echo "Discovered features: ${features_json}"
+          echo "features=${features_json}" >> "${GITHUB_OUTPUT}"
+
+  test:
+    needs: discover
+    if: needs.discover.outputs.features != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        feature: ${{ fromJson(needs.discover.outputs.features) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run devcontainer features test
+        run: |
+          set -euo pipefail
+          npx --yes @devcontainers/cli@latest features test --project-folder "features/${{ matrix.feature }}"
+
+  no-features:
+    needs: discover
+    if: needs.discover.outputs.features == '[]'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "No features found to test."

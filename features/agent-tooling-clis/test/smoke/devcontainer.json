@@ -1,0 +1,6 @@
+{
+  "build": {
+    "context": "../..",
+    "dockerfile": "features/agent-tooling-clis/test/smoke/Dockerfile"
+  }
+}
