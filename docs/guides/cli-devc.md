@@ -74,6 +74,8 @@ Supported IDs (without `--include-experimental`):
 Passing `--include-experimental` adds:
 - `neko-firefox` *(experimental remote debugging)*
 
+See [docs/sidecars.md](../sidecars.md) for usage/licensing notes on these desktop sidecars.
+
 Examples:
 - Chrome only:
   `airnub-devc generate stack --template stack-nextjs-supabase-browsers --with-browser neko-chrome`
