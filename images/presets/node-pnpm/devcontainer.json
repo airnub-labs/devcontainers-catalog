@@ -35,8 +35,7 @@
         "esbenp.prettier-vscode",
         "bradlc.vscode-tailwindcss",
         "github.copilot",
-        "github.copilot-chat",
-        "Clinedev.cline"
+        "github.copilot-chat"
       ]
     }
   },
