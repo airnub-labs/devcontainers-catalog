@@ -12,6 +12,7 @@ Most fragments expose a single `docker-compose.<service>.yml` file that is copie
 | inbucket | `docker-compose.inbucket.yml` | Disposable SMTP/IMAP/Web UI mail sandbox. |
 | kafka | `docker-compose.kafka-kraft.yml`, `docker-compose.kafka-utils.yml` | Single-node Kafka (KRaft) plus optional kafkacat helpers. |
 | linux-chrome | `docker-compose.linux-chrome.yml` | VNC-accessible Linux desktop running Chrome. |
+| minio | `docker-compose.minio.yml` | Single-node MinIO server with S3-compatible API and web console. |
 | prefect | `docker-compose.prefect.yml` | Prefect server with agent for flow development. |
 | redis | `docker-compose.redis.yml` | Standalone Redis for caching or queues. |
 | supabase | `docker-compose.supabase.yml` | Supabase stack (Postgres, auth, storage, realtime). |
