@@ -1,0 +1,10 @@
+{
+  "id": "cline-cli",
+  "version": "1.0.0",
+  "name": "Cline CLI",
+  "description": "Installs the Cline command line interface globally via pnpm.",
+  "documentationURL": "https://github.com/airnub-labs/devcontainers-catalog",
+  "installsAfter": [
+    "ghcr.io/devcontainers/features/common-utils"
+  ]
+}
