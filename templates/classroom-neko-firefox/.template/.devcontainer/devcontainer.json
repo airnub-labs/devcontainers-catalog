@@ -13,9 +13,7 @@
       "settings": {
         "terminal.integrated.defaultProfile.linux": "bash"
       },
-      "extensions": [
-        "Clinedev.cline"
-      ]
+      "extensions": []
     }
   },
   "forwardPorts": [8081, 59010],

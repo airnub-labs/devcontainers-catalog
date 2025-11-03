@@ -76,8 +76,7 @@
         "esbenp.prettier-vscode",
         "supabase.vscode-supabase-extension",
         "github.copilot",
-        "github.copilot-chat",
-        "Clinedev.cline"
+        "github.copilot-chat"
       ]
     }
   }
