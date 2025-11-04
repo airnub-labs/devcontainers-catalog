@@ -1,0 +1,13 @@
+{
+  "name": "runme-agent-sample",
+  "features": {
+    "ghcr.io/airnub-labs/devcontainers-catalog/runme-agent:1": {
+      "auto_run": false,
+      "readme_file": "README.md",
+      "blocks": "setup,dev",
+      "confirm_plan": true,
+      "agent": "none"
+    }
+  },
+  "postCreateCommand": "airnub-autosetup"
+}

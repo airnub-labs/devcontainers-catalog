@@ -1,0 +1,36 @@
+name: Test Feature - Runme Agent
+
+on:
+  pull_request:
+    paths:
+      - 'src/runme-agent/**'
+      - 'examples/runme-agent-sample/**'
+      - '.github/workflows/test-runme-agent.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/runme-agent/**'
+      - 'examples/runme-agent-sample/**'
+      - '.github/workflows/test-runme-agent.yml'
+  workflow_dispatch: {}
+
+jobs:
+  feature-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        base_image:
+          - mcr.microsoft.com/devcontainers/base:ubuntu
+          - mcr.microsoft.com/devcontainers/base:debian
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run devcontainer features test
+        run: |
+          set -euo pipefail
+          npx --yes @devcontainers/cli@latest features test \
+            --project-folder . \
+            --features runme-agent \
+            --base-image "${{ matrix.base_image }}"
