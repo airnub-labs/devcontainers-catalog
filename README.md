@@ -17,6 +17,10 @@
 
 ## What’s in this repo
 
+### Feature catalog highlights
+
+- [README Auto-Setup (Runme Agent)](src/runme-agent/README.md) — install Runme, expose the `airnub-autosetup` helper, and optionally delegate failures to an available coding agent. Enable it from the Codespaces/Dev Containers “Add Features…” picker or by referencing `ghcr.io/airnub-labs/devcontainers-catalog/runme-agent` in your `devcontainer.json`.
+
 ## Generator + Manifest Contract
 
 - `tools/catalog-generator/` exposes `generateCatalogWorkspace` and a `catalog-generate` CLI that materialises provider-agnostic workspaces.

@@ -1,0 +1,38 @@
+{
+  "id": "runme-agent",
+  "version": "1.0.0",
+  "name": "README Auto-Setup (Runme Agent)",
+  "description": "Safe-by-default README automation via Runme; optional handoff to a coding agent.",
+  "documentationURL": "https://github.com/airnub-labs/devcontainers-catalog/tree/main/src/runme-agent",
+  "options": {
+    "auto_run": {
+      "type": "boolean",
+      "default": false,
+      "description": "If true, run after container create (otherwise just install and provide the helper CLI)."
+    },
+    "readme_file": {
+      "type": "string",
+      "default": "README.md",
+      "description": "Markdown file to scan for Runme blocks."
+    },
+    "blocks": {
+      "type": "string",
+      "default": "setup,dev",
+      "description": "Comma-separated Runme block names to run (in order)."
+    },
+    "confirm_plan": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show a plan of the blocks to run and require user confirmation."
+    },
+    "agent": {
+      "type": "string",
+      "enum": ["none", "openhands"],
+      "default": "none",
+      "description": "Optional: if 'openhands', provide a helper stub to hand off tasks."
+    }
+  },
+  "installsAfter": [
+    "ghcr.io/devcontainers/features/common-utils"
+  ]
+}
