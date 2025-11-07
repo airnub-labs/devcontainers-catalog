@@ -67,6 +67,10 @@
             }
           }
         },
+        "enable_copilot": {
+          "type": "boolean",
+          "description": "When true, adds the GitHub Copilot and Copilot Chat extensions to the generated devcontainer."
+        },
         "env": {
           "type": "object",
           "additionalProperties": { "type": "string" }

@@ -11,6 +11,7 @@ export interface LessonEnv {
     base_preset: string; // e.g. "full", "node-pnpm", "python"
     image_tag_strategy?: string; // e.g. "ubuntu-24.04"
     vscode_extensions?: string[];
+    enable_copilot?: boolean;
     settings?: Record<string, unknown>;
     services?: Array<{ name: string; vars?: Record<string, string> }>;
     emit_aggregate_compose?: boolean;
