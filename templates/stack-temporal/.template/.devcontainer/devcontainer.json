@@ -1,0 +1,62 @@
+{
+  "name": "Temporal Workflow Development",
+  "dockerComposeFile": "compose.yaml",
+  "service": "dev",
+  "workspaceFolder": "/workspace",
+  "remoteUser": "vscode",
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": true,
+      "installOhMyZsh": true,
+      "upgradePackages": true,
+      "username": "vscode"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "lts",
+      "nodeGypDependencies": true
+    },
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.11"
+    },
+    "ghcr.io/devcontainers/features/go:1": {
+      "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest",
+      "dockerDashComposeVersion": "v2"
+    },
+    "ghcr.io/airnub-labs/devcontainer-features/temporal-cli:1": {
+      "version": "{{templateOption.temporalVersion}}"
+    }
+  },
+  "forwardPorts": [7233, 8233],
+  "portsAttributes": {
+    "7233": {
+      "label": "Temporal gRPC",
+      "onAutoForward": "notify"
+    },
+    "8233": {
+      "label": "Temporal UI",
+      "onAutoForward": "openBrowser"
+    }
+  },
+  "postCreateCommand": "bash .devcontainer/scripts/postCreate.sh",
+  "postStartCommand": "bash .devcontainer/scripts/postStart.sh",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "remote.downloadExtensionsLocally": "always",
+        "telemetry.telemetryLevel": "off"
+      },
+      "extensions": [
+        "golang.go",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "github.copilot",
+        "github.copilot-chat"
+      ]
+    }
+  }
+}

@@ -1,0 +1,83 @@
+services:
+  dev:
+    image: mcr.microsoft.com/devcontainers/base:ubuntu
+    user: vscode
+    volumes:
+      - ../..:/workspace:cached
+    command: sleep infinity
+    depends_on:
+      temporal:
+        condition: service_healthy
+      temporal-ui:
+        condition: service_healthy
+{{#templateOption.includeRedis}}
+      redis:
+        condition: service_healthy
+{{/templateOption.includeRedis}}
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_UI_ADDRESS=http://temporal-ui:8080
+    networks:
+      - temporal-network
+
+  temporal:
+    image: temporalio/auto-setup:1.25.0
+    container_name: temporal
+    restart: unless-stopped
+    ports:
+      - "7233:7233"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -lc '</dev/tcp/127.0.0.1/7233'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    networks:
+      - temporal-network
+
+  temporal-ui:
+    image: temporalio/ui:2.24.0
+    container_name: temporal-ui
+    restart: unless-stopped
+    environment:
+      TEMPORAL_ADDRESS: "temporal:7233"
+      TEMPORAL_GRPC_ENDPOINT: "temporal:7233"
+      TEMPORAL_AUTH_ENABLED: "false"
+    depends_on:
+      - temporal
+    ports:
+      - "{{templateOption.temporalUiPort}}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health | grep -q 'ok' || wget -qO- http://localhost:8080/ | grep -qi temporal"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    networks:
+      - temporal-network
+{{#templateOption.includeRedis}}
+
+  redis:
+    image: redis:7-alpine
+    container_name: temporal-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - temporal-network
+{{/templateOption.includeRedis}}
+
+networks:
+  temporal-network:
+    driver: bridge
+
+volumes:
+{{#templateOption.includeRedis}}
+  redis-data:
+    name: temporal-redis-data
+{{/templateOption.includeRedis}}

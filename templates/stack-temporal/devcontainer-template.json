@@ -1,0 +1,25 @@
+{
+  "version": "1.0.0",
+  "id": "stack-temporal",
+  "name": "Stack: Temporal Workflow Development",
+  "description": "Complete Temporal development environment with Temporal Server, UI, and CLI for building reliable workflows.",
+  "documentationURL": "https://github.com/airnub-labs/devcontainers-catalog",
+  "publisher": "airnub-labs",
+  "options": {
+    "temporalUiPort": {
+      "type": "integer",
+      "default": 8233,
+      "description": "Port to expose the Temporal UI web interface."
+    },
+    "includeRedis": {
+      "type": "boolean",
+      "default": false,
+      "description": "Include a Redis sidecar for caching and session management."
+    },
+    "temporalVersion": {
+      "type": "string",
+      "default": "latest",
+      "description": "Version of Temporal CLI to install (e.g., 'latest' or '1.5.1')."
+    }
+  }
+}
