@@ -1,0 +1,27 @@
+{
+  "id": "temporal-cli",
+  "version": "1.0.0",
+  "name": "Temporal CLI",
+  "description": "Installs the Temporal CLI for interacting with Temporal Server, Workflows, Activities, and Namespaces.",
+  "documentationURL": "https://github.com/airnub-labs/devcontainers-catalog/tree/main/features/temporal-cli",
+  "options": {
+    "version": {
+      "type": "string",
+      "default": "latest",
+      "description": "Version of Temporal CLI to install (e.g., 'latest', '1.5.1', or 'v1.5.1')"
+    },
+    "offline": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable offline installation mode (requires cacheDir)"
+    },
+    "cacheDir": {
+      "type": "string",
+      "default": "",
+      "description": "Directory containing cached Temporal CLI binaries for offline installation"
+    }
+  },
+  "installsAfter": [
+    "ghcr.io/devcontainers/features/common-utils"
+  ]
+}
