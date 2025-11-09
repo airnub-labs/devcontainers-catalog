@@ -27,3 +27,7 @@ spec:
     - DATABASE_URL
     - REDIS_URL
     - JWT_SECRET
+  # Optional: Reference lesson materials from the classroom-lessons repository
+  # starter_repo:
+  #   url: "https://github.com/airnub-labs/devcontainers-classroom-lessons"
+  #   subpath: "courses/backend-dev/materials/week-06/starter"

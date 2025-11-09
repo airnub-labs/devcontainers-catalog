@@ -164,7 +164,7 @@ devc services ls
 - Browse the [full documentation](../../docs/) for more details
 - Check out [classroom-quick-start.md](../../docs/getting-started/classroom-quick-start.md) for instructor guides
 - Learn about [manifest authoring](../../docs/getting-started/manifest-authoring.md)
-- Explore the [separate lessons repository](https://github.com/airnub-labs/devcontainers-classroom-lessons) for complete course examples
+- **Explore the [Classroom Lessons Repository](https://github.com/airnub-labs/devcontainers-classroom-lessons)** for complete multi-week courses, full curriculum examples, and pedagogical guides
 
 ## Contributing
 

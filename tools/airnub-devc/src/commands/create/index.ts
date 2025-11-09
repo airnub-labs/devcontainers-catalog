@@ -569,6 +569,9 @@ export async function createManifestInteractive(
       chalk.dim(`  # Or scaffold directly into a directory\n`) +
       `  devc scaffold ${resolvedPath} --out ./my-lesson\n\n` +
       chalk.dim(`  # Build and push the image\n`) +
-      `  devc build --ctx <generated-dir> --tag <your-tag> --push`,
+      `  devc build --ctx <generated-dir> --tag <your-tag> --push\n\n` +
+      chalk.blue(`💡 Tip: `) +
+      `For complete course materials, check out:\n` +
+      chalk.dim(`  https://github.com/airnub-labs/devcontainers-classroom-lessons`),
   );
 }

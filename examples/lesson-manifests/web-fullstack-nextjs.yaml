@@ -24,3 +24,7 @@ spec:
     - SUPABASE_URL
     - SUPABASE_ANON_KEY
     - REDIS_URL
+  # Optional: Reference lesson materials from the classroom-lessons repository
+  # starter_repo:
+  #   url: "https://github.com/airnub-labs/devcontainers-classroom-lessons"
+  #   subpath: "courses/fullstack-bootcamp/materials/week-08/starter"

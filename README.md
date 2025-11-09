@@ -73,6 +73,18 @@ devc create --template minimal-nodejs.yaml
 
 See [examples/lesson-manifests/README.md](examples/lesson-manifests/README.md) for 6 ready-to-use templates.
 
+### 📚 Full Course Library
+
+For complete multi-week courses with lesson materials, assignments, and pedagogical guides, check out the **[Classroom Lessons Repository](https://github.com/airnub-labs/devcontainers-classroom-lessons)**:
+
+- **Complete courses** - Web Development, Data Science, Full-Stack, etc.
+- **Multi-week progression** - Week 1 → Week 12 with increasing complexity
+- **Starter code & solutions** - Student starter repos and instructor solutions
+- **Pedagogical guides** - Teaching notes, common student issues, assessment tips
+- **Quickstart templates** - Single-lesson templates for specific topics
+
+The catalog provides the **infrastructure**, the lessons repo provides the **content**.
+
 ## Quick-start tiles
 
 | Persona | Flow | Commands | Cold / warm timing |
