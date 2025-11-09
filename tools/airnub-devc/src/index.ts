@@ -28,6 +28,7 @@ import { LessonEnv } from "./types.js";
 import { execa } from "execa";
 import { registerCodespacesCommands } from "./commands/codespaces/index.js";
 import { registerSidecarCommands } from "./commands/sidecars/index.js";
+import { createManifestInteractive } from "./commands/create/index.js";
 
 interface GlobalOptions {
   catalogRoot?: string;
@@ -721,6 +722,22 @@ program
       });
 
       console.log(chalk.green(`aggregate.compose.yml refreshed for services: ${services.join(", ")}`));
+    });
+  });
+
+// Create command - interactive manifest builder
+program
+  .command("create")
+  .description("Create a new lesson manifest interactively")
+  .option("--out <path>", "output manifest path")
+  .option("--template <name>", "start from an example template")
+  .action(async function (this: Command, opts: Record<string, any>) {
+    await withCatalog(this, async (catalog) => {
+      await createManifestInteractive({
+        out: opts.out,
+        template: opts.template,
+        catalog,
+      });
     });
   });
 

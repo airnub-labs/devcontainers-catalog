@@ -1,0 +1,24 @@
+# Workflow Orchestration with Prefect
+# Use case: Data pipelines, ETL workflows, scheduled tasks
+# Startup time: ~90 seconds (includes Prefect service)
+# Services: Prefect, Redis (optional for caching)
+
+apiVersion: airnub.devcontainers/v1
+kind: LessonEnv
+metadata:
+  org: "example-university"
+  course: "data-engineering"
+  lesson: "week05-workflow-orchestration"
+spec:
+  base_preset: "python-prefect"
+  image_tag_strategy: "ubuntu-24.04"
+  vscode_extensions:
+    - ms-python.python
+    - ms-python.vscode-pylance
+  services:
+    - name: "prefect"
+    - name: "redis"
+  emit_aggregate_compose: true
+  secrets_placeholders:
+    - PREFECT_API_KEY
+    - PREFECT_API_URL

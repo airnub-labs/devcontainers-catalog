@@ -1,0 +1,20 @@
+# Data Science with Python and Jupyter
+# Use case: Data analysis, machine learning, scientific computing
+# Startup time: ~30-45 seconds
+# Services: None (can add Redis for caching if needed)
+
+apiVersion: airnub.devcontainers/v1
+kind: LessonEnv
+metadata:
+  org: "example-university"
+  course: "data-science-101"
+  lesson: "week03-pandas-analysis"
+spec:
+  base_preset: "python"
+  image_tag_strategy: "ubuntu-24.04"
+  vscode_extensions:
+    - ms-python.python
+    - ms-python.vscode-pylance
+    - ms-toolsai.jupyter
+  settings:
+    python.defaultInterpreterPath: "/usr/local/bin/python"

@@ -24,5 +24,6 @@ spec:
     - AIRFLOW_ADMIN_PASS
     - TEMPORAL_API_KEY
   starter_repo:
-    url: "https://github.com/airnub-labs/lesson-starters/intro-ai-week02"
+    url: "https://github.com/airnub-labs/devcontainers-classroom-lessons"
+    subpath: "courses/intro-ai/materials/week-02/starter"
     path: "/workspace"

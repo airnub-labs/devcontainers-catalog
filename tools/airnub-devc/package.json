@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "@airnub/sdk-codespaces-adapter": "file:../../packages/sdk-codespaces-adapter",
+    "@clack/prompts": "^0.7.0",
     "@types/node": "^20.12.12",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",

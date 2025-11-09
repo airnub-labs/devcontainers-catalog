@@ -47,6 +47,44 @@ flowchart LR
 - **Flexible mode** → apply templates directly when you want to hand-tune features or Compose fragments. See the parity checklists inside each template README.
 - **Fast mode** → declare `spec.base_preset` in a manifest, run `devc generate`, and ship the prebuilt image + scaffold for instant Codespaces starts.
 
+## ✨ Interactive Manifest Creator
+
+**New!** Create manifests interactively with guided prompts:
+
+```bash
+devc create
+```
+
+This walks you through:
+- Selecting a course type (web, data science, workflows, etc.)
+- Choosing the right preset for your needs
+- Adding services (databases, caching, orchestration)
+- Real-time validation and cost estimates
+- VS Code extension setup
+
+Or start from a template:
+```bash
+# Browse examples
+ls examples/lesson-manifests/
+
+# Use a template as starting point
+devc create --template minimal-nodejs.yaml
+```
+
+See [examples/lesson-manifests/README.md](examples/lesson-manifests/README.md) for 6 ready-to-use templates.
+
+### 📚 Full Course Library
+
+For complete multi-week courses with lesson materials, assignments, and pedagogical guides, check out the **[Classroom Lessons Repository](https://github.com/airnub-labs/devcontainers-classroom-lessons)**:
+
+- **Complete courses** - Web Development, Data Science, Full-Stack, etc.
+- **Multi-week progression** - Week 1 → Week 12 with increasing complexity
+- **Starter code & solutions** - Student starter repos and instructor solutions
+- **Pedagogical guides** - Teaching notes, common student issues, assessment tips
+- **Quickstart templates** - Single-lesson templates for specific topics
+
+The catalog provides the **infrastructure**, the lessons repo provides the **content**.
+
 ## Quick-start tiles
 
 | Persona | Flow | Commands | Cold / warm timing |
