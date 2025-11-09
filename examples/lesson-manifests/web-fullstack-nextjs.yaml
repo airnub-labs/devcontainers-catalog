@@ -1,0 +1,26 @@
+# Full-Stack Next.js with Database and Caching
+# Use case: Modern full-stack web applications with Next.js, PostgreSQL, and Redis
+# Startup time: ~2-3 minutes (includes Supabase + Redis)
+# Services: Supabase (PostgreSQL + Auth + Storage), Redis
+
+apiVersion: airnub.devcontainers/v1
+kind: LessonEnv
+metadata:
+  org: "example-university"
+  course: "fullstack-bootcamp"
+  lesson: "week08-database-integration"
+spec:
+  base_preset: "node-pnpm"
+  image_tag_strategy: "ubuntu-24.04"
+  vscode_extensions:
+    - dbaeumer.vscode-eslint
+    - esbenp.prettier-vscode
+    - bradlc.vscode-tailwindcss
+  services:
+    - name: "supabase"
+    - name: "redis"
+  emit_aggregate_compose: true
+  secrets_placeholders:
+    - SUPABASE_URL
+    - SUPABASE_ANON_KEY
+    - REDIS_URL

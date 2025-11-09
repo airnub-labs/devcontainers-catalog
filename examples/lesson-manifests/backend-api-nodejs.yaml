@@ -1,0 +1,29 @@
+# Backend API Development with Node.js
+# Use case: REST APIs, microservices, backend services
+# Startup time: ~2 minutes (includes Supabase for PostgreSQL)
+# Services: Supabase (PostgreSQL), Redis (caching)
+
+apiVersion: airnub.devcontainers/v1
+kind: LessonEnv
+metadata:
+  org: "example-university"
+  course: "backend-dev"
+  lesson: "week06-rest-api-postgres"
+spec:
+  base_preset: "node-pnpm"
+  image_tag_strategy: "ubuntu-24.04"
+  vscode_extensions:
+    - dbaeumer.vscode-eslint
+    - esbenp.prettier-vscode
+    - humao.rest-client
+  services:
+    - name: "supabase"
+    - name: "redis"
+  emit_aggregate_compose: true
+  env:
+    NODE_ENV: "development"
+    PORT: "3000"
+  secrets_placeholders:
+    - DATABASE_URL
+    - REDIS_URL
+    - JWT_SECRET

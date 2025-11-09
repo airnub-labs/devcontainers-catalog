@@ -47,6 +47,32 @@ flowchart LR
 - **Flexible mode** → apply templates directly when you want to hand-tune features or Compose fragments. See the parity checklists inside each template README.
 - **Fast mode** → declare `spec.base_preset` in a manifest, run `devc generate`, and ship the prebuilt image + scaffold for instant Codespaces starts.
 
+## ✨ Interactive Manifest Creator
+
+**New!** Create manifests interactively with guided prompts:
+
+```bash
+devc create
+```
+
+This walks you through:
+- Selecting a course type (web, data science, workflows, etc.)
+- Choosing the right preset for your needs
+- Adding services (databases, caching, orchestration)
+- Real-time validation and cost estimates
+- VS Code extension setup
+
+Or start from a template:
+```bash
+# Browse examples
+ls examples/lesson-manifests/
+
+# Use a template as starting point
+devc create --template minimal-nodejs.yaml
+```
+
+See [examples/lesson-manifests/README.md](examples/lesson-manifests/README.md) for 6 ready-to-use templates.
+
 ## Quick-start tiles
 
 | Persona | Flow | Commands | Cold / warm timing |
